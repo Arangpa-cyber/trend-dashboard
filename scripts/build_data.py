@@ -5,6 +5,7 @@
   (종목을 바꿀 때는 index.html 한 곳만 고치면 됩니다.)
 - 시세: Twelve Data 무료 키 (분당 8회 제한에 맞춰 8초 간격, 약 14분)
 - 실적 일정: Nasdaq 실적 캘린더 (공식 API가 아니라서 막히면 실적 표시만 빠지고 나머지는 정상)
+  지난 400일 발표일은 처음 한 번만 다 받고(약 4분), 그 뒤로는 새 날짜만 이어 받습니다.
 - 결과: 저장소 맨 위의 data.json
 """
 import datetime as dt
@@ -58,36 +59,40 @@ def fetch_series(symbol, size):
     return None
 
 
-def fetch_earnings(symbols, days=60):
-    """앞으로 days일 안의 실적 발표일 (Nasdaq 실적 캘린더)"""
+def fetch_earnings(symbols, start, end):
+    """start-end 날짜(포함) 사이 실적 발표일 (Nasdaq 실적 캘린더) → {symbol: [{date, time}]}"""
     want, found = set(symbols), {}
-    today = dt.date.today()
     headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)", "Accept": "application/json"}
-    for k in range(days):
-        d = today + dt.timedelta(days=k)
-        if d.weekday() >= 5:
-            continue
-        try:
-            j = get_json(f"https://api.nasdaq.com/api/calendar/earnings?date={d.isoformat()}", headers, timeout=20)
-            for row in ((j.get("data") or {}).get("rows") or []):
-                s = row.get("symbol")
-                if s in want and s not in found:
-                    found[s] = {"date": d.isoformat(), "time": row.get("time", "")}
-        except Exception as e:
-            print(f"  실적 {d}: 실패 - {e}", flush=True)
-        time.sleep(0.6)
+    d = start
+    while d <= end:
+        if d.weekday() < 5:
+            try:
+                j = get_json(f"https://api.nasdaq.com/api/calendar/earnings?date={d.isoformat()}", headers, timeout=20)
+                for row in ((j.get("data") or {}).get("rows") or []):
+                    s = row.get("symbol")
+                    if s in want:
+                        found.setdefault(s, []).append({"date": d.isoformat(), "time": row.get("time", "")})
+            except Exception as e:
+                print(f"  실적 {d}: 실패 - {e}", flush=True)
+            time.sleep(0.6)
+        d += dt.timedelta(days=1)
     return found
+
+
+HIST_DAYS = 400   # 차트에 노란 배경으로 칠할 지난 실적 발표일 범위
+AHEAD_DAYS = 60   # 다가오는 실적 일정 범위
 
 
 def main():
     if not KEY:
         sys.exit("TWELVE_DATA_KEY 환경변수가 없습니다.")
-    old = {}
+    prev = {}
     if os.path.exists(OUT):
         try:
-            old = json.load(open(OUT, encoding="utf-8")).get("series", {})
+            prev = json.load(open(OUT, encoding="utf-8"))
         except Exception:
-            old = {}
+            prev = {}
+    old = prev.get("series", {})
 
     series, failed = {}, []
     symbols = MARKET + STOCKS
@@ -107,15 +112,38 @@ def main():
     if "QQQ" not in series:
         sys.exit("QQQ를 받지 못해 data.json을 갱신하지 않습니다.")
 
-    print("실적 일정 받기", flush=True)
-    earnings = fetch_earnings(STOCKS)
-    print(f"  실적 일정 {len(earnings)}종목", flush=True)
+    # 실적: 지난 발표일은 전에 받은 것을 이어 쓰고, 그 뒤 날짜와 앞으로 60일만 새로 받음
+    today = dt.date.today()
+    hist_from = today - dt.timedelta(days=HIST_DAYS)
+    hist = {s: [x for x in v if x >= hist_from.isoformat()] for s, v in (prev.get("earnHist") or {}).items()}
+    upto = prev.get("earnHistUpTo")
+    start = hist_from
+    if upto and hist:
+        start = max(hist_from, dt.date.fromisoformat(upto) - dt.timedelta(days=5))   # 며칠 겹쳐서 다시 확인
+        hist = {s: [x for x in v if x < start.isoformat()] for s, v in hist.items()}
+    print(f"실적 일정 받기: {start} - {today + dt.timedelta(days=AHEAD_DAYS)}", flush=True)
+    found = fetch_earnings(STOCKS, start, today + dt.timedelta(days=AHEAD_DAYS))
+    earnings = {}
+    for s, rows in found.items():
+        for r in rows:
+            if r["date"] < today.isoformat():
+                hist.setdefault(s, []).append(r["date"])
+            elif s not in earnings:
+                earnings[s] = r   # 다가오는 가장 가까운 발표일
+    hist = {s: sorted(set(v)) for s, v in hist.items() if v}
+    upto_new = (today - dt.timedelta(days=1)).isoformat()
+    if not found and prev.get("earnHist"):   # Nasdaq이 막힌 날: 전에 받은 실적을 그대로 둠
+        hist, upto_new = prev["earnHist"], prev.get("earnHistUpTo")
+        earnings = prev.get("earnings", {})
+    print(f"  다가오는 실적 {len(earnings)}종목, 지난 실적 {sum(len(v) for v in hist.values())}건", flush=True)
 
     data = {
         "generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "asOf": series["QQQ"][-1][0],
         "failed": failed,
         "earnings": earnings,
+        "earnHist": hist,
+        "earnHistUpTo": upto_new,
         "series": series,
     }
     with open(OUT, "w", encoding="utf-8") as f:
