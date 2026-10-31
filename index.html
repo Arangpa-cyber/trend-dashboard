@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-10-31 18:39</title>
+<title>추세 대시보드 v2026-10-31 18:48</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -28,6 +28,31 @@
   .topline { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   h1 { font-size: 20px; margin: 0; }
   h1 .ver { font-size: 12px; font-weight: 400; color: var(--sub); margin-left: 6px; }
+  .topbtns { display: flex; gap: 6px; }
+  #helpBtn { border: 1px solid var(--accent); background: var(--card); color: var(--accent); border-radius: 8px; padding: 4px 10px; font-size: 13px; font-weight: 700; }
+  h2 .q { font-size: 11px; font-weight: 700; width: 18px; height: 18px; line-height: 16px; padding: 0; border-radius: 50%;
+          border: 1px solid var(--sub); background: transparent; color: var(--sub); vertical-align: 2px; margin-left: 4px; }
+  h2 .q:hover { border-color: var(--accent); color: var(--accent); }
+  /* 도움말 창 */
+  #help { position: fixed; inset: 0; z-index: 120; background: rgba(0,0,0,0.45); display: none; justify-content: flex-end; }
+  #help.open { display: flex; }
+  #help .panel { width: min(620px, 100vw); height: 100%; background: var(--card); overflow-y: auto; padding: 18px 22px 40px;
+                 box-shadow: -8px 0 24px rgba(0,0,0,0.2); font-size: 14px; line-height: 1.75; }
+  #help .phead { display: flex; justify-content: space-between; align-items: center; position: sticky; top: -18px; background: var(--card);
+                 padding: 6px 0 10px; margin-top: -6px; border-bottom: 1px solid var(--line); z-index: 1; }
+  #help .phead b { font-size: 17px; }
+  #help .close { border: 0; background: transparent; color: var(--sub); font-size: 20px; }
+  #help .toc { font-size: 12px; color: var(--sub); margin: 10px 0 4px; line-height: 2; }
+  #help .toc a { color: var(--accent); text-decoration: none; margin-right: 10px; white-space: nowrap; }
+  #help h3 { font-size: 15px; margin: 26px 0 6px; padding-top: 4px; scroll-margin-top: 50px; }
+  #help h3 small { font-weight: 400; color: var(--sub); font-size: 12px; margin-left: 6px; }
+  #help p { margin: 4px 0 8px; }
+  #help .q2 { background: var(--bg); border-radius: 8px; padding: 8px 12px; margin: 6px 0 10px; }
+  #help table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 6px 0 10px; }
+  #help td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  #help td:first-child { white-space: nowrap; width: 1%; font-weight: 700; }
+  #help .hl { animation: hl 1.6s ease-out; }
+  @keyframes hl { from { background: rgba(194,65,12,0.18); } to { background: transparent; } }
   #gear { border: 1px solid var(--line); background: var(--card); color: var(--sub); border-radius: 8px; padding: 4px 10px; font-size: 13px; }
   #settings { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card);
               display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
@@ -157,8 +182,8 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-10-31 18:39</span></h1>
-    <button id="gear" title="API 키·데이터 설정">⚙ 설정</button>
+    <h1>추세 대시보드<span class="ver">v2026-10-31 18:48</span></h1>
+    <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
     <span>Twelve Data API 키</span>
@@ -179,16 +204,16 @@
   <div id="changes"><span class="muted">나스닥100 데이터를 모두 받으면 변화가 표시됩니다.</span></div>
 
   <!-- 1층 -->
-  <h2 id="sec-market">1. 시장 — QQQ 일봉 6개월</h2>
+  <h2 id="sec-market">1. 시장 — QQQ 일봉 6개월 <button class="q" data-help="h-market" title="이 층 보는 법">?</button></h2>
   <p class="lead">신호등 판정의 근거를 눈으로 확인하는 차트입니다.</p>
   <div class="card">
     <div id="marketChart"><div class="placeholder">QQQ 데이터를 기다리는 중</div></div>
     <div class="legend"><i style="color:#16a34a">━</i> 50일선 &nbsp; <i style="color:#7c3aed">━</i> 200일선 &nbsp;
-      <i style="color:#b91c1c">●</i> 분산일 &nbsp; <i style="color:#15803d">▲</i> 팔로스루 데이</div>
+      <i style="background:rgba(220,38,38,0.16);color:transparent;padding:0 5px">■</i> 분산일 &nbsp; <i style="background:rgba(22,163,74,0.30);color:transparent;padding:0 5px">■</i> 팔로스루 데이</div>
   </div>
 
   <!-- 2층 -->
-  <h2 id="sec-flow">2. 자금 흐름 — 나스닥100 안에서 돈이 어디로 가나</h2>
+  <h2 id="sec-flow">2. 자금 흐름 — 나스닥100 안에서 돈이 어디로 가나 <button class="q" data-help="h-flow" title="이 층 보는 법">?</button></h2>
   <p class="lead">위 두 비율선은 시장 체질, 아래 표는 산업별 순위입니다. 표의 행을 누르면 3층에서 그 산업만 봅니다.</p>
   <div class="grid2">
     <div class="card"><div class="card-head"><div class="name">QQQE / QQQ<span class="ticker">동일가중 ÷ 시총가중</span></div><div class="reason" id="r1txt">-</div></div><div class="ratioChart" id="r1"></div></div>
@@ -202,7 +227,7 @@
   </div>
 
   <!-- 3층 -->
-  <h2 id="sec-leaders">3. 주도주 — 나스닥100 RS 80 이상, 지금 어느 단계인가</h2>
+  <h2 id="sec-leaders">3. 주도주 — 나스닥100 RS 80 이상, 지금 어느 단계인가 <button class="q" data-help="h-leaders" title="이 층 보는 법">?</button></h2>
   <p class="lead">RS는 오닐식 가중 12개월 상대강도(최근 3개월 2배 가중)를 나스닥100 안에서 1-99로 매긴 값입니다. 카드를 누르면 주봉·일봉을 크게 봅니다.</p>
   <div class="legend" style="padding:0 0 8px"><i style="color:#16a34a">━</i> 10주선 &nbsp; <i style="color:#7c3aed">━</i> 40주선 &nbsp;
     <i style="color:#f59e0b">━</i> 박스 상단·하단 &nbsp; <i style="color:#b91c1c">┄</i> 52주 고점 &nbsp;
@@ -210,6 +235,8 @@
   <div id="filterChip"><button id="clearFilter"></button></div>
   <div id="leaders"><div class="muted" style="font-size:13px">나스닥100 데이터를 모두 받으면 표시됩니다.</div></div>
 </main>
+
+<div id="help"><div class="panel" id="helpPanel"></div></div>
 
 <div id="modal"><div class="box">
   <div class="mhead"><div class="name" id="mName"></div><span class="tag" id="mTag"></span><button class="close" id="mClose" title="닫기 (Esc)">✕</button>
@@ -285,6 +312,7 @@ const C = {
   ma10: "#16a34a", ma40: "#7c3aed", barUp: "#dc2626", barDown: "#1d4ed8",
   volUp: "rgba(220, 38, 38, 0.35)", volDown: "rgba(21, 101, 192, 0.35)",
   high: "#b91c1c", box: "#f59e0b", dd: "#b91c1c", ftd: "#15803d",
+  ddBg: "rgba(220, 38, 38, 0.16)", ftdBg: "rgba(22, 163, 74, 0.30)",   // 1층 배경색: 분산일, 팔로스루 데이
 };
 const DARK = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 
@@ -566,14 +594,18 @@ function addVolume(chart, rows, from) {
 function drawMarket(d, m) {
   const chart = baseChart(document.getElementById("marketChart"), 0.24);
   const from = Math.max(0, d.length - SHOW_DAYS);
-  const bars = addBars(chart, d, from);
+  // 분산일·팔로스루 데이: 그날 세로 칸 전체를 배경색으로 칠함 (가장 먼저 추가해서 바 뒤에 깔리게)
+  const ddSet = new Set(m.dd.filter((x) => !x.expired).map((x) => x.i)), ftdSet = new Set(m.ftds);
+  const bg = chart.addHistogramSeries({ priceScaleId: "bg", priceLineVisible: false, lastValueVisible: false,
+                                        priceFormat: { type: "custom", formatter: () => "" } });
+  chart.priceScale("bg").applyOptions({ scaleMargins: { top: 0, bottom: 0 }, visible: false });
+  bg.applyOptions({ autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 1 } }) });
+  bg.setData(d.map((r, i) => ({ r, i })).filter(({ i }) => i >= from).map(({ r, i }) =>
+    ftdSet.has(i) ? { time: r.t, value: 1, color: C.ftdBg } : ddSet.has(i) ? { time: r.t, value: 1, color: C.ddBg } : { time: r.t }));
+  addBars(chart, d, from);
   addLine(chart, d, m.ma50, from, C.ma10, 2);
   addLine(chart, d, m.ma200, from, C.ma40, 2);
   addVolume(chart, d, from);
-  const marks = [];
-  m.dd.filter((x) => x.i >= from && !x.expired).forEach((x) => marks.push({ time: d[x.i].t, position: "aboveBar", color: C.dd, shape: "circle", size: 0.4 }));
-  m.ftds.filter((i) => i >= from).forEach((i) => marks.push({ time: d[i].t, position: "belowBar", color: C.ftd, shape: "arrowUp", size: 0.6 }));
-  bars.setMarkers(marks.sort((a, b) => (a.time < b.time ? -1 : 1)));
   chart.timeScale().fitContent();
 }
 function drawRatio(elId, txtId, a, b, upWord, downWord) {
@@ -919,6 +951,150 @@ async function loadAll(force) {
   await showRefreshInfo();
   statusEl.textContent = (todo.length ? "갱신 완료" : "") + (failed.length ? " · 받지 못한 종목: " + failed.join(", ") : "");
 }
+
+
+// ═════════════ 도움말 ═════════════
+// 기준값은 위 설정(상수)을 그대로 읽어서 쓰므로, 설정을 바꾸면 도움말 숫자도 같이 바뀝니다.
+function buildHelp() {
+  const P = (x) => Math.round(x * 100) + "%";
+  const b = (cls, t) => '<span class="badge ' + cls + '">' + t + "</span>";
+  const pill = (cls, t) => '<span class="pill ' + cls + '" style="font-size:12px">' + t + "</span>";
+  document.getElementById("helpPanel").innerHTML = `
+<div class="phead"><b>이 대시보드 보는 법</b><button class="close" id="helpClose" title="닫기 (Esc)">✕</button></div>
+<div class="toc"><a href="#h-start">처음 오셨다면</a><a href="#h-signal">신호등</a><a href="#h-sticky">고정 바</a><a href="#h-changes">바뀐 것</a>
+<a href="#h-market">1층 시장</a><a href="#h-flow">2층 자금 흐름</a><a href="#h-leaders">3층 주도주</a><a href="#h-states">단계 7가지</a>
+<a href="#h-tags">꼬리표</a><a href="#h-charts">차트 읽는 법</a><a href="#h-data">데이터·갱신</a><a href="#h-limits">한계</a></div>
+
+<h3 id="h-start">처음 오셨다면</h3>
+<p>이 화면은 <b>위에서 아래로 좁혀 들어가는 깔때기</b>입니다. 각 층이 질문 하나에만 답합니다.</p>
+<div class="q2">
+<b>① 지금 시장이 내 편인가?</b> → 맨 위 신호등과 1층<br>
+<b>② 돈이 어느 쪽으로 몰리나?</b> → 2층 자금 흐름<br>
+<b>③ 그 안에서 지금 살 만한 자리에 있는 주도주는?</b> → 3층 주도주</div>
+<p>신호등이 <b>신규 매수 중지</b>나 <b>방어</b>면 3층에 좋은 차트가 있어도 새로 사지 않는다는 뜻입니다. 시장이 내 편일 때만 싸웁니다.</p>
+<p>매일 아침 할 일: ① 신호등 확인 → ② "바뀐 것" 상자에서 어제와 달라진 종목 확인 → ③ 3층 <b>돌파 중</b>, <b>준비</b> 종목의 차트 확인.</p>
+<p>제목 옆 <b>?</b> 버튼을 누르면 그 층의 설명으로 바로 옵니다. 카드나 종목 줄을 누르면 주봉·일봉 차트를 크게 봅니다.</p>
+
+<h3 id="h-signal">신호등 <small>맨 위 큰 상자 · QQQ 일봉 기준</small></h3>
+<table>
+<tr><td>${pill("go", "공격 가능")}</td><td>QQQ가 50일선과 200일선 위에 있고, 조정 중이 아니며, 최근 25거래일 분산일이 ${DD_LIMIT - 1}회 이하. 새로 사도 되는 시장.</td></tr>
+<tr><td>${pill("wait", "신규 매수 중지")}</td><td>다음 중 하나라도 해당: 50일선 아래 · 분산일 ${DD_LIMIT}회 이상 · 조정 중(팔로스루 데이 전). 새로 사지 않고 보유 종목만 관리.</td></tr>
+<tr><td>${pill("stop", "방어")}</td><td>QQQ가 200일선 아래. 큰 하락 국면일 수 있으니 현금 비중을 지키는 쪽.</td></tr>
+</table>
+<p>아래 회색 줄은 판정의 근거입니다.</p>
+<table>
+<tr><td>분산일</td><td>QQQ가 ${Math.abs(DD_DROP * 100).toFixed(1)}% 이상 떨어졌는데 거래량은 전날보다 많은 날. 큰 자본이 파는 흔적입니다. 그 뒤 종가가 5% 넘게 오르면 지워집니다.</td></tr>
+<tr><td>조정 중</td><td>QQQ가 직전 고점에서 ${P(CORRECTION_PCT)} 이상 빠진 상태.</td></tr>
+<tr><td>랠리 n일차</td><td>조정 중 바닥을 찍은 뒤 첫 상승일을 1일차로 셉니다. 바닥을 다시 깨면 처음부터 다시 셉니다.</td></tr>
+<tr><td>팔로스루 데이</td><td>랠리 4일차 이후, QQQ가 ${(FTD_GAIN * 100).toFixed(2)}% 이상 오르고 거래량이 전날보다 많은 날. 상승 전환이 확인됐다는 신호입니다.</td></tr>
+</table>
+
+<h3 id="h-sticky">고정 바 <small>스크롤해도 위에 붙어 있는 줄</small></h3>
+<p>시장 판정과 3층 단계별 종목 수, 바뀐 것 개수를 한 줄로 보여 줍니다. 항목을 누르면 그 위치로 이동합니다. 주황색 숫자는 지금 눈여겨볼 만한 항목입니다(돌파 중, 준비, 변화가 있을 때).</p>
+
+<h3 id="h-changes">바뀐 것 <small>신호등 바로 아래 상자</small></h3>
+<p>오른쪽 버튼으로 <b>전일 대비</b>와 <b>1주 전 대비</b>를 바꿉니다. 같은 데이터를 그 시점까지 잘라서 다시 계산한 뒤 지금과 비교합니다.</p>
+<table>
+<tr><td>단계 변화</td><td>3층 단계가 바뀐 종목. 예: 돌파 대기→돌파 중. 가장 먼저 볼 줄입니다.</td></tr>
+<tr><td>새 주도주</td><td>RS가 ${RS_LEADER} 이상으로 새로 올라온 종목. 괄호 안은 지금 단계.</td></tr>
+<tr><td>주도주 탈락</td><td>RS가 ${RS_LEADER} 아래로 내려간 종목. 괄호 안은 지금 RS.</td></tr>
+</table>
+<p>밑줄 친 티커를 누르면 차트를 크게 봅니다.</p>
+
+<h3 id="h-market">1층 · 시장 <small>QQQ 일봉 6개월</small></h3>
+<p>신호등이 왜 그렇게 나왔는지 눈으로 확인하는 차트입니다.</p>
+<table>
+<tr><td style="color:#16a34a">━ 50일선</td><td>중기 추세. 가격이 이 선 아래로 내려가면 신규 매수 중지.</td></tr>
+<tr><td style="color:#7c3aed">━ 200일선</td><td>장기 추세. 가격이 이 선 아래면 방어. 선의 기울기로 1년 흐름을 읽습니다.</td></tr>
+<tr><td><span style="background:rgba(220,38,38,0.16);padding:0 8px">옅은 붉은 배경</span></td><td>분산일. 그날 세로 칸 전체가 붉게 칠해집니다. 짧은 기간에 붉은 칸이 몰리면 큰 자본이 빠져나가는 중입니다.</td></tr>
+<tr><td><span style="background:rgba(22,163,74,0.30);padding:0 8px">초록 배경</span></td><td>팔로스루 데이. 조정 뒤 상승 전환 확인.</td></tr>
+</table>
+
+<h3 id="h-flow">2층 · 자금 흐름</h3>
+<p><b>위 두 비율선</b>은 시장 체질을 봅니다. 숫자는 보지 말고 선의 방향만 보세요. 회색 점선은 50일 평균입니다.</p>
+<table>
+<tr><td>QQQE / QQQ</td><td>동일가중 ÷ 시총가중. <b>▲ 상승이 넓게 퍼지는 중</b>: 많은 종목이 함께 오름(건강). <b>▼ 소수 대형주에 몰리는 중</b>: 몇몇 초대형주만 끌고 감(취약).</td></tr>
+<tr><td>XLY / XLP</td><td>경기소비재 ÷ 필수소비재. <b>▲ 공격 쪽</b>: 큰돈이 위험을 감수. <b>▼ 방어 쪽</b>: 큰돈이 숨는 중.</td></tr>
+<tr><td>방향 없음</td><td>비율이 50일 평균 근처에서 오르내림. 판단 보류.</td></tr>
+</table>
+<p><b>아래 산업 순위표</b>는 나스닥100 종목을 산업별로 묶어 자금이 어디로 가는지 봅니다. 행을 누르면 3층이 그 산업만 보여 주고, 다시 누르면 풀립니다.</p>
+<table>
+<tr><td>평균 RS</td><td>그 산업 종목들의 RS(아래 설명) 평균. 높을수록 지수보다 강한 산업.</td></tr>
+<tr><td>4주 전 → 지금</td><td>산업 순위의 변화. <span class="chg-up">▲</span> 올라옴, <span class="chg-down">▼</span> 내려감. <b>이미 1등인 산업보다 빠르게 올라오는 산업</b>이 "기대가 새로 커지는 곳"입니다.</td></tr>
+<tr><td>10주선 위</td><td>그 산업 종목 중 주가가 10주선 위에 있는 수. 순위는 높은데 이 숫자가 작으면 힘이 빠지는 중.</td></tr>
+<tr><td>주도주</td><td>그 산업에서 RS ${RS_LEADER} 이상인 종목.</td></tr>
+</table>
+
+<h3 id="h-leaders">3층 · 주도주</h3>
+<p>나스닥100에서 <b>RS ${RS_LEADER} 이상</b>인 종목만 골라, 원칙상 <b>지금 무엇을 할 단계인지</b>로 나눕니다.</p>
+<div class="q2"><b>RS(상대강도)</b>: 최근 12개월 수익률을 오닐식으로 가중(최근 3개월 2배)해서, 나스닥100 100종목 안에서 1-99로 순위를 매긴 값입니다. RS ${RS_LEADER} = 상위 20%. IBD의 RS 등급은 전체 상장 종목 대비라 숫자가 다를 수 있습니다.</div>
+<p>카드 윗줄: 종목명 · 티커 · 꼬리표 / 오른쪽: 산업 · RS. 아랫줄: 단계 판정의 근거. 차트가 있는 단계는 카드 3열, 차트를 생략한 단계는 한 종목 한 줄 목록입니다.</p>
+
+<h3 id="h-states">단계 7가지 <small>3층 묶음과 고정 바 항목</small></h3>
+<p>박스(베이스)는 주봉 기준으로 최근 ${BASE_LOOKBACK}주 안의 최고점부터 지금까지 ${BASE_MIN_WEEKS}주 이상 옆으로 움직인 구간입니다. 박스 상단이 돌파 기준(피벗)입니다.</p>
+<table>
+<tr><td>돌파 중</td><td>박스 상단을 넘었고, 아직 상단에서 ${P(BUY_RANGE)} 이내(매수 범위). <b>할 일: 매수 검토.</b> 돌파일 거래량이 50일 평균의 ${BREAKOUT_VOL}배에 못 미치면 "거래량 부족"이 붉게 표시됩니다. 거래량 없는 돌파는 큰 자본의 흔적이 아닙니다.</td></tr>
+<tr><td>준비</td><td>"돌파 대기" 중 최근 3주 변동폭이 ${P(TIGHT_3W)} 이하로 조여지고, 최근 2주 거래량이 그 전 10주 평균의 ${P(DRY_VOL)} 이하로 마른 종목. 돌파 대기 맨 앞에 놓입니다. <b>할 일: 돌파 지점 미리 표시.</b></td></tr>
+<tr><td>돌파 대기</td><td>박스 상단까지 ${P(NEAR_TOP)} 이내에서 숨 고르는 중. <b>할 일: 관심 목록.</b></td></tr>
+<tr><td>연장됨</td><td>박스 상단보다 ${P(BUY_RANGE)} 넘게 올랐거나, 박스 없이 10주선보다 10% 넘게 위. <b>할 일: 추격하지 않고 다음 박스를 기다림.</b></td></tr>
+<tr><td>박스 형성 중</td><td>신고가 부근에서 1-${BASE_MIN_WEEKS - 1}주째 쉬는 중. ${BASE_MIN_WEEKS}주가 지나 박스가 되면 돌파 대기로 올라옵니다. 차트 생략.</td></tr>
+<tr><td>박스 안</td><td>박스 상단까지 ${P(NEAR_TOP)} 넘게 남음. 아직 후보 아님. 차트 생략.</td></tr>
+<tr><td>손상</td><td>RS는 높지만 주가가 10주선 아래, 박스 하단 아래, 또는 박스가 ${P(BASE_MAX_DEPTH)} 넘게 깊음. 차트 생략.</td></tr>
+</table>
+
+<h3 id="h-tags">꼬리표</h3>
+<table>
+<tr><td>${b("new", "NEW")}</td><td>비교 시점(전일 또는 1주 전) 이후 RS ${RS_LEADER} 이상으로 새로 들어온 종목.</td></tr>
+<tr><td>${b("new", "대기→돌파 중")}</td><td>비교 시점 이후 단계가 바뀐 종목. 화살표 앞이 예전, 뒤가 지금.</td></tr>
+<tr><td>${b("rsh", "RS선 신고가")}</td><td>종목 ÷ QQQ 선이 52주 신고가. 주가보다 상대강도가 먼저 신고가를 내면 큰 자본이 사 모으는 흔적일 수 있습니다.</td></tr>
+<tr><td>${b("earn", "실적 11/05 D-5")}</td><td>${EARN_WARN_DAYS}일 안에 실적 발표. 실적 직후 갭 하락은 계획보다 큰 손실을 만들 수 있어 붉게 표시합니다.</td></tr>
+<tr><td>${b("earn far", "실적 12/01 D-31")}</td><td>${EARN_WARN_DAYS + 1}-45일 뒤 실적 발표(회색).</td></tr>
+<tr><td><span class="ready">준비</span></td><td>판정 근거 줄 맨 앞. 위 "준비" 단계 참고.</td></tr>
+<tr><td><span class="warn">거래량 부족</span></td><td>돌파일 거래량이 기준(50일 평균의 ${BREAKOUT_VOL}배)에 못 미침.</td></tr>
+</table>
+
+<h3 id="h-charts">차트 읽는 법</h3>
+<table>
+<tr><td>바 차트</td><td>오닐·미너비니식. 세로선은 고가-저가, 오른쪽 짧은 눈금이 종가(시가 눈금 없음).</td></tr>
+<tr><td><span style="color:#dc2626">붉은</span> / <span style="color:#1d4ed8">파란</span> 바</td><td>전일(주봉은 전주) 종가보다 올랐으면 붉은색, 내렸으면 파란색. 아래 거래량 막대도 같은 기준.</td></tr>
+<tr><td style="color:#16a34a">━ 10주선</td><td>주봉 차트의 중기 추세선(일봉 50일선과 비슷). 추세 종목은 이 선을 타고 오릅니다.</td></tr>
+<tr><td style="color:#7c3aed">━ 40주선</td><td>주봉 차트의 장기 추세선(일봉 200일선과 비슷).</td></tr>
+<tr><td style="color:#f59e0b">━ 주황 선 2개</td><td>감지된 박스의 상단과 하단. 상단이 돌파 기준입니다.</td></tr>
+<tr><td style="color:#b91c1c">┄ 붉은 점선</td><td>최근 52주 고점. 오른쪽 가격 축에 값이 나옵니다.</td></tr>
+<tr><td>크게 보기</td><td>왼쪽 주봉 1년, 오른쪽 일봉 6개월(50일선·200일선). 일봉의 주황 점선이 박스 상단(돌파 기준)이라 돌파일 거래량을 확인하기 좋습니다.</td></tr>
+</table>
+
+<h3 id="h-data">데이터와 갱신</h3>
+<p>시세는 Twelve Data, 실적 일정은 Nasdaq 실적 캘린더에서 받습니다. 대상은 나스닥100 구성종목(GOOG처럼 중복된 주식 종류는 하나만)과 QQQ, QQQE, XLY, XLP입니다.</p>
+<p>GitHub가 미국 평일 장 마감 뒤(한국시간 화-토 오전 6시 10분 무렵) 자동으로 새로 받습니다. 화면 위 줄에 <b>데이터 기준일</b>(어느 날 장 마감까지 반영됐는지)과 <b>다음 갱신 예정 시각</b>이 나옵니다. 페이지를 열어 둔 채로 갱신 시각이 지나면 알아서 다시 읽습니다.</p>
+<p>⚙ 설정의 "새로 받기"는 서버에 올라온 최신 파일을 다시 읽는 버튼입니다.</p>
+
+<h3 id="h-limits">한계</h3>
+<p>분산일, 팔로스루 데이, 박스, 단계는 모두 <b>정해진 규칙으로 계산한 근사치</b>입니다. 사람이 차트를 보고 긋는 박스와 다를 수 있습니다. 이 화면은 후보를 걸러 주는 역할만 하고, 최종 판단은 차트로 직접 하세요.</p>
+<p>분산일은 IBD처럼 거래소 전체 거래량이 아니라 QQQ 자체 거래량으로 셉니다. 최근 상장 종목은 데이터가 짧아 RS와 40주선이 불완전할 수 있습니다. 나스닥100 구성종목이 바뀌면(매년 12월 정기 변경 등) 종목 목록을 고쳐야 합니다.</p>`;
+  document.getElementById("helpClose").addEventListener("click", closeHelp);
+  document.querySelectorAll("#helpPanel .toc a").forEach((a) => a.addEventListener("click", (e) => {
+    e.preventDefault(); jumpHelp(a.getAttribute("href").slice(1));
+  }));
+}
+function jumpHelp(id) {
+  const t = document.getElementById(id);
+  if (!t) return;
+  t.scrollIntoView({ behavior: "smooth", block: "start" });
+  t.classList.remove("hl"); void t.offsetWidth; t.classList.add("hl");
+}
+function openHelp(id) {
+  document.getElementById("help").classList.add("open");
+  if (id) setTimeout(() => jumpHelp(id), 60); else document.getElementById("helpPanel").scrollTop = 0;
+}
+function closeHelp() { document.getElementById("help").classList.remove("open"); }
+buildHelp();
+document.getElementById("helpBtn").addEventListener("click", () => openHelp());
+document.querySelectorAll("h2 .q").forEach((q) => q.addEventListener("click", () => openHelp(q.dataset.help)));
+document.getElementById("help").addEventListener("click", (e) => { if (e.target.id === "help") closeHelp(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeHelp(); });
+// 처음 방문한 사람에게는 도움말을 한 번 자동으로 열어 줌
+try { if (!localStorage.getItem("td2_helpSeen")) { openHelp(); localStorage.setItem("td2_helpSeen", "1"); } } catch (e) {}
 
 // ═════════════ 10. 시작 ═════════════
 document.getElementById("key").value = getKey();
