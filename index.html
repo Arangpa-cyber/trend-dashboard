@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 07:30</title>
+<title>추세 대시보드 v2026-11-01 07:40</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -222,10 +222,14 @@
     table.ntable .nm, table.alltable .stk2 { box-shadow: 6px 0 6px -6px rgba(0,0,0,0.35); }
   }
   @media (max-width: 700px) {
-    table.ntable .nm { width: 104px; } table.alltable col.c-name { width: 104px; }
-    table.ntable .tkc { width: 62px; } table.ntable .nm { left: 62px; }
-    table.alltable col.c-t { width: 62px; } table.alltable .stk2 { left: 62px; }
+    /* 휴대폰: 화면이 좁아서 티커 칸만 고정, 종목명은 함께 밀려 감 */
+    table.ntable .nm { width: 104px; position: static; box-shadow: none; } table.alltable col.c-name { width: 104px; }
+    table.alltable .stk2 { position: static; box-shadow: none; }
+    table.ntable .tkc { width: 62px; } table.alltable col.c-t { width: 62px; }
+    table.ntable .tkc, table.alltable .stk1 { box-shadow: 6px 0 6px -6px rgba(0,0,0,0.35); }
   }
+  /* 아이폰 사파리가 넓은 표 안 글자를 멋대로 키우지 않게 */
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   #filterChip { display: none; font-size: 12px; margin-bottom: 8px; }
   #filterChip button { border: 1px solid var(--accent); color: var(--accent); background: transparent; border-radius: 12px; padding: 2px 10px; }
 
@@ -249,7 +253,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 07:30</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 07:40</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
