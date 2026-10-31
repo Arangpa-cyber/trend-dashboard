@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-10-31 19:51</title>
+<title>추세 대시보드 v2026-10-31 20:10</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -198,7 +198,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-10-31 19:51</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-10-31 20:10</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -453,7 +453,7 @@ function analyzeMarket(d) {
                                  (rally > 0 ? "랠리 " + rally + "일차, 팔로스루 데이 대기" : "랠리 시도 전"));
   else if (ftds.length) why.push("팔로스루 데이 " + d[ftds[ftds.length - 1]].t.slice(5).replace("-", "/"));
   else why.push("최근 1년여 " + Math.round(CORRECTION_PCT * 100) + "% 이상 조정 없음");
-  return { verdict, cls, why: why.join(" · "), ma50, ma200, dd, ftds };
+  return { verdict, cls, why: why.join(" · "), ma50, ma200, dd, dd25, ftds };
 }
 
 // 오닐식 가중 상대강도 점수 (최근 3개월 2배 가중)
@@ -633,7 +633,8 @@ function drawMarket(d, m) {
   const chart = baseChart(document.getElementById("marketChart"), 0.24);
   const from = Math.max(0, d.length - SHOW_DAYS);
   // 분산일·팔로스루 데이: 그날 세로 칸 전체를 배경색으로 칠함 (가장 먼저 추가해서 바 뒤에 깔리게)
-  const ddSet = new Set(m.dd.filter((x) => !x.expired).map((x) => x.i)), ftdSet = new Set(m.ftds);
+  // 오닐 규칙 그대로: 최근 25거래일 안에 있고, 그 뒤 5% 상승으로 지워지지 않은 분산일만 칠함 (신호등이 세는 것과 같음)
+  const ddSet = new Set(m.dd25.map((x) => x.i)), ftdSet = new Set(m.ftds);
   addBg(chart, d, from, (r, i) => (ftdSet.has(i) ? C.ftdBg : ddSet.has(i) ? C.ddBg : null));
   addBars(chart, d, from);
   addLine(chart, d, m.ma50, from, C.ma10, 2);
@@ -1032,7 +1033,8 @@ function ddftdHtml() {
 <br><b>판별 기준</b> (QQQ 기준)
 <ol><li>종가가 전날 종가보다 <b>${Math.abs(DD_DROP * 100).toFixed(1)}% 이상 하락</b></li>
 <li>그날 거래량이 <b>전날 거래량보다 많음</b></li>
-<li><b>최근 25거래일</b> 안의 것만 셉니다. 그 뒤 종가가 그날 종가보다 5% 이상 오르면 효력이 없어져 차트에서도 지워집니다.</li>
+<li>분산일마다 따로 지웁니다: ① 25거래일이 지나면 지워지고, ② 그 뒤 QQQ 종가가 <b>그 분산일의 종가</b>보다 5% 이상 오르면 그 분산일만 지워집니다. 나머지 분산일은 그대로 남습니다(한꺼번에 초기화하지 않음).</li>
+<li>차트에는 지금 효력이 남아 있는 분산일만 칠합니다. 신호등이 세는 개수와 칠한 칸 수가 같습니다.</li>
 <li>25거래일 안에 <b>${DD_LIMIT}회 이상</b>이면 신규 매수 중지.</li></ol></div>
 <div><h4><span style="background:rgba(22,163,74,0.30);padding:0 6px">팔로스루 데이</span> Follow-Through Day</h4>
 <b>개념</b>: 조정장에서 바닥을 찍은 뒤, 반등이 진짜인지 확인해 주는 날입니다. 큰 자본이 다시 사기 시작했다는 증거입니다.
@@ -1072,7 +1074,7 @@ function buildHelp() {
 </table>
 <p>아래 회색 줄은 판정의 근거입니다.</p>
 <table>
-<tr><td>분산일</td><td>QQQ가 ${Math.abs(DD_DROP * 100).toFixed(1)}% 이상 떨어졌는데 거래량은 전날보다 많은 날. 큰 자본이 파는 흔적입니다. 그 뒤 종가가 5% 넘게 오르면 지워집니다.</td></tr>
+<tr><td>분산일</td><td>QQQ가 ${Math.abs(DD_DROP * 100).toFixed(1)}% 이상 떨어졌는데 거래량은 전날보다 많은 날. 큰 자본이 파는 흔적입니다. 25거래일이 지나거나, 그 뒤 종가가 그날 종가보다 5% 이상 오르면 그 분산일만 지워집니다.</td></tr>
 <tr><td>조정 중</td><td>QQQ가 직전 고점에서 ${P(CORRECTION_PCT)} 이상 빠진 상태.</td></tr>
 <tr><td>랠리 n일차</td><td>조정 중 바닥을 찍은 뒤 첫 상승일을 1일차로 셉니다. 바닥을 다시 깨면 처음부터 다시 셉니다.</td></tr>
 <tr><td>팔로스루 데이</td><td>랠리 4일차 이후, QQQ가 ${(FTD_GAIN * 100).toFixed(2)}% 이상 오르고 거래량이 전날보다 많은 날. 상승 전환이 확인됐다는 신호입니다.</td></tr>
@@ -1096,7 +1098,7 @@ function buildHelp() {
 <table>
 <tr><td style="color:#16a34a">━ 50일선</td><td>중기 추세. 가격이 이 선 아래로 내려가면 신규 매수 중지.</td></tr>
 <tr><td style="color:#7c3aed">━ 200일선</td><td>장기 추세. 가격이 이 선 아래면 방어. 선의 기울기로 1년 흐름을 읽습니다.</td></tr>
-<tr><td><span style="background:rgba(220,38,38,0.16);padding:0 8px">옅은 붉은 배경</span></td><td>분산일. 그날 세로 칸 전체가 붉게 칠해집니다. 짧은 기간에 붉은 칸이 몰리면 큰 자본이 빠져나가는 중입니다.</td></tr>
+<tr><td><span style="background:rgba(220,38,38,0.16);padding:0 8px">옅은 붉은 배경</span></td><td>지금 효력이 남아 있는 분산일(최근 25거래일 안, 5% 상승으로 지워지지 않은 것)만 칠합니다. 그래서 붉은 칸은 늘 최근 한 달 남짓 안에만 있습니다. 붉은 칸이 몰리면 큰 자본이 빠져나가는 중입니다.</td></tr>
 <tr><td><span style="background:rgba(22,163,74,0.30);padding:0 8px">초록 배경</span></td><td>팔로스루 데이. 조정 뒤 상승 전환 확인.</td></tr>
 </table>
 
