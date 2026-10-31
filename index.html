@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-10-31 19:36</title>
+<title>추세 대시보드 v2026-10-31 19:51</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -107,7 +107,7 @@
   #changes .seg button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   #changes .lbl { color: var(--sub); margin-right: 6px; }
   #changes .cbox { margin-top: 8px; overflow-x: auto; border-top: 1px solid var(--line); }
-  table.ctable .kd { width: 84px; } table.ctable .grp { width: 240px; } table.ctable .chg { width: 230px; }
+  table.ctable .kd { width: 84px; } table.ctable .grp { width: 180px; } table.ctable .rsc { width: 110px; } table.ctable .chg { width: 230px; }
   table.ctable .kind { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 4px; }
   .kind.mv { background: var(--accent); color: #fff; } .kind.ad { background: #16a34a; color: #fff; }
   .kind.dr { background: transparent; color: var(--sub); border: 1px solid var(--line); }
@@ -198,7 +198,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-10-31 19:36</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-10-31 19:51</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -779,7 +779,7 @@ function renderChanges() {
   const nm = (t) => (TICKERS[t] ? TICKERS[t].name : t), grp = (t) => (TICKERS[t] ? TICKERS[t].group : "");
   const row = (kind, kcls, t, rsTxt, change, reason) =>
     '<tr data-t="' + t + '"><td class="kd"><span class="kind ' + kcls + '">' + kind + '</span></td><td class="tkc"><span class="tk">' + t + "</span></td>" +
-    '<td class="nm">' + nm(t) + '</td><td class="muted grp">' + grp(t) + " · " + rsTxt + '</td><td class="chg">' + change + '</td><td class="rs muted">' + (reason || "") + "</td></tr>";
+    '<td class="nm">' + nm(t) + '</td><td class="muted grp" title="' + grp(t) + '">' + grp(t) + '</td><td class="rsc">' + rsTxt + '</td><td class="chg">' + change + '</td><td class="rs muted">' + (reason || "") + "</td></tr>";
   const rows = [];
   DIFF.moved.forEach(([t, a, b]) => { const x = VIEW.info[t];
     rows.push(row("단계 변화", "mv", t, "RS <b>" + x.rs + "</b>", LABEL[a] + " → <b>" + LABEL[b] + "</b>", x.cls.reason)); });
