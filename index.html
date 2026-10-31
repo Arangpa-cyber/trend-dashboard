@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-10-31 19:13</title>
+<title>추세 대시보드 v2026-10-31 19:29</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -193,7 +193,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-10-31 19:13</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-10-31 19:29</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -313,7 +313,7 @@ const DD_LIMIT = 5;                 // 최근 25거래일 분산일이 이 이�
 const BASE_MIN_WEEKS = 5;           // 박스로 인정하는 최소 길이 (오닐 플랫 베이스 5주)
 const BASE_LOOKBACK = 26, BASE_MAX_DEPTH = 0.35;
 const NEAR_TOP = 0.10;              // 박스 상단에서 10% 이내만 '돌파 대기', 더 멀면 '박스 안'
-const BUY_RANGE = 0.05;             // 박스 상단에서 5% 이내까지만 '돌파 중', 넘으면 '돌파 후 상승 중'
+const BUY_RANGE = 0.05;             // 박스 상단에서 5% 이내까지만 '돌파 중', 넘으면 '상승 중'
 const BREAKOUT_VOL = 1.4;           // 돌파일 거래량이 50일 평균의 1.4배 이상이어야 정상 돌파
 const TIGHT_3W = 0.10;              // 최근 3주 변동폭 10% 이하면 '조여짐'
 const DRY_VOL = 0.8;                // 최근 2주 거래량이 그 전 10주 평균의 80% 이하면 '거래량 마름'
@@ -520,7 +520,7 @@ function classify(d, w) {
                    "% · 최근 3주 폭 " + (r3 * 100).toFixed(0) + "%" + (dry ? " · 거래량 마름" : "") + " · 상단까지 " + pctf(toTop) };
 }
 const stateKey = (c) => (c.state === "base" && c.ready ? "ready" : c.state);
-const LABEL = { breakout: "돌파 중", ready: "준비", base: "돌파 대기", forming: "박스 형성 중", extended: "돌파 후 상승 중", inbox: "박스 안", damaged: "손상" };
+const LABEL = { breakout: "돌파 중", ready: "준비", base: "돌파 대기", forming: "박스 형성 중", extended: "상승 중", inbox: "박스 안", damaged: "손상" };
 
 // k 거래일 전 시점으로 잘라서 전체를 계산 (k=0 지금, 1 전일, 5 1주 전)
 function computeView(k) {
@@ -737,7 +737,7 @@ function renderSticky() {
   if (VIEW) {
     const list = leaderList(), cnt = (k) => list.filter((x) => stateKey(x.cls) === k).length;
     const chips = [["breakout", "돌파 중", cnt("breakout")], ["base", "준비", cnt("ready"), true], ["base", "대기", cnt("base")],
-                   ["extended", "돌파 후 상승", cnt("extended")], ["forming", "형성 중", cnt("forming")], ["inbox", "박스 안", cnt("inbox")], ["damaged", "손상", cnt("damaged")]];
+                   ["extended", "상승 중", cnt("extended")], ["forming", "형성 중", cnt("forming")], ["inbox", "박스 안", cnt("inbox")], ["damaged", "손상", cnt("damaged")]];
     html += '<span class="sep">|</span>' + chips.map(([id, lbl, n, hot]) =>
       '<a class="chip' + ((id === "breakout" || hot) && n ? " hot" : "") + '" href="#st-' + id + '">' + lbl + " <b>" + n + "</b></a>").join(" · ");
     if (DIFF) {
@@ -803,7 +803,7 @@ function renderFlow() {
 const CHART_STATES = [
   ["breakout", "돌파 중", "박스 상단을 넘었고 아직 매수 범위(상단 +5% 이내) 안"],
   ["base", "돌파 대기", "박스 상단 10% 이내에서 숨 고르는 중 · '준비'는 변동폭이 조여지고 거래량이 마른 종목"],
-  ["extended", "돌파 후 상승 중", "박스를 돌파한 뒤 매수 범위(상단 +5%)를 벗어나 오르는 중 · 추격하지 않고 다음 박스를 기다림"],
+  ["extended", "상승 중", "박스를 돌파한 뒤 매수 범위(상단 +5%)를 벗어나 오르는 중 · 추격하지 않고 다음 박스를 기다림"],
 ];
 const NAME_STATES = [
   ["forming", "박스 형성 중", "신고가 부근에서 1-4주째 · 5주가 지나 박스가 되면 '돌파 대기'로 올라옴 · 차트 생략"],
@@ -1115,7 +1115,7 @@ function buildHelp() {
 <tr><td>돌파 중</td><td>박스 상단을 넘었고, 아직 상단에서 ${P(BUY_RANGE)} 이내(매수 범위). <b>할 일: 매수 검토.</b> 돌파일 거래량이 50일 평균의 ${BREAKOUT_VOL}배에 못 미치면 "거래량 부족"이 붉게 표시됩니다. 거래량 없는 돌파는 큰 자본의 흔적이 아닙니다.</td></tr>
 <tr><td>준비</td><td>"돌파 대기" 중 최근 3주 변동폭이 ${P(TIGHT_3W)} 이하로 조여지고, 최근 2주 거래량이 그 전 10주 평균의 ${P(DRY_VOL)} 이하로 마른 종목. 돌파 대기 맨 앞에 놓입니다. <b>할 일: 돌파 지점 미리 표시.</b></td></tr>
 <tr><td>돌파 대기</td><td>박스 상단까지 ${P(NEAR_TOP)} 이내에서 숨 고르는 중. <b>할 일: 관심 목록.</b></td></tr>
-<tr><td>돌파 후 상승 중</td><td>박스 상단보다 ${P(BUY_RANGE)} 넘게 올랐거나, 박스 없이 10주선보다 10% 넘게 위. <b>할 일: 추격하지 않고 다음 박스를 기다림.</b></td></tr>
+<tr><td>상승 중</td><td>박스 상단보다 ${P(BUY_RANGE)} 넘게 올랐거나, 박스 없이 10주선보다 10% 넘게 위. <b>할 일: 추격하지 않고 다음 박스를 기다림.</b></td></tr>
 <tr><td>박스 형성 중</td><td>신고가 부근에서 1-${BASE_MIN_WEEKS - 1}주째 쉬는 중. ${BASE_MIN_WEEKS}주가 지나 박스가 되면 돌파 대기로 올라옵니다. 상장한 지 6주가 안 돼 판단할 수 없는 종목도 여기에 둡니다. 차트 생략.</td></tr>
 <tr><td>박스 안</td><td>박스 상단까지 ${P(NEAR_TOP)} 넘게 남음. 아직 후보 아님. 차트 생략.</td></tr>
 <tr><td>손상</td><td>RS는 높지만 주가가 10주선 아래, 박스 하단 아래, 또는 박스가 ${P(BASE_MAX_DEPTH)} 넘게 깊음. 차트 생략.</td></tr>
