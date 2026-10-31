@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-10-31 20:10</title>
+<title>추세 대시보드 v2026-11-01 00:50</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -175,6 +175,37 @@
   table.ntable .rs { width: auto; }
   table.ntable .bd { width: 300px; text-align: right; }
   table.ntable .badge { margin-left: 4px; }
+  /* 4층: 전체 종목 */
+  details.allbox { background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
+  details.allbox > summary { cursor: pointer; padding: 10px 14px; font-size: 13px; list-style: none; }
+  details.allbox > summary::-webkit-details-marker { display: none; }
+  details.allbox > summary::before { content: "▸ 펼치기"; color: var(--accent); font-weight: 800; margin-right: 10px; }
+  details.allbox[open] > summary::before { content: "▾ 접기"; }
+  .alltools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 0 14px 10px; font-size: 12px; }
+  .alltools button { border: 1px solid var(--line); background: transparent; color: var(--sub); border-radius: 12px; padding: 2px 10px; }
+  .alltools button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .alltools input { margin-left: auto; border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 6px; padding: 3px 8px; width: 160px; }
+  .alltools .grpf { color: var(--accent); }
+  .allwrap { max-height: 78vh; overflow: auto; border-top: 1px solid var(--line); }
+  table.alltable { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; table-layout: fixed; min-width: 1180px; }
+  table.alltable th { position: sticky; top: 0; z-index: 2; background: var(--card); text-align: left; font-size: 11px; color: var(--sub); font-weight: 700;
+                      padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; cursor: pointer; user-select: none; }
+  table.alltable th.on { color: var(--accent); }
+  table.alltable td { padding: 4px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+  table.alltable tbody tr { cursor: zoom-in; } table.alltable tbody tr:hover td { background: rgba(127,127,127,0.07); }
+  table.alltable .stk { position: sticky; left: 0; z-index: 1; background: var(--card); }
+  table.alltable th.stk { z-index: 3; }
+  table.alltable tr.pre td { background: rgba(22,163,74,0.06); }
+  table.alltable tr.cut td { padding: 3px 8px; font-size: 11px; color: var(--accent); background: transparent; border-bottom: 2px solid var(--accent); cursor: default; }
+  table.alltable .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .spark { display: block; }
+  .stg { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--sub); }
+  .stg.breakout, .stg.ready { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .stg.base { border-color: var(--accent); color: var(--accent); }
+  .stg.damaged { color: var(--down); border-color: transparent; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #9ca3af; margin-right: 3px; vertical-align: -1px; }
+  .dot.on10 { background: #16a34a; border-color: #16a34a; } .dot.on40 { background: #7c3aed; border-color: #7c3aed; }
+  .badge.pre { background: #16a34a; color: #fff; }
   #filterChip { display: none; font-size: 12px; margin-bottom: 8px; }
   #filterChip button { border: 1px solid var(--accent); color: var(--accent); background: transparent; border-radius: 12px; padding: 2px 10px; }
 
@@ -198,7 +229,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-10-31 20:10</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 00:50</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -252,6 +283,15 @@
   <div id="cmpNote"></div>
   <div id="filterChip"><button id="clearFilter"></button></div>
   <div id="leaders"><div class="muted" style="font-size:13px">나스닥100 데이터를 모두 받으면 표시됩니다.</div></div>
+
+  <!-- 4층 -->
+  <h2 id="sec-all">4. 전체 종목 — 나스닥100 RS 순위 <button class="q" data-help="h-all" title="이 층 보는 법">?</button></h2>
+  <p class="lead">3층 아래에서 무엇이 올라오고 있는지 보는 전체 명단입니다. 칸 제목을 누르면 정렬이 바뀌고, 줄을 누르면 차트를 크게 봅니다.</p>
+  <details id="allBox" class="allbox">
+    <summary id="allSum">나스닥100 데이터를 모두 받으면 표시됩니다.</summary>
+    <div class="alltools" id="allTools"></div>
+    <div class="allwrap"><table class="alltable" id="allTable"></table></div>
+  </details>
 </main>
 
 <div id="help"><div class="panel" id="helpPanel"></div></div>
@@ -322,6 +362,7 @@ const BUY_RANGE = 0.05;             // 박스 상단에서 5% 이내까지만 '�
 const BREAKOUT_VOL = 1.4;           // 돌파일 거래량이 50일 평균의 1.4배 이상이어야 정상 돌파
 const TIGHT_3W = 0.10;              // 최근 3주 변동폭 10% 이하면 '조여짐'
 const DRY_VOL = 0.8;                // 최근 2주 거래량이 그 전 10주 평균의 80% 이하면 '거래량 마름'
+const PRE_RS_MIN = 60, PRE_RS_GAIN = 10;  // 예비 주도주: RS 60-79, 4주 사이 RS +10 이상, 10주선 위
 const EARN_WARN_DAYS = 14;          // 실적 발표가 이 기간 안이면 빨갛게 표시
 const REFRESH_NY_HOUR = 16, REFRESH_NY_MIN = 1;   // 미국장 마감 1분 뒤 갱신
 const MIN_GAP_MS = 8000;            // 무료 키: 분당 8회
@@ -541,6 +582,15 @@ function computeView(k) {
     const d = D[t], w = toWeekly(d), ma10 = smaArr(w.map((x) => x.c), 10);
     const x = info[t] = { t, d, w, rs: rn[t], rsThen: rt[t], above10: ma10[w.length - 1] != null && d[d.length - 1].c > ma10[w.length - 1] };
     if (x.rs >= RS_LEADER) { x.cls = classify(d, w); x.rsHigh = q ? rsLineHigh(d, q) : false; }
+    if (!k) {                                   // 4층(전체 종목)용: 지금 시점만 계산
+      if (!x.cls) { x.cls = classify(d, w); x.rsHigh = q ? rsLineHigh(d, q) : false; }
+      const ma40 = smaArr(w.map((y) => y.c), 40)[w.length - 1], c = d[d.length - 1].c, y1 = d.slice(-252);
+      x.above40 = ma40 != null ? c > ma40 : null;
+      x.fromHi = c / Math.max(...y1.map((r) => r.h)) - 1;
+      x.fromLo = c / Math.min(...y1.map((r) => r.l)) - 1;
+      x.rsChg = x.rsThen != null ? x.rs - x.rsThen : null;
+      x.pre = x.rs >= PRE_RS_MIN && x.rs < RS_LEADER && x.rsChg != null && x.rsChg >= PRE_RS_GAIN && x.above10;
+    }
   });
   const groups = UNIVERSE.map(([g, items]) => {
     const ts = items.map(([t]) => t).filter((t) => info[t]);
@@ -751,6 +801,8 @@ function renderSticky() {
       const nC = DIFF.added.length + DIFF.moved.length + DIFF.dropped.length;
       html += '<span class="sep">|</span><a class="chip' + (nC ? " hot" : "") + '" href="#changes">' + (CMP_K === 1 ? "전일" : "1주 전") + " 대비 변화 <b>" + nC + "</b></a>";
     }
+    const nPre = Object.values(VIEW.info).filter((x) => x.pre && (!selectedGroup || TICKERS[x.t].group === selectedGroup)).length;
+    html += '<span class="sep">|</span><a class="chip' + (nPre ? " hot" : "") + '" href="#sec-all" id="preChip">예비 주도주 <b>' + nPre + "</b></a>";
     if (selectedGroup) html += '<span class="sep">|</span><span class="chip">' + selectedGroup + "만 보는 중</span>";
   }
   el.innerHTML = html;
@@ -873,8 +925,115 @@ function renderLeaders() {
     box.querySelectorAll("tr").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t)));
     wrap.appendChild(box);
   });
+  renderUniverse();                               // 4층도 같은 산업 선택·비교 기준을 따름
 }
 document.getElementById("clearFilter").addEventListener("click", () => { selectedGroup = null; renderFlow(); renderLeaders(); renderSticky(); });
+
+// ═════════════ 4층: 전체 종목 ═════════════
+let ALL_SORT = { key: "rs", dir: -1 }, ALL_FILTER = "all", ALL_Q = "";
+const STAGE_ORDER = { breakout: 0, ready: 1, base: 2, extended: 3, forming: 4, inbox: 5, damaged: 6 };
+const ALL_COLS = [   // [키, 제목, 너비, 정렬값]
+  ["rank", "순위", 44, (x) => x.rs], ["t", "티커", 70, (x) => x.t], ["name", "종목명", 160, (x) => TICKERS[x.t].name],
+  ["grp", "산업", 150, (x) => TICKERS[x.t].group], ["rs", "RS", 104, (x) => x.rs], ["rsChg", "4주", 54, (x) => x.rsChg ?? -999],
+  ["spark", "6개월", 132, null], ["stage", "단계", 108, (x) => STAGE_ORDER[stateKey(x.cls)]],
+  ["fromHi", "고점 대비", 76, (x) => x.fromHi], ["fromLo", "저점 대비", 76, (x) => x.fromLo],
+  ["trend", "10주·40주", 74, (x) => (x.above10 ? 2 : 0) + (x.above40 ? 1 : 0)], ["tags", "꼬리표", 0, null],
+];
+const ALL_FILTERS = [["all", "전체"], ["pre", "예비 주도주"], ["above10", "10주선 위"], ["nearHi", "고점 10% 이내"], ["noDmg", "손상 제외"]];
+
+// 6개월 종가 선 + 50일선 (작은 SVG)
+function sparkSvg(d) {
+  const W = 120, H = 28, n = Math.min(SHOW_DAYS, d.length), cl = d.map((r) => r.c), ma = smaArr(cl, 50);
+  const c = cl.slice(-n), m = ma.slice(-n);
+  const all = c.concat(m.filter((v) => v != null)), lo = Math.min(...all), hi = Math.max(...all), sp = hi - lo || 1;
+  const pt = (v, i) => (i * (W - 2) / (n - 1) + 1).toFixed(1) + "," + (H - 2 - ((v - lo) / sp) * (H - 4)).toFixed(1);
+  const line = (arr) => arr.map((v, i) => (v == null ? null : pt(v, i))).filter(Boolean).join(" ");
+  const up = c[n - 1] >= (m[n - 1] ?? c[0]);
+  return '<svg class="spark" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '">' +
+    '<polyline points="' + line(m) + '" fill="none" stroke="#16a34a" stroke-width="1" opacity="0.8"/>' +
+    '<polyline points="' + line(c) + '" fill="none" stroke="' + (up ? "var(--up)" : "var(--down)") + '" stroke-width="1.4"/></svg>';
+}
+
+function renderUniverse() {
+  const box = document.getElementById("allBox");
+  if (!VIEW || !box) return;
+  const all = Object.values(VIEW.info).filter((x) => x.cls);
+  const nL = all.filter((x) => x.rs >= RS_LEADER).length, nP = all.filter((x) => x.pre).length, nA = all.filter((x) => x.above10).length;
+  document.getElementById("allSum").innerHTML = "<b>" + all.length + "종목</b> · RS 80+ <b>" + nL + "</b> · 예비 주도주 <b style=\"color:#16a34a\">" + nP +
+    "</b> · 10주선 위 <b>" + nA + "</b>" + (selectedGroup ? ' · <span class="grpf">' + selectedGroup + "만</span>" : "");
+  if (!box.open) return;                          // 접혀 있으면 표는 그리지 않음
+
+  const tools = document.getElementById("allTools");
+  if (!tools.dataset.built) {                     // 도구 줄은 한 번만 만들어서 입력 중 포커스가 안 날아가게
+    tools.dataset.built = "1";
+    tools.innerHTML = ALL_FILTERS.map(([k, l]) => '<button data-f="' + k + '">' + l + "</button>").join("") +
+      '<input id="allQ" type="search" placeholder="티커·종목명 찾기">';
+    tools.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { ALL_FILTER = b.dataset.f; renderUniverse(); }));
+    document.getElementById("allQ").addEventListener("input", (e) => { ALL_Q = e.target.value.trim().toLowerCase(); renderUniverse(); });
+  }
+  tools.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.f === ALL_FILTER));
+
+  const rankOf = {}; [...all].sort((a, b) => b.rs - a.rs).forEach((x, i) => (rankOf[x.t] = i + 1));
+  let list = all.filter((x) => (!selectedGroup || TICKERS[x.t].group === selectedGroup) &&
+    (ALL_FILTER === "all" || (ALL_FILTER === "pre" && x.pre) || (ALL_FILTER === "above10" && x.above10) ||
+     (ALL_FILTER === "nearHi" && x.fromHi >= -0.10) || (ALL_FILTER === "noDmg" && x.cls.state !== "damaged")) &&
+    (!ALL_Q || x.t.toLowerCase().includes(ALL_Q) || TICKERS[x.t].name.toLowerCase().includes(ALL_Q)));
+  const col = ALL_COLS.find((c) => c[0] === ALL_SORT.key), f = col[3];
+  list.sort((a, b) => { const va = f(a), vb = f(b); return (va < vb ? -1 : va > vb ? 1 : 0) * ALL_SORT.dir || b.rs - a.rs; });
+
+  const pct = (v) => '<span class="' + (v >= 0 ? "chg-up" : "chg-down") + '" style="font-weight:600">' + (v >= 0 ? "+" : "") + (v * 100).toFixed(0) + "%</span>";
+  const head = "<colgroup>" + ALL_COLS.map((c) => "<col" + (c[2] ? ' style="width:' + c[2] + 'px"' : "") + ">").join("") + "</colgroup><thead><tr>" +
+    ALL_COLS.map((c, i) => '<th data-k="' + c[0] + '" class="' + (i < 2 ? "stk " : "") + (c[0] === ALL_SORT.key ? "on" : "") + (["rs", "rsChg", "fromHi", "fromLo", "rank"].includes(c[0]) ? " num" : "") + '"' +
+      (i === 1 ? ' style="left:44px"' : "") + ">" + c[1] + (c[0] === ALL_SORT.key ? (ALL_SORT.dir < 0 ? " ▼" : " ▲") : "") + "</th>").join("") + "</tr></thead>";
+  const showCut = ALL_SORT.key === "rs" || ALL_SORT.key === "rank";
+  let cutDone = false, rows = "", prevRs = null;
+  list.forEach((x) => {
+    if (showCut && !cutDone && prevRs != null && ((ALL_SORT.dir < 0 && x.rs < RS_LEADER && prevRs >= RS_LEADER) || (ALL_SORT.dir > 0 && x.rs >= RS_LEADER && prevRs < RS_LEADER))) {
+      cutDone = true;
+      rows += '<tr class="cut"><td colspan="' + ALL_COLS.length + '">' + (ALL_SORT.dir < 0 ? "▲ 여기 위가 3층 주도주 (RS " + RS_LEADER + " 이상)" : "▼ 여기 아래가 3층 주도주 (RS " + RS_LEADER + " 이상)") + "</td></tr>";
+    }
+    const sk = stateKey(x.cls), chg = x.rsChg;
+    const tags = (x.pre ? '<span class="badge pre">예비 주도주</span>' : "") + badgesFor(x.t, x);
+    rows += '<tr data-t="' + x.t + '" class="' + (x.pre ? "pre" : "") + '">' +
+      '<td class="num stk muted">' + rankOf[x.t] + "</td>" +
+      '<td class="stk" style="left:44px"><span class="tk">' + x.t + "</span></td>" +
+      "<td>" + TICKERS[x.t].name + '</td><td class="muted" title="' + TICKERS[x.t].group + '">' + TICKERS[x.t].group + "</td>" +
+      '<td class="num"><span class="bar" style="width:' + Math.round(x.rs * 0.55) + 'px"></span><b>' + x.rs + "</b></td>" +
+      '<td class="num">' + (chg == null ? '<span class="muted">-</span>' : chg > 0 ? '<span class="chg-up">▲' + chg + "</span>" : chg < 0 ? '<span class="chg-down">▼' + -chg + "</span>" : '<span class="muted">0</span>') + "</td>" +
+      "<td>" + sparkSvg(x.d) + "</td>" +
+      '<td title="' + x.cls.reason.replace(/<[^>]+>/g, "") + '"><span class="stg ' + sk + '">' + LABEL[sk] + "</span></td>" +
+      '<td class="num">' + pct(x.fromHi) + '</td><td class="num">' + pct(x.fromLo) + "</td>" +
+      '<td title="10주선 ' + (x.above10 ? "위" : "아래") + " · 40주선 " + (x.above40 ? "위" : x.above40 == null ? "데이터 부족" : "아래") + '">' +
+      '<span class="dot' + (x.above10 ? " on10" : "") + '"></span><span class="dot' + (x.above40 ? " on40" : "") + '"></span></td>' +
+      "<td>" + tags + "</td></tr>";
+    prevRs = x.rs;
+  });
+  if (!list.length) rows = '<tr><td colspan="' + ALL_COLS.length + '" class="muted" style="padding:14px">해당하는 종목이 없습니다.</td></tr>';
+  const tb = document.getElementById("allTable");
+  tb.innerHTML = head + "<tbody>" + rows + "</tbody>";
+  tb.querySelectorAll("th").forEach((th) => {
+    const c = ALL_COLS.find((z) => z[0] === th.dataset.k);
+    if (!c[3]) { th.style.cursor = "default"; return; }
+    th.addEventListener("click", () => {
+      const key = th.dataset.k === "rank" ? "rs" : th.dataset.k;
+      ALL_SORT = ALL_SORT.key === key ? { key, dir: -ALL_SORT.dir } : { key, dir: ["t", "name", "grp", "stage"].includes(key) ? 1 : -1 };
+      renderUniverse();
+    });
+  });
+  tb.querySelectorAll("tbody tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t)));
+}
+document.getElementById("allBox").addEventListener("toggle", (e) => {
+  try { localStorage.setItem("td2_allOpen", e.target.open ? "1" : "0"); } catch (_) {}
+  renderUniverse();
+});
+try { if (localStorage.getItem("td2_allOpen") === "1") document.getElementById("allBox").open = true; } catch (_) {}
+// 고정 바의 "예비 주도주"를 누르면 4층을 펼치고 예비 주도주만 보여 줌
+document.getElementById("stickyInner").addEventListener("click", (e) => {
+  if (!e.target.closest("#preChip")) return;
+  ALL_FILTER = "pre";
+  const box = document.getElementById("allBox");
+  if (box.open) renderUniverse(); else box.open = true;
+});
 
 // 크게 보기
 function openModal(t) {
@@ -1053,7 +1212,7 @@ function buildHelp() {
   document.getElementById("helpPanel").innerHTML = `
 <div class="phead"><b>이 대시보드 보는 법</b><button class="close" id="helpClose" title="닫기 (Esc)">✕</button></div>
 <div class="toc"><a href="#h-start">처음 오셨다면</a><a href="#h-signal">신호등</a><a href="#h-sticky">고정 바</a><a href="#h-changes">바뀐 것</a>
-<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 자금 흐름</a><a href="#h-leaders">3층 주도주</a><a href="#h-states">단계 7가지</a>
+<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 자금 흐름</a><a href="#h-leaders">3층 주도주</a><a href="#h-states">단계 7가지</a><a href="#h-all">4층 전체 종목</a>
 <a href="#h-tags">꼬리표</a><a href="#h-charts">차트 읽는 법</a><a href="#h-data">데이터·갱신</a><a href="#h-limits">한계</a></div>
 
 <h3 id="h-start">처음 오셨다면</h3>
@@ -1136,6 +1295,19 @@ function buildHelp() {
 <tr><td>박스 안</td><td>박스 상단까지 ${P(NEAR_TOP)} 넘게 남음. 아직 후보 아님. 차트 생략.</td></tr>
 <tr><td>손상</td><td>RS는 높지만 주가가 10주선 아래, 박스 하단 아래, 또는 박스가 ${P(BASE_MAX_DEPTH)} 넘게 깊음. 차트 생략.</td></tr>
 </table>
+
+<h3 id="h-all">4층 · 전체 종목 <small>나스닥100 RS 순위</small></h3>
+<p>3층에 아직 못 들어온 종목까지 나스닥100 전체를 한 종목 한 줄로 보여 줍니다. 처음에는 접혀 있고, 접힌 줄에도 요약(종목 수, RS ${RS_LEADER}+, 예비 주도주, 10주선 위)이 나옵니다. 펼친 상태는 기억됩니다.</p>
+<table>
+<tr><td>순위 · RS</td><td>RS 높은 순 순위와 RS 값. 기본 정렬은 RS 높은 순이고, 주황 구분선 위가 3층 주도주입니다.</td></tr>
+<tr><td>4주</td><td>4주 전 대비 RS 변화. <span class="chg-up">▲</span> 상대강도가 좋아지는 중.</td></tr>
+<tr><td>6개월</td><td>6개월 종가 선(붉은색: 50일선 위, 파란색: 50일선 아래)과 초록 50일선.</td></tr>
+<tr><td>단계</td><td>3층과 같은 7단계 판정을 모든 종목에 적용. 마우스를 올리면 판정 근거가 보입니다.</td></tr>
+<tr><td>고점 대비 / 저점 대비</td><td>최근 52주 최고가에서 몇 % 아래인지, 52주 최저가에서 몇 % 위인지. 고점 근처이면서 저점에서 멀리 올라온 종목이 강한 종목입니다(미너비니 기준: 고점 25% 이내, 저점 30% 이상 위).</td></tr>
+<tr><td><span class="dot on10"></span><span class="dot on40"></span></td><td>왼쪽 점은 10주선, 오른쪽 점은 40주선. 채워져 있으면 그 선 위, 빈 원이면 아래.</td></tr>
+<tr><td>${b("pre", "예비 주도주")}</td><td>RS ${PRE_RS_MIN}-${RS_LEADER - 1}이면서 4주 사이 RS가 ${PRE_RS_GAIN} 이상 오르고 10주선 위인 종목. 3층에 들어오기 전 미리 볼 후보입니다. 줄 배경이 옅은 초록입니다.</td></tr>
+</table>
+<p>칸 제목을 누르면 그 칸으로 정렬하고, 한 번 더 누르면 반대 순서입니다. 위의 버튼으로 예비 주도주, 10주선 위, 고점 10% 이내, 손상 제외만 볼 수 있고, 오른쪽 칸에서 티커나 이름으로 찾습니다. 2층 산업 표에서 산업을 고르면 4층도 그 산업만 보여 줍니다.</p>
 
 <h3 id="h-tags">꼬리표</h3>
 <table>
