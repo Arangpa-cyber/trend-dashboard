@@ -33,4 +33,6 @@ jobs:
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           git add data.json
           git commit -m "데이터 갱신 $(date -u +%F)" || echo "바뀐 것 없음"
-          git push
+          # 실행 중에 다른 커밋(index.html 수정 등)이 올라왔으면 그 위에 얹어서 올림
+          for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done
+          git push   # 세 번 다 실패했으면 여기서 실패로 표시됨
