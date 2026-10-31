@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 01:10</title>
+<title>추세 대시보드 v2026-11-01 07:20</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -107,7 +107,7 @@
   #changes .seg button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   #changes .lbl { color: var(--sub); margin-right: 6px; }
   #changes .cbox { margin-top: 8px; overflow-x: auto; border-top: 1px solid var(--line); }
-  table.ctable .kd { width: 84px; } table.ctable .grp { width: 180px; } table.ctable .rsc { width: 110px; } table.ctable .chg { width: 230px; }
+  table.ctable .kd { width: 84px; } table.ctable .grp { width: 180px; } table.ctable .rsc { width: 110px; } table.ctable .chg { width: 230px; } table.ctable .rs { width: 460px; }
   table.ctable .kind { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 4px; }
   .kind.mv { background: var(--accent); color: #fff; } .kind.ad { background: #16a34a; color: #fff; }
   .kind.dr { background: transparent; color: var(--sub); border: 1px solid var(--line); }
@@ -162,17 +162,21 @@
   @media (max-width: 600px) { .chart { height: 300px; } }
   .placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 13px; text-align: center; padding: 0 16px; }
   .nbox { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
-  table.ntable { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; min-width: 900px; }
+  /* 칸 너비를 모두 정해 두고 표 너비 = 칸 너비 합(화면보다 넓으면 가로로 밀어 봄) */
+  table.ntable { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; table-layout: fixed; }
   table.ntable td { overflow: hidden; text-overflow: ellipsis; }
   table.ntable td { padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: middle; }
   table.ntable tr:last-child td { border-bottom: 0; }
   table.ntable tr { cursor: zoom-in; }
-  table.ntable tr:hover td { background: rgba(127,127,127,0.07); }
+  table.ntable tr:hover td { background: linear-gradient(rgba(127,127,127,0.07), rgba(127,127,127,0.07)), var(--card); }
   /* 모든 묶음의 칸 너비를 같게 고정해서 위아래 줄이 맞도록 */
   table.ntable .tkc { width: 70px; }
   table.ntable .nm { width: 170px; }
   table.ntable .grp { width: 190px; }
-  table.ntable .rs { width: auto; }
+  table.ntable .rs { width: 460px; }
+  /* 티커·종목명은 가로로 밀어도 왼쪽에 고정 */
+  table.ntable .tkc { position: sticky; left: 0; z-index: 1; background: var(--card); }
+  table.ntable .nm { position: sticky; left: 70px; z-index: 1; background: var(--card); }
   table.ntable .bd { width: 300px; text-align: right; }
   table.ntable .badge { margin-left: 4px; }
   /* 4층: 전체 종목 */
@@ -187,15 +191,20 @@
   .alltools input { margin-left: auto; border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 6px; padding: 3px 8px; width: 160px; }
   .alltools .grpf { color: var(--accent); }
   .allwrap { max-height: 78vh; overflow: auto; border-top: 1px solid var(--line); }
-  table.alltable { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; table-layout: fixed; min-width: 1180px; }
+  table.alltable { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; table-layout: fixed; }
+  table.alltable col.c-rank { width: 44px; } table.alltable col.c-t { width: 70px; } table.alltable col.c-name { width: 160px; }
+  table.alltable col.c-grp { width: 150px; } table.alltable col.c-rs { width: 104px; } table.alltable col.c-rsChg { width: 54px; }
+  table.alltable col.c-spark { width: 132px; } table.alltable col.c-stage { width: 108px; } table.alltable col.c-fromHi, table.alltable col.c-fromLo { width: 76px; }
+  table.alltable col.c-trend { width: 74px; } table.alltable col.c-tags { width: 260px; }
   table.alltable th { position: sticky; top: 0; z-index: 2; background: var(--card); text-align: left; font-size: 11px; color: var(--sub); font-weight: 700;
                       padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; cursor: pointer; user-select: none; }
   table.alltable th.on { color: var(--accent); }
   table.alltable td { padding: 4px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
-  table.alltable tbody tr { cursor: zoom-in; } table.alltable tbody tr:hover td { background: rgba(127,127,127,0.07); }
-  table.alltable .stk { position: sticky; left: 0; z-index: 1; background: var(--card); }
+  table.alltable tbody tr { cursor: zoom-in; } table.alltable tbody tr:hover td { background: linear-gradient(rgba(127,127,127,0.07), rgba(127,127,127,0.07)), var(--card); }
+  table.alltable .stk { position: sticky; z-index: 1; background: var(--card); }
+  table.alltable .stk1 { left: 0; } table.alltable .stk2 { left: 70px; }
   table.alltable th.stk { z-index: 3; }
-  table.alltable tr.pre td { background: rgba(22,163,74,0.06); }
+  table.alltable tr.pre td { background: linear-gradient(rgba(22,163,74,0.06), rgba(22,163,74,0.06)), var(--card); }
   table.alltable tr.cut td { padding: 3px 8px; font-size: 11px; color: var(--accent); background: transparent; border-bottom: 2px solid var(--accent); cursor: default; }
   table.alltable .num { text-align: right; font-variant-numeric: tabular-nums; }
   .spark { display: block; }
@@ -207,6 +216,15 @@
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #9ca3af; margin-right: 3px; vertical-align: -1px; }
   .dot.on10 { background: #16a34a; border-color: #16a34a; } .dot.on40 { background: #7c3aed; border-color: #7c3aed; }
   .badge.pre { background: #16a34a; color: #fff; }
+  /* 좁은 화면: 종목명 칸을 줄이고, 고정 칸 오른쪽에 그림자로 경계 표시 */
+  @media (max-width: 900px) {
+    table.ntable .nm, table.alltable .stk2 { box-shadow: 6px 0 6px -6px rgba(0,0,0,0.35); }
+  }
+  @media (max-width: 700px) {
+    table.ntable .nm { width: 104px; } table.alltable col.c-name { width: 104px; }
+    table.ntable .tkc { width: 62px; } table.ntable .nm { left: 62px; }
+    table.alltable col.c-t { width: 62px; } table.alltable .stk2 { left: 62px; }
+  }
   #filterChip { display: none; font-size: 12px; margin-bottom: 8px; }
   #filterChip button { border: 1px solid var(--accent); color: var(--accent); background: transparent; border-radius: 12px; padding: 2px 10px; }
 
@@ -230,7 +248,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 01:10</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 07:20</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -836,8 +854,8 @@ function renderChanges() {
   // 한 종목 = 한 줄: 구분 · 티커 · 이름 · 산업·RS · 예전 → 지금 · 지금 판정 근거
   const nm = (t) => (TICKERS[t] ? TICKERS[t].name : t), grp = (t) => (TICKERS[t] ? TICKERS[t].group : "");
   const row = (kind, kcls, t, rsTxt, change, reason) =>
-    '<tr data-t="' + t + '"><td class="kd"><span class="kind ' + kcls + '">' + kind + '</span></td><td class="tkc"><span class="tk">' + t + "</span></td>" +
-    '<td class="nm">' + nm(t) + '</td><td class="muted grp" title="' + grp(t) + '">' + grp(t) + '</td><td class="rsc">' + rsTxt + '</td><td class="chg">' + change + '</td><td class="rs muted">' + (reason || "") + "</td></tr>";
+    '<tr data-t="' + t + '"><td class="tkc"><span class="tk">' + t + "</span></td>" +
+    '<td class="nm" title="' + nm(t) + '">' + nm(t) + '</td><td class="kd"><span class="kind ' + kcls + '">' + kind + '</span></td><td class="muted grp" title="' + grp(t) + '">' + grp(t) + '</td><td class="rsc">' + rsTxt + '</td><td class="chg">' + change + '</td><td class="rs muted">' + (reason || "") + "</td></tr>";
   const rows = [];
   DIFF.moved.forEach(([t, a, b]) => { const x = VIEW.info[t];
     rows.push(row("단계 변화", "mv", t, "RS <b>" + x.rs + "</b>", LABEL[a] + " → <b>" + LABEL[b] + "</b>", x.cls.reason)); });
@@ -925,7 +943,7 @@ function renderLeaders() {
     box.className = "nbox";
     box.innerHTML = '<table class="ntable"><tbody>' + items.map((x) =>
       '<tr data-t="' + x.t + '"><td class="tkc"><span class="tk">' + x.t + "</span></td>" +
-      '<td class="nm">' + TICKERS[x.t].name + "</td>" +
+      '<td class="nm" title="' + TICKERS[x.t].name + '">' + TICKERS[x.t].name + "</td>" +
       '<td class="muted grp">' + TICKERS[x.t].group + " · RS <b>" + x.rs + "</b></td>" +
       '<td class="rs">' + x.cls.reason + "</td>" +
       '<td class="bd">' + badgesFor(x.t, x) + "</td></tr>").join("") + "</tbody></table>";
@@ -989,9 +1007,11 @@ function renderUniverse() {
   list.sort((a, b) => { const va = f(a), vb = f(b); return (va < vb ? -1 : va > vb ? 1 : 0) * ALL_SORT.dir || b.rs - a.rs; });
 
   const pct = (v) => '<span class="' + (v >= 0 ? "chg-up" : "chg-down") + '" style="font-weight:600">' + (v >= 0 ? "+" : "") + (v * 100).toFixed(0) + "%</span>";
-  const head = "<colgroup>" + ALL_COLS.map((c) => "<col" + (c[2] ? ' style="width:' + c[2] + 'px"' : "") + ">").join("") + "</colgroup><thead><tr>" +
-    ALL_COLS.map((c, i) => '<th data-k="' + c[0] + '" class="' + (i < 2 ? "stk " : "") + (c[0] === ALL_SORT.key ? "on" : "") + (["rs", "rsChg", "fromHi", "fromLo", "rank"].includes(c[0]) ? " num" : "") + '"' +
-      (i === 1 ? ' style="left:44px"' : "") + ">" + c[1] + (c[0] === ALL_SORT.key ? (ALL_SORT.dir < 0 ? " ▼" : " ▲") : "") + "</th>").join("") + "</tr></thead>";
+  // 티커·종목명 칸은 가로로 밀어도 왼쪽에 고정 (너비는 CSS col.c-* 에서)
+  const STK = { t: " stk stk1", name: " stk stk2" };
+  const head = "<colgroup>" + ALL_COLS.map((c) => '<col class="c-' + c[0] + '">').join("") + "</colgroup><thead><tr>" +
+    ALL_COLS.map((c) => '<th data-k="' + c[0] + '" class="' + (STK[c[0]] || "") + (c[0] === ALL_SORT.key ? " on" : "") + (["rs", "rsChg", "fromHi", "fromLo", "rank"].includes(c[0]) ? " num" : "") + '"' +
+      ">" + c[1] + (c[0] === ALL_SORT.key ? (ALL_SORT.dir < 0 ? " ▼" : " ▲") : "") + "</th>").join("") + "</tr></thead>";
   const showCut = ALL_SORT.key === "rs" || ALL_SORT.key === "rank";
   let cutDone = false, rows = "", prevRs = null;
   list.forEach((x) => {
@@ -1002,9 +1022,9 @@ function renderUniverse() {
     const sk = stateKey(x.cls), chg = x.rsChg;
     const tags = (x.pre ? '<span class="badge pre">예비 주도주</span>' : "") + badgesFor(x.t, x);
     rows += '<tr data-t="' + x.t + '" class="' + (x.pre ? "pre" : "") + '">' +
-      '<td class="num stk muted">' + rankOf[x.t] + "</td>" +
-      '<td class="stk" style="left:44px"><span class="tk">' + x.t + "</span></td>" +
-      "<td>" + TICKERS[x.t].name + '</td><td class="muted" title="' + TICKERS[x.t].group + '">' + TICKERS[x.t].group + "</td>" +
+      '<td class="num muted">' + rankOf[x.t] + "</td>" +
+      '<td class="stk stk1"><span class="tk">' + x.t + "</span></td>" +
+      '<td class="stk stk2" title="' + TICKERS[x.t].name + '">' + TICKERS[x.t].name + '</td><td class="muted" title="' + TICKERS[x.t].group + '">' + TICKERS[x.t].group + "</td>" +
       '<td class="num"><span class="bar" style="width:' + Math.round(x.rs * 0.55) + 'px"></span><b>' + x.rs + "</b></td>" +
       '<td class="num">' + (chg == null ? '<span class="muted">-</span>' : chg > 0 ? '<span class="chg-up">▲' + chg + "</span>" : chg < 0 ? '<span class="chg-down">▼' + -chg + "</span>" : '<span class="muted">0</span>') + "</td>" +
       "<td>" + sparkSvg(x.d) + "</td>" +
