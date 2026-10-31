@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 07:20</title>
+<title>추세 대시보드 v2026-11-01 07:30</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -195,7 +195,7 @@
   table.alltable col.c-rank { width: 44px; } table.alltable col.c-t { width: 70px; } table.alltable col.c-name { width: 160px; }
   table.alltable col.c-grp { width: 150px; } table.alltable col.c-rs { width: 104px; } table.alltable col.c-rsChg { width: 54px; }
   table.alltable col.c-spark { width: 132px; } table.alltable col.c-stage { width: 108px; } table.alltable col.c-fromHi, table.alltable col.c-fromLo { width: 76px; }
-  table.alltable col.c-trend { width: 74px; } table.alltable col.c-tags { width: 260px; }
+  table.alltable col.c-trend { width: 74px; } table.alltable col.c-tags { width: 320px; }
   table.alltable th { position: sticky; top: 0; z-index: 2; background: var(--card); text-align: left; font-size: 11px; color: var(--sub); font-weight: 700;
                       padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; cursor: pointer; user-select: none; }
   table.alltable th.on { color: var(--accent); }
@@ -206,6 +206,7 @@
   table.alltable th.stk { z-index: 3; }
   table.alltable tr.pre td { background: linear-gradient(rgba(22,163,74,0.06), rgba(22,163,74,0.06)), var(--card); }
   table.alltable tr.cut td { padding: 3px 8px; font-size: 11px; color: var(--accent); background: transparent; border-bottom: 2px solid var(--accent); cursor: default; }
+  table.alltable tr.cut td { overflow: visible; } table.alltable tr.cut .cutl { position: sticky; left: 8px; }   /* 옆으로 밀어도 구분선 글자가 보이게 */
   table.alltable .num { text-align: right; font-variant-numeric: tabular-nums; }
   .spark { display: block; }
   .stg { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--sub); }
@@ -248,7 +249,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 07:20</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 07:30</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1017,7 +1018,7 @@ function renderUniverse() {
   list.forEach((x) => {
     if (showCut && !cutDone && prevRs != null && ((ALL_SORT.dir < 0 && x.rs < RS_LEADER && prevRs >= RS_LEADER) || (ALL_SORT.dir > 0 && x.rs >= RS_LEADER && prevRs < RS_LEADER))) {
       cutDone = true;
-      rows += '<tr class="cut"><td colspan="' + ALL_COLS.length + '">' + (ALL_SORT.dir < 0 ? "▲ 여기 위가 3층 주도주 (RS " + RS_LEADER + " 이상)" : "▼ 여기 아래가 3층 주도주 (RS " + RS_LEADER + " 이상)") + "</td></tr>";
+      rows += '<tr class="cut"><td colspan="' + ALL_COLS.length + '"><span class="cutl">' + (ALL_SORT.dir < 0 ? "▲ 여기 위가 3층 주도주 (RS " + RS_LEADER + " 이상)" : "▼ 여기 아래가 3층 주도주 (RS " + RS_LEADER + " 이상)") + "</span></td></tr>";
     }
     const sk = stateKey(x.cls), chg = x.rsChg;
     const tags = (x.pre ? '<span class="badge pre">예비 주도주</span>' : "") + badgesFor(x.t, x);
