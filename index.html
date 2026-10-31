@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-10-31 18:48</title>
+<title>추세 대시보드 v2026-10-31 19:13</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -90,7 +90,18 @@
   /* 변화 (5) */
   #changes { margin-top: 10px; border-radius: 10px; padding: 10px 14px; border: 1px solid var(--line); background: var(--card);
              font-size: 13px; line-height: 1.8; scroll-margin-top: 60px; }
-  #changes .seg { float: right; font-size: 12px; }
+  #changes .seg, #cmpNote .seg { float: right; font-size: 12px; }
+  #cmpNote { font-size: 12px; color: var(--sub); border: 1px dashed var(--line); border-radius: 8px; padding: 6px 10px; margin: 0 0 10px; }
+  #cmpNote:empty { display: none; } #cmpNote .badge { margin-left: 0; }
+  #cmpNote .seg button { border: 1px solid var(--line); background: transparent; color: var(--sub); padding: 1px 8px; }
+  #cmpNote .seg button:first-child { border-radius: 6px 0 0 6px; } #cmpNote .seg button:last-child { border-radius: 0 6px 6px 0; border-left: 0; }
+  #cmpNote .seg button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  details.explain { margin: 0 10px 10px; font-size: 12px; }
+  details.explain summary { cursor: pointer; color: var(--accent); font-weight: 700; padding: 4px 0; }
+  .ddftd { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+  .ddftd > div { background: var(--bg); border-radius: 8px; padding: 10px 12px; line-height: 1.6; }
+  .ddftd h4 { margin: 0 0 4px; font-size: 13px; } .ddftd ol { margin: 4px 0 0; padding-left: 18px; }
+  @media (max-width: 760px) { .ddftd { grid-template-columns: 1fr; } }
   #changes .seg button { border: 1px solid var(--line); background: transparent; color: var(--sub); padding: 1px 8px; }
   #changes .seg button:first-child { border-radius: 6px 0 0 6px; } #changes .seg button:last-child { border-radius: 0 6px 6px 0; border-left: 0; }
   #changes .seg button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -182,7 +193,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-10-31 18:48</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-10-31 19:13</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -210,6 +221,7 @@
     <div id="marketChart"><div class="placeholder">QQQ 데이터를 기다리는 중</div></div>
     <div class="legend"><i style="color:#16a34a">━</i> 50일선 &nbsp; <i style="color:#7c3aed">━</i> 200일선 &nbsp;
       <i style="background:rgba(220,38,38,0.16);color:transparent;padding:0 5px">■</i> 분산일 &nbsp; <i style="background:rgba(22,163,74,0.30);color:transparent;padding:0 5px">■</i> 팔로스루 데이</div>
+    <details class="explain"><summary>분산일·팔로스루 데이란? 개념과 판별 기준 보기</summary><div class="ddftd" id="ddftdBody"></div></details>
   </div>
 
   <!-- 2층 -->
@@ -231,7 +243,8 @@
   <p class="lead">RS는 오닐식 가중 12개월 상대강도(최근 3개월 2배 가중)를 나스닥100 안에서 1-99로 매긴 값입니다. 카드를 누르면 주봉·일봉을 크게 봅니다.</p>
   <div class="legend" style="padding:0 0 8px"><i style="color:#16a34a">━</i> 10주선 &nbsp; <i style="color:#7c3aed">━</i> 40주선 &nbsp;
     <i style="color:#f59e0b">━</i> 박스 상단·하단 &nbsp; <i style="color:#b91c1c">┄</i> 52주 고점 &nbsp;
-    <span class="badge rsh">RS선 신고가</span> 종목÷QQQ 선이 52주 신고가 &nbsp; <span class="badge earn">실적 D-7</span> 14일 안 실적 발표</div>
+    <span class="badge rsh">RS선 신고가</span> 종목÷QQQ 선이 52주 신고가 &nbsp; <span class="badge earn">실적 D-7</span> 14일 안 실적 발표 &nbsp; <i style="background:rgba(250,204,21,0.38);color:transparent;padding:0 5px">■</i> 실적 발표일(주)</div>
+  <div id="cmpNote"></div>
   <div id="filterChip"><button id="clearFilter"></button></div>
   <div id="leaders"><div class="muted" style="font-size:13px">나스닥100 데이터를 모두 받으면 표시됩니다.</div></div>
 </main>
@@ -242,8 +255,8 @@
   <div class="mhead"><div class="name" id="mName"></div><span class="tag" id="mTag"></span><button class="close" id="mClose" title="닫기 (Esc)">✕</button>
     <div class="reason" id="mReason"></div></div>
   <div class="mcharts">
-    <div><div class="cap">주봉 1년 · 10주선 · 40주선 · 박스</div><div class="mc" id="mWeekly"></div></div>
-    <div><div class="cap">일봉 6개월 · 50일선 · 200일선 · 주황 점선은 박스 상단(돌파 기준)</div><div class="mc" id="mDaily"></div></div>
+    <div><div class="cap">주봉 1년 · 10주선 · 40주선 · 박스 · 노란 배경은 실적 발표 주</div><div class="mc" id="mWeekly"></div></div>
+    <div><div class="cap">일봉 6개월 · 50일선 · 200일선 · 주황 점선은 박스 상단(돌파 기준) · 노란 배경은 실적 발표일</div><div class="mc" id="mDaily"></div></div>
   </div>
 </div></div>
 
@@ -300,7 +313,7 @@ const DD_LIMIT = 5;                 // 최근 25거래일 분산일이 이 이�
 const BASE_MIN_WEEKS = 5;           // 박스로 인정하는 최소 길이 (오닐 플랫 베이스 5주)
 const BASE_LOOKBACK = 26, BASE_MAX_DEPTH = 0.35;
 const NEAR_TOP = 0.10;              // 박스 상단에서 10% 이내만 '돌파 대기', 더 멀면 '박스 안'
-const BUY_RANGE = 0.05;             // 박스 상단에서 5% 이내까지만 '돌파 중', 넘으면 '연장'
+const BUY_RANGE = 0.05;             // 박스 상단에서 5% 이내까지만 '돌파 중', 넘으면 '돌파 후 상승 중'
 const BREAKOUT_VOL = 1.4;           // 돌파일 거래량이 50일 평균의 1.4배 이상이어야 정상 돌파
 const TIGHT_3W = 0.10;              // 최근 3주 변동폭 10% 이하면 '조여짐'
 const DRY_VOL = 0.8;                // 최근 2주 거래량이 그 전 10주 평균의 80% 이하면 '거래량 마름'
@@ -313,6 +326,7 @@ const C = {
   volUp: "rgba(220, 38, 38, 0.35)", volDown: "rgba(21, 101, 192, 0.35)",
   high: "#b91c1c", box: "#f59e0b", dd: "#b91c1c", ftd: "#15803d",
   ddBg: "rgba(220, 38, 38, 0.16)", ftdBg: "rgba(22, 163, 74, 0.30)",   // 1층 배경색: 분산일, 팔로스루 데이
+  earnBg: "rgba(250, 204, 21, 0.38)",                                  // 종목 차트 배경색: 실적 발표일
 };
 const DARK = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 
@@ -464,7 +478,7 @@ function rsLineHigh(d, q) {
 // 종목 단계 판정 (주봉 박스 기준)
 function classify(d, w) {
   const n = w.length, price = d[d.length - 1].c;
-  if (n < 6) return { state: "extended", reason: "상장 직후라 판단 불가 (" + n + "주)", box: null };
+  if (n < 6) return { state: "forming", reason: "상장 직후라 판단 불가 (" + n + "주)", box: null };
   const ma10 = smaArr(w.map((x) => x.c), 10)[n - 1];
   const dist10 = ma10 ? price / ma10 - 1 : 0;
   const prior = w.slice(Math.max(0, n - 1 - BASE_LOOKBACK), n - 1);   // 이번 주 제외
@@ -506,7 +520,7 @@ function classify(d, w) {
                    "% · 최근 3주 폭 " + (r3 * 100).toFixed(0) + "%" + (dry ? " · 거래량 마름" : "") + " · 상단까지 " + pctf(toTop) };
 }
 const stateKey = (c) => (c.state === "base" && c.ready ? "ready" : c.state);
-const LABEL = { breakout: "돌파 중", ready: "준비", base: "돌파 대기", forming: "박스 형성 중", extended: "연장", inbox: "박스 안", damaged: "손상" };
+const LABEL = { breakout: "돌파 중", ready: "준비", base: "돌파 대기", forming: "박스 형성 중", extended: "돌파 후 상승 중", inbox: "박스 안", damaged: "손상" };
 
 // k 거래일 전 시점으로 잘라서 전체를 계산 (k=0 지금, 1 전일, 5 1주 전)
 function computeView(k) {
@@ -591,17 +605,30 @@ function addVolume(chart, rows, from) {
   chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.8, bottom: 0 }, visible: false });
   v.setData(rows.map((r, i) => ({ time: r.t, value: r.v, color: i > 0 && r.c < rows[i - 1].c ? C.volDown : C.volUp })).filter((p, i) => i >= from));
 }
+// 특정 날(주)의 세로 칸 전체를 배경색으로 칠함. 바보다 먼저 추가해야 바 뒤에 깔림
+function addBg(chart, rows, from, colorOf) {
+  const bg = chart.addHistogramSeries({ priceScaleId: "bg", priceLineVisible: false, lastValueVisible: false,
+                                        priceFormat: { type: "custom", formatter: () => "" } });
+  chart.priceScale("bg").applyOptions({ scaleMargins: { top: 0, bottom: 0 }, visible: false });
+  bg.applyOptions({ autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 1 } }) });
+  bg.setData(rows.map((r, i) => ({ r, i })).filter(({ i }) => i >= from).map(({ r, i }) => {
+    const c = colorOf(r, i);
+    return c ? { time: r.t, value: 1, color: c } : { time: r.t };
+  }));
+}
+const mondayOf = (t) => { const dt = new Date(t + "T00:00:00Z"); return new Date(dt.getTime() - ((dt.getUTCDay() + 6) % 7) * 86400000).toISOString().slice(0, 10); };
+// 종목의 실적 발표일 (지난 1년 + 다가오는 날)
+function earnDates(t) {
+  const s = new Set(EARN_HIST[t] || []);
+  if (EARN[t]) s.add(EARN[t].date);
+  return s;
+}
 function drawMarket(d, m) {
   const chart = baseChart(document.getElementById("marketChart"), 0.24);
   const from = Math.max(0, d.length - SHOW_DAYS);
   // 분산일·팔로스루 데이: 그날 세로 칸 전체를 배경색으로 칠함 (가장 먼저 추가해서 바 뒤에 깔리게)
   const ddSet = new Set(m.dd.filter((x) => !x.expired).map((x) => x.i)), ftdSet = new Set(m.ftds);
-  const bg = chart.addHistogramSeries({ priceScaleId: "bg", priceLineVisible: false, lastValueVisible: false,
-                                        priceFormat: { type: "custom", formatter: () => "" } });
-  chart.priceScale("bg").applyOptions({ scaleMargins: { top: 0, bottom: 0 }, visible: false });
-  bg.applyOptions({ autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 1 } }) });
-  bg.setData(d.map((r, i) => ({ r, i })).filter(({ i }) => i >= from).map(({ r, i }) =>
-    ftdSet.has(i) ? { time: r.t, value: 1, color: C.ftdBg } : ddSet.has(i) ? { time: r.t, value: 1, color: C.ddBg } : { time: r.t }));
+  addBg(chart, d, from, (r, i) => (ftdSet.has(i) ? C.ftdBg : ddSet.has(i) ? C.ddBg : null));
   addBars(chart, d, from);
   addLine(chart, d, m.ma50, from, C.ma10, 2);
   addLine(chart, d, m.ma200, from, C.ma40, 2);
@@ -625,9 +652,11 @@ function drawRatio(elId, txtId, a, b, upWord, downWord) {
   document.getElementById(txtId).innerHTML = up ? '<b class="chg-up">▲ ' + upWord + "</b>"
     : down ? '<b class="chg-down">▼ ' + downWord + "</b>" : '<span class="muted">방향 없음 (50일 평균 근처)</span>';
 }
-function drawStock(el, w, cls) {
+function drawStock(el, w, cls, t) {
   const chart = baseChart(el, 0.24);
   const n = w.length, from = Math.max(0, n - SHOW_WEEKS);
+  const ew = new Set([...earnDates(t)].map(mondayOf));
+  if (ew.size) addBg(chart, w, from, (r) => (ew.has(r.t) ? C.earnBg : null));
   const bars = addBars(chart, w, from);
   const cl = w.map((x) => x.c);
   addLine(chart, w, smaArr(cl, 10), from, C.ma10, 3);
@@ -644,9 +673,11 @@ function drawStock(el, w, cls) {
   }
   chart.timeScale().fitContent();
 }
-function drawDaily(el, d, cls) {
+function drawDaily(el, d, cls, t) {
   const chart = baseChart(el, 0.24);
   const from = Math.max(0, d.length - SHOW_DAYS);
+  const ed = earnDates(t);
+  if (ed.size) addBg(chart, d, from, (r) => (ed.has(r.t) ? C.earnBg : null));
   const bars = addBars(chart, d, from);
   const cl = d.map((x) => x.c);
   addLine(chart, d, smaArr(cl, 50), from, C.ma10, 2);
@@ -659,7 +690,9 @@ function drawDaily(el, d, cls) {
 // ═════════════ 7. 화면 구성 ═════════════
 const statusEl = document.getElementById("status");
 const DATA = {};                     // symbol → 일봉 배열
-let EARN = {};                       // symbol → {date, time} (서버 모드에서만)
+let EARN = {};                       // symbol → {date, time} 다가오는 실적 (서버 모드에서만)
+let EARN_HIST = {};                  // symbol → [지난 실적 발표일] (서버 모드에서만)
+let PREV_ASOF = "";                  // 비교 시점(전일 또는 1주 전)의 기준일
 let SERVER = null;                   // 서버 data.json을 쓰는 중이면 {generated}
 let selectedGroup = null, VIEW = null, CMP_K = 1, DIFF = null, MARKET_STATE = null;
 
@@ -673,7 +706,7 @@ function earnBadge(t) {
 }
 function badgesFor(t, x) {
   let s = "";
-  if (DIFF && DIFF.badges[t]) s += '<span class="badge new">' + DIFF.badges[t] + "</span>";
+  if (DIFF && DIFF.badges[t]) s += '<span class="badge new" title="' + cmpWord() + "(" + md(PREV_ASOF) + ' 마감) 대비">' + DIFF.badges[t] + "</span>";
   if (x.rsHigh) s += '<span class="badge rsh">RS선 신고가</span>';
   return s + earnBadge(t);
 }
@@ -704,7 +737,7 @@ function renderSticky() {
   if (VIEW) {
     const list = leaderList(), cnt = (k) => list.filter((x) => stateKey(x.cls) === k).length;
     const chips = [["breakout", "돌파 중", cnt("breakout")], ["base", "준비", cnt("ready"), true], ["base", "대기", cnt("base")],
-                   ["extended", "연장", cnt("extended")], ["forming", "형성 중", cnt("forming")], ["inbox", "박스 안", cnt("inbox")], ["damaged", "손상", cnt("damaged")]];
+                   ["extended", "돌파 후 상승", cnt("extended")], ["forming", "형성 중", cnt("forming")], ["inbox", "박스 안", cnt("inbox")], ["damaged", "손상", cnt("damaged")]];
     html += '<span class="sep">|</span>' + chips.map(([id, lbl, n, hot]) =>
       '<a class="chip' + ((id === "breakout" || hot) && n ? " hot" : "") + '" href="#st-' + id + '">' + lbl + " <b>" + n + "</b></a>").join(" · ");
     if (DIFF) {
@@ -716,18 +749,35 @@ function renderSticky() {
   el.innerHTML = html;
 }
 
+const md = (t) => (t ? t.slice(5).replace("-", "/") : "");
+const cmpWord = () => (CMP_K === 1 ? "전일" : "1주 전");
+// 비교 기준 전환 버튼 (바뀐 것 상자와 3층 위에 같이 놓임)
+function cmpSeg() {
+  return '<span class="seg"><button data-k="1" class="' + (CMP_K === 1 ? "on" : "") + '">전일 대비</button><button data-k="5" class="' + (CMP_K === 5 ? "on" : "") + '">1주 전 대비</button></span>';
+}
+function bindSeg(el) {
+  el.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => { CMP_K = +b.dataset.k; refreshDiff(); }));
+}
+function renderCmpNote() {
+  const el = document.getElementById("cmpNote");
+  if (!el || !VIEW) return;
+  el.innerHTML = cmpSeg() + '<span class="badge new">NEW</span> <span class="badge new">대기→돌파 중</span> 꼬리표의 비교 기준: <b>' + cmpWord() +
+    " (" + md(PREV_ASOF) + " 마감)</b> → 지금 (" + md(VIEW.asOf) + " 마감). 오른쪽 버튼으로 바꿉니다.";
+  bindSeg(el);
+}
 function renderChanges() {
   const el = document.getElementById("changes");
   if (!VIEW || !DIFF) return;
   const tk = (t) => '<span class="tk" data-t="' + t + '">' + t + "</span>";
-  const seg = '<span class="seg"><button data-k="1" class="' + (CMP_K === 1 ? "on" : "") + '">전일 대비</button><button data-k="5" class="' + (CMP_K === 5 ? "on" : "") + '">1주 전 대비</button></span>';
+  const seg = cmpSeg();
   const parts = [];
   if (DIFF.moved.length) parts.push('<div><span class="lbl">단계 변화</span>' + DIFF.moved.map(([t, a, b]) => tk(t) + " " + LABEL[a] + "→<b>" + LABEL[b] + "</b>").join(" · ") + "</div>");
   if (DIFF.added.length) parts.push('<div><span class="lbl">새 주도주 (RS 80 진입)</span>' + DIFF.added.map((t) => tk(t) + " (" + LABEL[stateKey(VIEW.info[t].cls)] + ")").join(" · ") + "</div>");
   if (DIFF.dropped.length) parts.push('<div><span class="lbl">주도주 탈락</span>' + DIFF.dropped.map(([t, rs]) => t + (rs != null ? " (RS " + rs + ")" : "")).join(" · ") + "</div>");
-  el.innerHTML = seg + "<b>" + (CMP_K === 1 ? "전 거래일" : "5거래일 전") + " 대비 바뀐 것</b>" +
+  el.innerHTML = seg + "<b>" + cmpWord() + " 대비 바뀐 것</b> <span class=\"muted\">" + md(PREV_ASOF) + " 마감 → " + md(VIEW.asOf) + " 마감</span>" +
     (parts.length ? parts.join("") : '<div class="muted">바뀐 것이 없습니다.</div>');
-  el.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => { CMP_K = +b.dataset.k; refreshDiff(); }));
+  bindSeg(el);
+  renderCmpNote();
   el.querySelectorAll(".tk").forEach((s) => s.addEventListener("click", () => openModal(s.dataset.t)));
 }
 
@@ -753,7 +803,7 @@ function renderFlow() {
 const CHART_STATES = [
   ["breakout", "돌파 중", "박스 상단을 넘었고 아직 매수 범위(상단 +5% 이내) 안"],
   ["base", "돌파 대기", "박스 상단 10% 이내에서 숨 고르는 중 · '준비'는 변동폭이 조여지고 거래량이 마른 종목"],
-  ["extended", "연장됨", "이미 많이 올라감 · 추격하지 않고 다음 박스를 기다림"],
+  ["extended", "돌파 후 상승 중", "박스를 돌파한 뒤 매수 범위(상단 +5%)를 벗어나 오르는 중 · 추격하지 않고 다음 박스를 기다림"],
 ];
 const NAME_STATES = [
   ["forming", "박스 형성 중", "신고가 부근에서 1-4주째 · 5주가 지나 박스가 되면 '돌파 대기'로 올라옴 · 차트 생략"],
@@ -789,7 +839,7 @@ function renderLeaders() {
         '<div class="reason">' + x.cls.reason + '</div></div><div class="chart"></div>';
       card.addEventListener("click", () => openModal(x.t));
       grid.appendChild(card);
-      drawStock(card.querySelector(".chart"), x.w, x.cls);
+      drawStock(card.querySelector(".chart"), x.w, x.cls, x.t);
     });
   });
   NAME_STATES.forEach(([key, title, desc]) => {
@@ -821,8 +871,8 @@ function openModal(t) {
   document.getElementById("mReason").innerHTML = cls.reason;
   document.getElementById("modal").classList.add("open");
   requestAnimationFrame(() => {
-    drawStock(document.getElementById("mWeekly"), x.w, cls);
-    drawDaily(document.getElementById("mDaily"), x.d, cls);
+    drawStock(document.getElementById("mWeekly"), x.w, cls, t);
+    drawDaily(document.getElementById("mDaily"), x.d, cls, t);
   });
 }
 function closeModal() { const m = document.getElementById("modal"); m.classList.remove("open"); disposeCharts(m); }
@@ -833,6 +883,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal
 function refreshDiff() {
   if (!VIEW) return;
   const prev = computeView(CMP_K);
+  PREV_ASOF = prev.asOf;
   DIFF = diffViews(VIEW, prev);
   renderChanges(); renderLeaders(); renderSticky();
 }
@@ -840,7 +891,9 @@ function renderAll() {
   renderMarket();
   if (STOCKS.filter((t) => DATA[t]).length >= STOCKS.length * 0.9) {
     VIEW = computeView(0);
-    DIFF = diffViews(VIEW, computeView(CMP_K));
+    const prev = computeView(CMP_K);
+    PREV_ASOF = prev.asOf;
+    DIFF = diffViews(VIEW, prev);
     renderFlow(); renderChanges(); renderLeaders(); renderSticky();
   }
 }
@@ -905,6 +958,7 @@ async function loadServer() {
     if (!j.series || !j.series.QQQ) return false;
     for (const [s, rows] of Object.entries(j.series)) DATA[s] = unpack(rows);
     EARN = j.earnings || {};
+    EARN_HIST = j.earnHist || {};
     SERVER = { generated: j.generated };
     renderAll();
     await showRefreshInfo();
@@ -955,14 +1009,35 @@ async function loadAll(force) {
 
 // ═════════════ 도움말 ═════════════
 // 기준값은 위 설정(상수)을 그대로 읽어서 쓰므로, 설정을 바꾸면 도움말 숫자도 같이 바뀝니다.
+// 분산일·팔로스루 데이 개념과 판별 기준 (1층 펼침 상자와 도움말에 같이 씀)
+function ddftdHtml() {
+  const P = (x) => Math.round(x * 100) + "%";
+  return `<div><h4><span style="background:rgba(220,38,38,0.16);padding:0 6px">분산일</span> Distribution Day</h4>
+<b>개념</b>: 기관처럼 큰 자본이 주식을 내다 판 날입니다. 값이 떨어졌는데 거래량이 늘었다면 "파는 쪽이 더 급했다"는 뜻입니다.
+하루는 큰 의미가 없지만, 몇 주 사이에 여러 번 쌓이면 상승장이 꼭지를 만드는 중일 가능성이 커집니다. 오닐이 시장 고점을 알아챈 핵심 신호입니다.
+<br><b>판별 기준</b> (QQQ 기준)
+<ol><li>종가가 전날 종가보다 <b>${Math.abs(DD_DROP * 100).toFixed(1)}% 이상 하락</b></li>
+<li>그날 거래량이 <b>전날 거래량보다 많음</b></li>
+<li><b>최근 25거래일</b> 안의 것만 셉니다. 그 뒤 종가가 그날 종가보다 5% 이상 오르면 효력이 없어져 차트에서도 지워집니다.</li>
+<li>25거래일 안에 <b>${DD_LIMIT}회 이상</b>이면 신규 매수 중지.</li></ol></div>
+<div><h4><span style="background:rgba(22,163,74,0.30);padding:0 6px">팔로스루 데이</span> Follow-Through Day</h4>
+<b>개념</b>: 조정장에서 바닥을 찍은 뒤, 반등이 진짜인지 확인해 주는 날입니다. 큰 자본이 다시 사기 시작했다는 증거입니다.
+모든 팔로스루 데이가 성공하지는 않지만, 팔로스루 데이 없이 시작된 큰 상승장은 거의 없습니다(오닐).
+<br><b>판별 기준</b> (QQQ 기준)
+<ol><li>먼저 <b>조정</b>: 종가가 직전 고점보다 ${P(CORRECTION_PCT)} 이상 낮음</li>
+<li><b>랠리 시도</b>: 조정 중 최저가 뒤 처음 오른 날이 1일차. 그 뒤 최저가를 다시 깨면 처음부터 다시 셉니다.</li>
+<li><b>랠리 4일차 이후</b> 어느 날, 종가가 <b>${(FTD_GAIN * 100).toFixed(2)}% 이상 상승</b>하고 거래량이 <b>전날보다 많으면</b> 팔로스루 데이.</li>
+<li>팔로스루 데이가 나오면 조정이 끝난 것으로 보고, 그 뒤로는 50일선과 분산일로 공격 여부를 판단합니다.</li></ol></div>`;
+}
 function buildHelp() {
+  document.getElementById("ddftdBody").innerHTML = ddftdHtml();
   const P = (x) => Math.round(x * 100) + "%";
   const b = (cls, t) => '<span class="badge ' + cls + '">' + t + "</span>";
   const pill = (cls, t) => '<span class="pill ' + cls + '" style="font-size:12px">' + t + "</span>";
   document.getElementById("helpPanel").innerHTML = `
 <div class="phead"><b>이 대시보드 보는 법</b><button class="close" id="helpClose" title="닫기 (Esc)">✕</button></div>
 <div class="toc"><a href="#h-start">처음 오셨다면</a><a href="#h-signal">신호등</a><a href="#h-sticky">고정 바</a><a href="#h-changes">바뀐 것</a>
-<a href="#h-market">1층 시장</a><a href="#h-flow">2층 자금 흐름</a><a href="#h-leaders">3층 주도주</a><a href="#h-states">단계 7가지</a>
+<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 자금 흐름</a><a href="#h-leaders">3층 주도주</a><a href="#h-states">단계 7가지</a>
 <a href="#h-tags">꼬리표</a><a href="#h-charts">차트 읽는 법</a><a href="#h-data">데이터·갱신</a><a href="#h-limits">한계</a></div>
 
 <h3 id="h-start">처음 오셨다면</h3>
@@ -993,7 +1068,8 @@ function buildHelp() {
 <p>시장 판정과 3층 단계별 종목 수, 바뀐 것 개수를 한 줄로 보여 줍니다. 항목을 누르면 그 위치로 이동합니다. 주황색 숫자는 지금 눈여겨볼 만한 항목입니다(돌파 중, 준비, 변화가 있을 때).</p>
 
 <h3 id="h-changes">바뀐 것 <small>신호등 바로 아래 상자</small></h3>
-<p>오른쪽 버튼으로 <b>전일 대비</b>와 <b>1주 전 대비</b>를 바꿉니다. 같은 데이터를 그 시점까지 잘라서 다시 계산한 뒤 지금과 비교합니다.</p>
+<p>오른쪽 버튼으로 <b>전일 대비</b>와 <b>1주 전 대비</b>(5거래일 전)를 바꿉니다. 같은 데이터를 그 시점까지 잘라서 다시 계산한 뒤 지금과 비교합니다. 제목 옆 회색 글씨가 실제 비교하는 두 날짜입니다(예: 10/23 마감 → 10/30 마감).</p>
+<p>지금 어느 기준인지는 세 곳에 나옵니다: 바뀐 것 상자의 제목, 고정 바의 "전일 대비 변화" 항목, 3층 위의 점선 상자. 어느 곳에서 바꿔도 모두 함께 바뀝니다.</p>
 <table>
 <tr><td>단계 변화</td><td>3층 단계가 바뀐 종목. 예: 돌파 대기→돌파 중. 가장 먼저 볼 줄입니다.</td></tr>
 <tr><td>새 주도주</td><td>RS가 ${RS_LEADER} 이상으로 새로 올라온 종목. 괄호 안은 지금 단계.</td></tr>
@@ -1009,6 +1085,9 @@ function buildHelp() {
 <tr><td><span style="background:rgba(220,38,38,0.16);padding:0 8px">옅은 붉은 배경</span></td><td>분산일. 그날 세로 칸 전체가 붉게 칠해집니다. 짧은 기간에 붉은 칸이 몰리면 큰 자본이 빠져나가는 중입니다.</td></tr>
 <tr><td><span style="background:rgba(22,163,74,0.30);padding:0 8px">초록 배경</span></td><td>팔로스루 데이. 조정 뒤 상승 전환 확인.</td></tr>
 </table>
+
+<h3 id="h-ddftd">분산일과 팔로스루 데이 <small>개념과 판별 기준</small></h3>
+<div class="ddftd" style="grid-template-columns:1fr">${ddftdHtml()}</div>
 
 <h3 id="h-flow">2층 · 자금 흐름</h3>
 <p><b>위 두 비율선</b>은 시장 체질을 봅니다. 숫자는 보지 말고 선의 방향만 보세요. 회색 점선은 50일 평균입니다.</p>
@@ -1036,15 +1115,15 @@ function buildHelp() {
 <tr><td>돌파 중</td><td>박스 상단을 넘었고, 아직 상단에서 ${P(BUY_RANGE)} 이내(매수 범위). <b>할 일: 매수 검토.</b> 돌파일 거래량이 50일 평균의 ${BREAKOUT_VOL}배에 못 미치면 "거래량 부족"이 붉게 표시됩니다. 거래량 없는 돌파는 큰 자본의 흔적이 아닙니다.</td></tr>
 <tr><td>준비</td><td>"돌파 대기" 중 최근 3주 변동폭이 ${P(TIGHT_3W)} 이하로 조여지고, 최근 2주 거래량이 그 전 10주 평균의 ${P(DRY_VOL)} 이하로 마른 종목. 돌파 대기 맨 앞에 놓입니다. <b>할 일: 돌파 지점 미리 표시.</b></td></tr>
 <tr><td>돌파 대기</td><td>박스 상단까지 ${P(NEAR_TOP)} 이내에서 숨 고르는 중. <b>할 일: 관심 목록.</b></td></tr>
-<tr><td>연장됨</td><td>박스 상단보다 ${P(BUY_RANGE)} 넘게 올랐거나, 박스 없이 10주선보다 10% 넘게 위. <b>할 일: 추격하지 않고 다음 박스를 기다림.</b></td></tr>
-<tr><td>박스 형성 중</td><td>신고가 부근에서 1-${BASE_MIN_WEEKS - 1}주째 쉬는 중. ${BASE_MIN_WEEKS}주가 지나 박스가 되면 돌파 대기로 올라옵니다. 차트 생략.</td></tr>
+<tr><td>돌파 후 상승 중</td><td>박스 상단보다 ${P(BUY_RANGE)} 넘게 올랐거나, 박스 없이 10주선보다 10% 넘게 위. <b>할 일: 추격하지 않고 다음 박스를 기다림.</b></td></tr>
+<tr><td>박스 형성 중</td><td>신고가 부근에서 1-${BASE_MIN_WEEKS - 1}주째 쉬는 중. ${BASE_MIN_WEEKS}주가 지나 박스가 되면 돌파 대기로 올라옵니다. 상장한 지 6주가 안 돼 판단할 수 없는 종목도 여기에 둡니다. 차트 생략.</td></tr>
 <tr><td>박스 안</td><td>박스 상단까지 ${P(NEAR_TOP)} 넘게 남음. 아직 후보 아님. 차트 생략.</td></tr>
 <tr><td>손상</td><td>RS는 높지만 주가가 10주선 아래, 박스 하단 아래, 또는 박스가 ${P(BASE_MAX_DEPTH)} 넘게 깊음. 차트 생략.</td></tr>
 </table>
 
 <h3 id="h-tags">꼬리표</h3>
 <table>
-<tr><td>${b("new", "NEW")}</td><td>비교 시점(전일 또는 1주 전) 이후 RS ${RS_LEADER} 이상으로 새로 들어온 종목.</td></tr>
+<tr><td>${b("new", "NEW")}</td><td>비교 시점(전일 또는 1주 전) 이후 RS ${RS_LEADER} 이상으로 새로 들어온 종목. 지금 비교 기준은 3층 위 점선 상자에 날짜와 함께 나오고, 꼬리표에 마우스를 올려도 보입니다.</td></tr>
 <tr><td>${b("new", "대기→돌파 중")}</td><td>비교 시점 이후 단계가 바뀐 종목. 화살표 앞이 예전, 뒤가 지금.</td></tr>
 <tr><td>${b("rsh", "RS선 신고가")}</td><td>종목 ÷ QQQ 선이 52주 신고가. 주가보다 상대강도가 먼저 신고가를 내면 큰 자본이 사 모으는 흔적일 수 있습니다.</td></tr>
 <tr><td>${b("earn", "실적 11/05 D-5")}</td><td>${EARN_WARN_DAYS}일 안에 실적 발표. 실적 직후 갭 하락은 계획보다 큰 손실을 만들 수 있어 붉게 표시합니다.</td></tr>
@@ -1060,6 +1139,7 @@ function buildHelp() {
 <tr><td style="color:#16a34a">━ 10주선</td><td>주봉 차트의 중기 추세선(일봉 50일선과 비슷). 추세 종목은 이 선을 타고 오릅니다.</td></tr>
 <tr><td style="color:#7c3aed">━ 40주선</td><td>주봉 차트의 장기 추세선(일봉 200일선과 비슷).</td></tr>
 <tr><td style="color:#f59e0b">━ 주황 선 2개</td><td>감지된 박스의 상단과 하단. 상단이 돌파 기준입니다.</td></tr>
+<tr><td><span style="background:rgba(250,204,21,0.38);padding:0 8px">노란 배경</span></td><td>실적 발표일. 일봉은 그날, 주봉은 그 주 전체를 칠합니다. 지난 1년 발표일과 다가오는 발표일이 나옵니다. 실적 전후로 갭이 생기기 쉬우니 박스와 돌파를 볼 때 함께 확인하세요. 장 마감 뒤 발표는 주가 반응이 다음 날 바에 나타납니다.</td></tr>
 <tr><td style="color:#b91c1c">┄ 붉은 점선</td><td>최근 52주 고점. 오른쪽 가격 축에 값이 나옵니다.</td></tr>
 <tr><td>크게 보기</td><td>왼쪽 주봉 1년, 오른쪽 일봉 6개월(50일선·200일선). 일봉의 주황 점선이 박스 상단(돌파 기준)이라 돌파일 거래량을 확인하기 좋습니다.</td></tr>
 </table>
