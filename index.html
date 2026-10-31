@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 00:50</title>
+<title>추세 대시보드 v2026-11-01 01:10</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -202,7 +202,8 @@
   .stg { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--sub); }
   .stg.breakout, .stg.ready { background: var(--accent); border-color: var(--accent); color: #fff; }
   .stg.base { border-color: var(--accent); color: var(--accent); }
-  .stg.damaged { color: var(--down); border-color: transparent; }
+  .stg.trendbreak, .stg.basebreak, .stg.basefail { color: var(--down); border-color: transparent; }
+  .stg.basefail { font-weight: 800; }
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #9ca3af; margin-right: 3px; vertical-align: -1px; }
   .dot.on10 { background: #16a34a; border-color: #16a34a; } .dot.on40 { background: #7c3aed; border-color: #7c3aed; }
   .badge.pre { background: #16a34a; color: #fff; }
@@ -229,7 +230,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 00:50</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 01:10</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -278,7 +279,7 @@
   <h2 id="sec-leaders">3. 주도주 — 나스닥100 RS 80 이상, 지금 어느 단계인가 <button class="q" data-help="h-leaders" title="이 층 보는 법">?</button></h2>
   <p class="lead">RS는 오닐식 가중 12개월 상대강도(최근 3개월 2배 가중)를 나스닥100 안에서 1-99로 매긴 값입니다. 카드를 누르면 주봉·일봉을 크게 봅니다.</p>
   <div class="legend" style="padding:0 0 8px"><i style="color:#16a34a">━</i> 10주선 &nbsp; <i style="color:#7c3aed">━</i> 40주선 &nbsp;
-    <i style="color:#f59e0b">━</i> 박스 상단·하단 &nbsp; <i style="color:#b91c1c">┄</i> 52주 고점 &nbsp;
+    <i style="color:#f59e0b">━</i> 베이스 상단·하단 &nbsp; <i style="color:#b91c1c">┄</i> 52주 고점 &nbsp;
     <span class="badge rsh">RS선 신고가</span> 종목÷QQQ 선이 52주 신고가 &nbsp; <span class="badge earn">실적 D-7</span> 14일 안 실적 발표 &nbsp; <i style="background:rgba(250,204,21,0.38);color:transparent;padding:0 5px">■</i> 실적 발표일(주)</div>
   <div id="cmpNote"></div>
   <div id="filterChip"><button id="clearFilter"></button></div>
@@ -300,15 +301,15 @@
   <div class="mhead"><div class="name" id="mName"></div><span class="tag" id="mTag"></span><button class="close" id="mClose" title="닫기 (Esc)">✕</button>
     <div class="reason" id="mReason"></div></div>
   <div class="mcharts">
-    <div><div class="cap">주봉 1년 · 10주선 · 40주선 · 박스 · 노란 배경은 실적 발표 주</div><div class="mc" id="mWeekly"></div></div>
-    <div><div class="cap">일봉 6개월 · 50일선 · 200일선 · 주황 점선은 박스 상단(돌파 기준) · 노란 배경은 실적 발표일</div><div class="mc" id="mDaily"></div></div>
+    <div><div class="cap">주봉 1년 · 10주선 · 40주선 · 베이스 · 노란 배경은 실적 발표 주</div><div class="mc" id="mWeekly"></div></div>
+    <div><div class="cap">일봉 6개월 · 50일선 · 200일선 · 주황 점선은 베이스 상단(돌파 기준) · 노란 배경은 실적 발표일</div><div class="mc" id="mDaily"></div></div>
   </div>
 </div></div>
 
 <footer>
   데이터 <a href="https://twelvedata.com/" target="_blank" rel="noopener">Twelve Data</a> · 실적 일정 Nasdaq(서버 모드에서만) · 차트 <a href="https://www.tradingview.com/lightweight-charts/" target="_blank" rel="noopener">TradingView Lightweight Charts</a><br>
   나스닥100 구성종목: 2026-10-30 기준. 지수 정기 변경(매년 12월)이나 수시 변경이 있으면 아래 UNIVERSE 목록을 고쳐야 합니다.<br>
-  분산일·팔로스루 데이·박스는 정해진 규칙으로 계산한 근사치입니다. 최종 판단은 차트로 하세요.
+  분산일·팔로스루 데이·베이스는 정해진 규칙으로 계산한 근사치입니다. 최종 판단은 차트로 하세요.
 </footer>
 
 <script>
@@ -355,14 +356,14 @@ const CORRECTION_PCT = 0.08;        // QQQ가 고점 대비 이만큼 빠지면 
 const FTD_GAIN = 0.0125;            // 팔로스루 데이: 랠리 4일차 이후 +1.25% 이상, 전일보다 거래량 증가
 const DD_DROP = -0.002;             // 분산일: -0.2% 이상 하락, 전일보다 거래량 증가
 const DD_LIMIT = 5;                 // 최근 25거래일 분산일이 이 이상이면 신규 매수 중지
-const BASE_MIN_WEEKS = 5;           // 박스로 인정하는 최소 길이 (오닐 플랫 베이스 5주)
+const BASE_MIN_WEEKS = 5;           // 베이스로 인정하는 최소 길이 (오닐 플랫 베이스 5주)
 const BASE_LOOKBACK = 26, BASE_MAX_DEPTH = 0.35;
-const NEAR_TOP = 0.10;              // 박스 상단에서 10% 이내만 '돌파 대기', 더 멀면 '박스 안'
-const BUY_RANGE = 0.05;             // 박스 상단에서 5% 이내까지만 '돌파 중', 넘으면 '상승 중'
+const NEAR_TOP = 0.10;              // 베이스 상단에서 10% 이내만 '돌파 대기', 더 멀면 '베이스 안'
+const BUY_RANGE = 0.05;             // 베이스 상단에서 5% 이내까지만 '돌파 중', 넘으면 '상승 중'
 const BREAKOUT_VOL = 1.4;           // 돌파일 거래량이 50일 평균의 1.4배 이상이어야 정상 돌파
 const TIGHT_3W = 0.10;              // 최근 3주 변동폭 10% 이하면 '조여짐'
 const DRY_VOL = 0.8;                // 최근 2주 거래량이 그 전 10주 평균의 80% 이하면 '거래량 마름'
-const PRE_RS_MIN = 60, PRE_RS_GAIN = 10;  // 예비 주도주: RS 60-79, 4주 사이 RS +10 이상, 10주선 위
+const PRE_RS_MIN = 60, PRE_RS_GAIN = 10;  // 예비 주도주: RS 60-79, 4주 사이 RS +10 이상, 10주선 위, 건전한 베이스
 const EARN_WARN_DAYS = 14;          // 실적 발표가 이 기간 안이면 빨갛게 표시
 const REFRESH_NY_HOUR = 16, REFRESH_NY_MIN = 1;   // 미국장 마감 1분 뒤 갱신
 const MIN_GAP_MS = 8000;            // 무료 키: 분당 8회
@@ -521,7 +522,7 @@ function rsLineHigh(d, q) {
   return win[win.length - 1] >= Math.max(...win) * 0.999;
 }
 
-// 종목 단계 판정 (주봉 박스 기준)
+// 종목 단계 판정 (주봉 베이스 기준)
 function classify(d, w) {
   const n = w.length, price = d[d.length - 1].c;
   if (n < 6) return { state: "forming", reason: "상장 직후라 판단 불가 (" + n + "주)", box: null };
@@ -535,26 +536,28 @@ function classify(d, w) {
   const depth = (top - bottom) / top, toTop = top / price - 1;
   const box = L >= BASE_MIN_WEEKS ? { from: base[0].t, top, bottom } : null;
 
-  if (ma10 && price < ma10) return { state: "damaged", reason: "10주선 아래 (" + pctf(dist10) + ")", box };
-  if (box && price < bottom) return { state: "damaged", reason: "박스 하단 이탈", box };
-  if (box && depth > BASE_MAX_DEPTH) return { state: "damaged", reason: "박스가 너무 깊음 (" + (depth * 100).toFixed(0) + "%)", box };
-  if (!box) {                                   // 고점 뒤 5주가 안 됨: 아직 박스로 보지 않음
+  // 문제가 겹치면 더 심각한 쪽으로: 베이스 붕괴 > 베이스 이탈 > 추세 이탈
+  const below10 = ma10 && price < ma10, t10 = below10 ? " · 10주선 아래 (" + pctf(dist10) + ")" : "";
+  if (box && depth > BASE_MAX_DEPTH) return { state: "basefail", reason: "베이스 저점이 너무 깊음 (고점 대비 -" + (depth * 100).toFixed(0) + "%)" + t10, box };
+  if (box && price < bottom) return { state: "basebreak", reason: "베이스 하단 이탈 (하단 " + pctf(price / bottom - 1) + ")" + t10, box };
+  if (below10) return { state: "trendbreak", reason: "10주선 아래 (" + pctf(dist10) + ")", box };
+  if (!box) {                                   // 고점 뒤 5주가 안 됨: 아직 베이스로 보지 않음
     if (price <= top && toTop > NEAR_TOP) return { state: "inbox", reason: "고점 뒤 " + L + "주 조정 중 · 고점까지 " + pctf(toTop), box };
-    if (dist10 > 0.10) return { state: "extended", reason: "새 박스 형성 전 · 10주선 " + pctf(dist10) + " · 다음 박스 대기", box };
-    return { state: "forming", reason: "신고가 부근 · 새 박스 형성 중 (" + L + "주) · 10주선 " + pctf(dist10), box };
+    if (dist10 > 0.10) return { state: "extended", reason: "새 베이스 형성 전 · 10주선 " + pctf(dist10) + " · 다음 베이스 대기", box };
+    return { state: "forming", reason: "신고가 부근 · 새 베이스 형성 중 (" + L + "주) · 10주선 " + pctf(dist10), box };
   }
   if (price > top) {
     const over = price / top - 1;
-    if (over > BUY_RANGE) return { state: "extended", reason: "박스 상단 " + pctf(over) + " · 추격 금지, 다음 박스 대기", box };
-    let k = -1;                                  // 돌파일: 최근 15거래일 중 박스 상단을 처음 넘어 마감한 날
+    if (over > BUY_RANGE) return { state: "extended", reason: "베이스 상단 " + pctf(over) + " · 추격 금지, 다음 베이스 대기", box };
+    let k = -1;                                  // 돌파일: 최근 15거래일 중 베이스 상단을 처음 넘어 마감한 날
     for (let i = Math.max(1, d.length - 15); i < d.length; i++) if (d[i].c > top && d[i - 1].c <= top) k = i;
     if (k < 0) k = d.length - 1;
     const v50 = d.slice(Math.max(0, k - 50), k).reduce((a, r) => a + r.v, 0) / Math.min(50, k);
     const vr = d[k].v / v50;
     const volTxt = vr >= BREAKOUT_VOL ? "돌파일 거래량 " + vr.toFixed(1) + "배" : '<span class="warn">거래량 부족 ' + vr.toFixed(1) + "배</span>";
-    return { state: "breakout", reason: "박스 상단 " + pctf(over) + " · " + volTxt, box, weak: vr < BREAKOUT_VOL };
+    return { state: "breakout", reason: "베이스 상단 " + pctf(over) + " · " + volTxt, box, weak: vr < BREAKOUT_VOL };
   }
-  if (toTop > NEAR_TOP) return { state: "inbox", reason: "박스 " + L + "주 · 상단까지 " + pctf(toTop), box };
+  if (toTop > NEAR_TOP) return { state: "inbox", reason: "베이스 " + L + "주 · 상단까지 " + pctf(toTop), box };
   const last3 = prior.slice(-3);
   const r3 = (Math.max(...last3.map((x) => x.h)) - Math.min(...last3.map((x) => x.l))) / Math.max(...last3.map((x) => x.h));
   const recent = prior.slice(-2), before = prior.slice(-12, -2);
@@ -562,11 +565,12 @@ function classify(d, w) {
   const dry = before.length >= 5 && avg(recent) <= avg(before) * DRY_VOL;
   const ready = r3 <= TIGHT_3W && dry;
   return { state: "base", ready, box,
-           reason: (ready ? '<span class="ready">준비</span> · ' : "") + "박스 " + L + "주 · 깊이 " + (depth * 100).toFixed(0) +
+           reason: (ready ? '<span class="ready">준비</span> · ' : "") + "베이스 " + L + "주 · 깊이 " + (depth * 100).toFixed(0) +
                    "% · 최근 3주 폭 " + (r3 * 100).toFixed(0) + "%" + (dry ? " · 거래량 마름" : "") + " · 상단까지 " + pctf(toTop) };
 }
 const stateKey = (c) => (c.state === "base" && c.ready ? "ready" : c.state);
-const LABEL = { breakout: "돌파 중", ready: "준비", base: "돌파 대기", forming: "박스 형성 중", extended: "상승 중", inbox: "박스 안", damaged: "손상" };
+const LABEL = { breakout: "돌파 중", ready: "준비", base: "돌파 대기", forming: "베이스 형성 중", extended: "상승 중", inbox: "베이스 안", trendbreak: "추세 이탈", basebreak: "베이스 이탈", basefail: "베이스 붕괴" };
+const BROKEN = new Set(["trendbreak", "basebreak", "basefail"]);
 
 // k 거래일 전 시점으로 잘라서 전체를 계산 (k=0 지금, 1 전일, 5 1주 전)
 function computeView(k) {
@@ -589,7 +593,8 @@ function computeView(k) {
       x.fromHi = c / Math.max(...y1.map((r) => r.h)) - 1;
       x.fromLo = c / Math.min(...y1.map((r) => r.l)) - 1;
       x.rsChg = x.rsThen != null ? x.rs - x.rsThen : null;
-      x.pre = x.rs >= PRE_RS_MIN && x.rs < RS_LEADER && x.rsChg != null && x.rsChg >= PRE_RS_GAIN && x.above10;
+      x.soundBase = x.cls.state !== "basebreak" && x.cls.state !== "basefail";   // 건전한 베이스: 베이스 저점 35% 이내, 베이스 하단 위
+      x.pre = x.rs >= PRE_RS_MIN && x.rs < RS_LEADER && x.rsChg != null && x.rsChg >= PRE_RS_GAIN && x.above10 && x.soundBase;
     }
   });
   const groups = UNIVERSE.map(([g, items]) => {
@@ -719,9 +724,9 @@ function drawStock(el, w, cls, t) {
   addLine(chart, w, smaArr(cl, 10), from, C.ma10, 3);
   addLine(chart, w, smaArr(cl, 40), from, C.ma40, 3);
   addVolume(chart, w, from);
-  const hi = Math.max(...w.slice(from).map((x) => x.h));      // 52주 고점 (저점 선은 박스 하단으로 대신)
+  const hi = Math.max(...w.slice(from).map((x) => x.h));      // 52주 고점 (저점 선은 베이스 하단으로 대신)
   bars.createPriceLine({ price: hi, color: C.high, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "" });
-  if (cls && cls.box && cls.state !== "damaged") {
+  if (cls && cls.box && cls.state !== "basefail") {
     const span = w.filter((x) => x.t >= cls.box.from);
     [cls.box.top, cls.box.bottom].forEach((v) => {
       const s = chart.addLineSeries({ color: C.box, lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
@@ -794,7 +799,7 @@ function renderSticky() {
   if (VIEW) {
     const list = leaderList(), cnt = (k) => list.filter((x) => stateKey(x.cls) === k).length;
     const chips = [["breakout", "돌파 중", cnt("breakout")], ["base", "준비", cnt("ready"), true], ["base", "대기", cnt("base")],
-                   ["extended", "상승 중", cnt("extended")], ["forming", "형성 중", cnt("forming")], ["inbox", "박스 안", cnt("inbox")], ["damaged", "손상", cnt("damaged")]];
+                   ["extended", "상승 중", cnt("extended")], ["forming", "형성 중", cnt("forming")], ["inbox", "베이스 안", cnt("inbox")], ["trendbreak", "추세 이탈", cnt("trendbreak")], ["basebreak", "베이스 이탈", cnt("basebreak")], ["basefail", "베이스 붕괴", cnt("basefail")]];
     html += '<span class="sep">|</span>' + chips.map(([id, lbl, n, hot]) =>
       '<a class="chip' + ((id === "breakout" || hot) && n ? " hot" : "") + '" href="#st-' + id + '">' + lbl + " <b>" + n + "</b></a>").join(" · ");
     if (DIFF) {
@@ -868,14 +873,16 @@ function renderFlow() {
 }
 
 const CHART_STATES = [
-  ["breakout", "돌파 중", "박스 상단을 넘었고 아직 매수 범위(상단 +5% 이내) 안"],
-  ["base", "돌파 대기", "박스 상단 10% 이내에서 숨 고르는 중 · '준비'는 변동폭이 조여지고 거래량이 마른 종목"],
-  ["extended", "상승 중", "박스를 돌파한 뒤 매수 범위(상단 +5%)를 벗어나 오르는 중 · 추격하지 않고 다음 박스를 기다림"],
+  ["breakout", "돌파 중", "베이스 상단을 넘었고 아직 매수 범위(상단 +5% 이내) 안"],
+  ["base", "돌파 대기", "베이스 상단 10% 이내에서 숨 고르는 중 · '준비'는 변동폭이 조여지고 거래량이 마른 종목"],
+  ["extended", "상승 중", "베이스를 돌파한 뒤 매수 범위(상단 +5%)를 벗어나 오르는 중 · 추격하지 않고 다음 베이스를 기다림"],
 ];
 const NAME_STATES = [
-  ["forming", "박스 형성 중", "신고가 부근에서 1-4주째 · 5주가 지나 박스가 되면 '돌파 대기'로 올라옴 · 차트 생략"],
-  ["inbox", "박스 안", "박스 상단까지 10% 넘게 남음 · 아직 후보 아님 · 차트 생략"],
-  ["damaged", "손상", "RS는 높지만 10주선이나 박스 하단 아래 · 차트 생략"],
+  ["forming", "베이스 형성 중", "신고가 부근에서 1-4주째 · 5주가 지나 베이스가 되면 '돌파 대기'로 올라옴 · 차트 생략"],
+  ["inbox", "베이스 안", "베이스 상단까지 10% 넘게 남음 · 아직 후보 아님 · 차트 생략"],
+  ["trendbreak", "추세 이탈", "RS는 높지만 주가가 10주선 아래 · 차트 생략"],
+  ["basebreak", "베이스 이탈", "주가가 베이스 하단 아래로 내려감 · 차트 생략"],
+  ["basefail", "베이스 붕괴", "베이스 저점이 고점보다 35% 넘게 깊음 · 실패하기 쉬운 베이스 · 차트 생략"],
 ];
 function renderLeaders() {
   const wrap = document.getElementById("leaders");
@@ -931,7 +938,7 @@ document.getElementById("clearFilter").addEventListener("click", () => { selecte
 
 // ═════════════ 4층: 전체 종목 ═════════════
 let ALL_SORT = { key: "rs", dir: -1 }, ALL_FILTER = "all", ALL_Q = "";
-const STAGE_ORDER = { breakout: 0, ready: 1, base: 2, extended: 3, forming: 4, inbox: 5, damaged: 6 };
+const STAGE_ORDER = { breakout: 0, ready: 1, base: 2, extended: 3, forming: 4, inbox: 5, trendbreak: 6, basebreak: 7, basefail: 8 };
 const ALL_COLS = [   // [키, 제목, 너비, 정렬값]
   ["rank", "순위", 44, (x) => x.rs], ["t", "티커", 70, (x) => x.t], ["name", "종목명", 160, (x) => TICKERS[x.t].name],
   ["grp", "산업", 150, (x) => TICKERS[x.t].group], ["rs", "RS", 104, (x) => x.rs], ["rsChg", "4주", 54, (x) => x.rsChg ?? -999],
@@ -939,7 +946,7 @@ const ALL_COLS = [   // [키, 제목, 너비, 정렬값]
   ["fromHi", "고점 대비", 76, (x) => x.fromHi], ["fromLo", "저점 대비", 76, (x) => x.fromLo],
   ["trend", "10주·40주", 74, (x) => (x.above10 ? 2 : 0) + (x.above40 ? 1 : 0)], ["tags", "꼬리표", 0, null],
 ];
-const ALL_FILTERS = [["all", "전체"], ["pre", "예비 주도주"], ["above10", "10주선 위"], ["nearHi", "고점 10% 이내"], ["noDmg", "손상 제외"]];
+const ALL_FILTERS = [["all", "전체"], ["pre", "예비 주도주"], ["above10", "10주선 위"], ["nearHi", "고점 10% 이내"], ["noBroken", "이탈·붕괴 제외"]];
 
 // 6개월 종가 선 + 50일선 (작은 SVG)
 function sparkSvg(d) {
@@ -976,7 +983,7 @@ function renderUniverse() {
   const rankOf = {}; [...all].sort((a, b) => b.rs - a.rs).forEach((x, i) => (rankOf[x.t] = i + 1));
   let list = all.filter((x) => (!selectedGroup || TICKERS[x.t].group === selectedGroup) &&
     (ALL_FILTER === "all" || (ALL_FILTER === "pre" && x.pre) || (ALL_FILTER === "above10" && x.above10) ||
-     (ALL_FILTER === "nearHi" && x.fromHi >= -0.10) || (ALL_FILTER === "noDmg" && x.cls.state !== "damaged")) &&
+     (ALL_FILTER === "nearHi" && x.fromHi >= -0.10) || (ALL_FILTER === "noBroken" && !BROKEN.has(x.cls.state))) &&
     (!ALL_Q || x.t.toLowerCase().includes(ALL_Q) || TICKERS[x.t].name.toLowerCase().includes(ALL_Q)));
   const col = ALL_COLS.find((c) => c[0] === ALL_SORT.key), f = col[3];
   list.sort((a, b) => { const va = f(a), vb = f(b); return (va < vb ? -1 : va > vb ? 1 : 0) * ALL_SORT.dir || b.rs - a.rs; });
@@ -1212,7 +1219,7 @@ function buildHelp() {
   document.getElementById("helpPanel").innerHTML = `
 <div class="phead"><b>이 대시보드 보는 법</b><button class="close" id="helpClose" title="닫기 (Esc)">✕</button></div>
 <div class="toc"><a href="#h-start">처음 오셨다면</a><a href="#h-signal">신호등</a><a href="#h-sticky">고정 바</a><a href="#h-changes">바뀐 것</a>
-<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 자금 흐름</a><a href="#h-leaders">3층 주도주</a><a href="#h-states">단계 7가지</a><a href="#h-all">4층 전체 종목</a>
+<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 자금 흐름</a><a href="#h-leaders">3층 주도주</a><a href="#h-states">단계 9가지</a><a href="#h-all">4층 전체 종목</a>
 <a href="#h-tags">꼬리표</a><a href="#h-charts">차트 읽는 법</a><a href="#h-data">데이터·갱신</a><a href="#h-limits">한계</a></div>
 
 <h3 id="h-start">처음 오셨다면</h3>
@@ -1284,16 +1291,18 @@ function buildHelp() {
 <div class="q2"><b>RS(상대강도)</b>: 최근 12개월 수익률을 오닐식으로 가중(최근 3개월 2배)해서, 나스닥100 100종목 안에서 1-99로 순위를 매긴 값입니다. RS ${RS_LEADER} = 상위 20%. IBD의 RS 등급은 전체 상장 종목 대비라 숫자가 다를 수 있습니다.</div>
 <p>카드 윗줄: 종목명 · 티커 · 꼬리표 / 오른쪽: 산업 · RS. 아랫줄: 단계 판정의 근거. 차트가 있는 단계는 카드 3열, 차트를 생략한 단계는 한 종목 한 줄 목록입니다.</p>
 
-<h3 id="h-states">단계 7가지 <small>3층 묶음과 고정 바 항목</small></h3>
-<p>박스(베이스)는 주봉 기준으로 최근 ${BASE_LOOKBACK}주 안의 최고점부터 지금까지 ${BASE_MIN_WEEKS}주 이상 옆으로 움직인 구간입니다. 박스 상단이 돌파 기준(피벗)입니다.</p>
+<h3 id="h-states">단계 9가지 <small>3층 묶음과 고정 바 항목</small></h3>
+<p>베이스는 주봉 기준으로 최근 ${BASE_LOOKBACK}주 안의 최고점부터 지금까지 ${BASE_MIN_WEEKS}주 이상 옆으로 움직인 구간입니다. 베이스 상단이 돌파 기준(피벗)입니다.</p>
 <table>
-<tr><td>돌파 중</td><td>박스 상단을 넘었고, 아직 상단에서 ${P(BUY_RANGE)} 이내(매수 범위). <b>할 일: 매수 검토.</b> 돌파일 거래량이 50일 평균의 ${BREAKOUT_VOL}배에 못 미치면 "거래량 부족"이 붉게 표시됩니다. 거래량 없는 돌파는 큰 자본의 흔적이 아닙니다.</td></tr>
+<tr><td>돌파 중</td><td>베이스 상단을 넘었고, 아직 상단에서 ${P(BUY_RANGE)} 이내(매수 범위). <b>할 일: 매수 검토.</b> 돌파일 거래량이 50일 평균의 ${BREAKOUT_VOL}배에 못 미치면 "거래량 부족"이 붉게 표시됩니다. 거래량 없는 돌파는 큰 자본의 흔적이 아닙니다.</td></tr>
 <tr><td>준비</td><td>"돌파 대기" 중 최근 3주 변동폭이 ${P(TIGHT_3W)} 이하로 조여지고, 최근 2주 거래량이 그 전 10주 평균의 ${P(DRY_VOL)} 이하로 마른 종목. 돌파 대기 맨 앞에 놓입니다. <b>할 일: 돌파 지점 미리 표시.</b></td></tr>
-<tr><td>돌파 대기</td><td>박스 상단까지 ${P(NEAR_TOP)} 이내에서 숨 고르는 중. <b>할 일: 관심 목록.</b></td></tr>
-<tr><td>상승 중</td><td>박스 상단보다 ${P(BUY_RANGE)} 넘게 올랐거나, 박스 없이 10주선보다 10% 넘게 위. <b>할 일: 추격하지 않고 다음 박스를 기다림.</b></td></tr>
-<tr><td>박스 형성 중</td><td>신고가 부근에서 1-${BASE_MIN_WEEKS - 1}주째 쉬는 중. ${BASE_MIN_WEEKS}주가 지나 박스가 되면 돌파 대기로 올라옵니다. 상장한 지 6주가 안 돼 판단할 수 없는 종목도 여기에 둡니다. 차트 생략.</td></tr>
-<tr><td>박스 안</td><td>박스 상단까지 ${P(NEAR_TOP)} 넘게 남음. 아직 후보 아님. 차트 생략.</td></tr>
-<tr><td>손상</td><td>RS는 높지만 주가가 10주선 아래, 박스 하단 아래, 또는 박스가 ${P(BASE_MAX_DEPTH)} 넘게 깊음. 차트 생략.</td></tr>
+<tr><td>돌파 대기</td><td>베이스 상단까지 ${P(NEAR_TOP)} 이내에서 숨 고르는 중. <b>할 일: 관심 목록.</b></td></tr>
+<tr><td>상승 중</td><td>베이스 상단보다 ${P(BUY_RANGE)} 넘게 올랐거나, 베이스 없이 10주선보다 10% 넘게 위. <b>할 일: 추격하지 않고 다음 베이스를 기다림.</b></td></tr>
+<tr><td>베이스 형성 중</td><td>신고가 부근에서 1-${BASE_MIN_WEEKS - 1}주째 쉬는 중. ${BASE_MIN_WEEKS}주가 지나 베이스가 되면 돌파 대기로 올라옵니다. 상장한 지 6주가 안 돼 판단할 수 없는 종목도 여기에 둡니다. 차트 생략.</td></tr>
+<tr><td>베이스 안</td><td>베이스 상단까지 ${P(NEAR_TOP)} 넘게 남음. 아직 후보 아님. 차트 생략.</td></tr>
+<tr><td>추세 이탈</td><td>RS는 높지만 주가가 10주선 아래. 중기 추세가 꺾였을 수 있음. 차트 생략.</td></tr>
+<tr><td>베이스 이탈</td><td>주가가 베이스 하단(베이스 안 최저가) 아래로 내려감. 베이스가 지지선 역할을 못 함. 차트 생략.</td></tr>
+<tr><td>베이스 붕괴</td><td>베이스 저점이 베이스 고점보다 ${P(BASE_MAX_DEPTH)} 넘게 깊음. 고점 근처에서 산 사람들의 매물이 많아 실패하기 쉬운 베이스(오닐·미너비니: 3분의 1 넘게 빠진 베이스는 위험). 차트 생략.<br>여러 문제가 겹치면 더 심각한 쪽(베이스 붕괴 &gt; 베이스 이탈 &gt; 추세 이탈)으로 분류하고, 10주선 아래이면 판정 근거에 함께 적습니다.</td></tr>
 </table>
 
 <h3 id="h-all">4층 · 전체 종목 <small>나스닥100 RS 순위</small></h3>
@@ -1305,9 +1314,9 @@ function buildHelp() {
 <tr><td>단계</td><td>3층과 같은 7단계 판정을 모든 종목에 적용. 마우스를 올리면 판정 근거가 보입니다.</td></tr>
 <tr><td>고점 대비 / 저점 대비</td><td>최근 52주 최고가에서 몇 % 아래인지, 52주 최저가에서 몇 % 위인지. 고점 근처이면서 저점에서 멀리 올라온 종목이 강한 종목입니다(미너비니 기준: 고점 25% 이내, 저점 30% 이상 위).</td></tr>
 <tr><td><span class="dot on10"></span><span class="dot on40"></span></td><td>왼쪽 점은 10주선, 오른쪽 점은 40주선. 채워져 있으면 그 선 위, 빈 원이면 아래.</td></tr>
-<tr><td>${b("pre", "예비 주도주")}</td><td>RS ${PRE_RS_MIN}-${RS_LEADER - 1}이면서 4주 사이 RS가 ${PRE_RS_GAIN} 이상 오르고 10주선 위인 종목. 3층에 들어오기 전 미리 볼 후보입니다. 줄 배경이 옅은 초록입니다.</td></tr>
+<tr><td>${b("pre", "예비 주도주")}</td><td>다음 네 가지를 모두 갖춘 종목: ① RS ${PRE_RS_MIN}-${RS_LEADER - 1} ② 4주 사이 RS +${PRE_RS_GAIN} 이상 ③ 10주선 위 ④ <b>건전한 베이스</b>(베이스 저점이 고점보다 ${P(BASE_MAX_DEPTH)} 이내로 얕고, 주가가 베이스 하단 위. 아직 베이스가 생기기 전이면 통과). 크게 떨어졌다가 바닥에서 반등만 하는 종목은 RS가 빨리 올라도 ④에서 걸러집니다. 3층에 들어오기 전 미리 볼 후보입니다. 줄 배경이 옅은 초록입니다.</td></tr>
 </table>
-<p>칸 제목을 누르면 그 칸으로 정렬하고, 한 번 더 누르면 반대 순서입니다. 위의 버튼으로 예비 주도주, 10주선 위, 고점 10% 이내, 손상 제외만 볼 수 있고, 오른쪽 칸에서 티커나 이름으로 찾습니다. 2층 산업 표에서 산업을 고르면 4층도 그 산업만 보여 줍니다.</p>
+<p>칸 제목을 누르면 그 칸으로 정렬하고, 한 번 더 누르면 반대 순서입니다. 위의 버튼으로 예비 주도주, 10주선 위, 고점 10% 이내, 이탈·붕괴 제외(추세 이탈·베이스 이탈·베이스 붕괴를 뺌)만 볼 수 있고, 오른쪽 칸에서 티커나 이름으로 찾습니다. 2층 산업 표에서 산업을 고르면 4층도 그 산업만 보여 줍니다.</p>
 
 <h3 id="h-tags">꼬리표</h3>
 <table>
@@ -1326,10 +1335,10 @@ function buildHelp() {
 <tr><td><span style="color:#dc2626">붉은</span> / <span style="color:#1d4ed8">파란</span> 바</td><td>전일(주봉은 전주) 종가보다 올랐으면 붉은색, 내렸으면 파란색. 아래 거래량 막대도 같은 기준.</td></tr>
 <tr><td style="color:#16a34a">━ 10주선</td><td>주봉 차트의 중기 추세선(일봉 50일선과 비슷). 추세 종목은 이 선을 타고 오릅니다.</td></tr>
 <tr><td style="color:#7c3aed">━ 40주선</td><td>주봉 차트의 장기 추세선(일봉 200일선과 비슷).</td></tr>
-<tr><td style="color:#f59e0b">━ 주황 선 2개</td><td>감지된 박스의 상단과 하단. 상단이 돌파 기준입니다.</td></tr>
-<tr><td><span style="background:rgba(250,204,21,0.38);padding:0 8px">노란 배경</span></td><td>실적 발표일. 일봉은 그날, 주봉은 그 주 전체를 칠합니다. 지난 1년 발표일과 다가오는 발표일이 나옵니다. 실적 전후로 갭이 생기기 쉬우니 박스와 돌파를 볼 때 함께 확인하세요. 장 마감 뒤 발표는 주가 반응이 다음 날 바에 나타납니다.</td></tr>
+<tr><td style="color:#f59e0b">━ 주황 선 2개</td><td>감지된 베이스의 상단과 하단. 상단이 돌파 기준입니다.</td></tr>
+<tr><td><span style="background:rgba(250,204,21,0.38);padding:0 8px">노란 배경</span></td><td>실적 발표일. 일봉은 그날, 주봉은 그 주 전체를 칠합니다. 지난 1년 발표일과 다가오는 발표일이 나옵니다. 실적 전후로 갭이 생기기 쉬우니 베이스와 돌파를 볼 때 함께 확인하세요. 장 마감 뒤 발표는 주가 반응이 다음 날 바에 나타납니다.</td></tr>
 <tr><td style="color:#b91c1c">┄ 붉은 점선</td><td>최근 52주 고점. 오른쪽 가격 축에 값이 나옵니다.</td></tr>
-<tr><td>크게 보기</td><td>왼쪽 주봉 1년, 오른쪽 일봉 6개월(50일선·200일선). 일봉의 주황 점선이 박스 상단(돌파 기준)이라 돌파일 거래량을 확인하기 좋습니다.</td></tr>
+<tr><td>크게 보기</td><td>왼쪽 주봉 1년, 오른쪽 일봉 6개월(50일선·200일선). 일봉의 주황 점선이 베이스 상단(돌파 기준)이라 돌파일 거래량을 확인하기 좋습니다.</td></tr>
 </table>
 
 <h3 id="h-data">데이터와 갱신</h3>
@@ -1338,7 +1347,7 @@ function buildHelp() {
 <p>⚙ 설정의 "새로 받기"는 서버에 올라온 최신 파일을 다시 읽는 버튼입니다.</p>
 
 <h3 id="h-limits">한계</h3>
-<p>분산일, 팔로스루 데이, 박스, 단계는 모두 <b>정해진 규칙으로 계산한 근사치</b>입니다. 사람이 차트를 보고 긋는 박스와 다를 수 있습니다. 이 화면은 후보를 걸러 주는 역할만 하고, 최종 판단은 차트로 직접 하세요.</p>
+<p>분산일, 팔로스루 데이, 베이스, 단계는 모두 <b>정해진 규칙으로 계산한 근사치</b>입니다. 사람이 차트를 보고 긋는 베이스와 다를 수 있습니다. 이 화면은 후보를 걸러 주는 역할만 하고, 최종 판단은 차트로 직접 하세요.</p>
 <p>분산일은 IBD처럼 거래소 전체 거래량이 아니라 QQQ 자체 거래량으로 셉니다. 최근 상장 종목은 데이터가 짧아 RS와 40주선이 불완전할 수 있습니다. 나스닥100 구성종목이 바뀌면(매년 12월 정기 변경 등) 종목 목록을 고쳐야 합니다.</p>`;
   document.getElementById("helpClose").addEventListener("click", closeHelp);
   document.querySelectorAll("#helpPanel .toc a").forEach((a) => a.addEventListener("click", (e) => {
