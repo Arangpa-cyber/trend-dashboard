@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 15:50</title>
+<title>추세 대시보드 v2026-11-01 16:15</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -244,9 +244,6 @@
   .mycard .mh { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
   .mycard .mbox { margin-top: 8px; overflow-x: auto; border-top: 1px solid var(--line); }
   table.mtable .msl { width: 150px; } table.mtable .mpv { width: 150px; } table.mtable .mrd { width: 200px; } table.mtable .mer { width: 130px; }
-  #holdAlert { margin-top: 10px; border-radius: 10px; padding: 8px 14px; border: 1px solid var(--stop); background: var(--stop-bg); font-size: 13px; cursor: pointer; line-height: 1.8; }
-  #holdAlert[hidden] { display: none; }
-  #holdAlert .go4 { color: var(--stop); font-weight: 700; white-space: nowrap; }
   #changes { scroll-margin-top: 60px; }
   table.mtable .stg { margin-right: 4px; }
   table.mtable .mst { width: 120px; } table.mtable .mrs { width: 120px; } table.mtable .m10 { width: 110px; } table.mtable .mhi { width: 90px; } table.mtable .mw { width: 330px; }
@@ -297,7 +294,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 15:50</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 16:15</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -317,7 +314,6 @@
 
 <main class="wrapw">
   <div id="signal"><div class="verdict">시장 판정 대기 중</div><div class="why">QQQ 데이터를 받으면 표시됩니다.</div></div>
-  <div id="holdAlert" hidden></div>
 
   <!-- 1층 -->
   <h2 id="sec-market">1. 시장 — QQQ 일봉 6개월 <button class="q" data-help="h-market" title="이 층 보는 법">?</button></h2>
@@ -941,7 +937,6 @@ function myRowHead(t) {
   return '<td class="stc">' + starHtml(t) + '</td><td class="tkc"><span class="tk">' + t + '</span></td><td class="nm" title="' + TICKERS[t].name + '">' + TICKERS[t].name + "</td>";
 }
 function renderMine() {
-  renderHoldAlert();
   const el = document.getElementById("mine"), wl = document.getElementById("watch");
   if (!el || !wl) return;
   // ★★ 보유
@@ -998,16 +993,6 @@ function renderMine() {
   }
   [el, wl].forEach((box) => box.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t))));
 }
-// 신호등 바로 아래: 보유 경고가 있을 때만 한 줄
-function renderHoldAlert() {
-  const el = document.getElementById("holdAlert");
-  if (!el) return;
-  const items = VIEW ? MY.hold.map((t) => [t, holdWarns(t)]).filter(([, w]) => w.length) : [];
-  if (!items.length) { el.hidden = true; el.innerHTML = ""; return; }
-  el.hidden = false;
-  el.innerHTML = STAR2 + " <b>보유 경고 " + items.length + "</b> · " + items.map(([t, w]) => "<b>" + t + "</b> " + w.join(", ")).join(" · ") + ' <span class="go4">→ 4층 보기</span>';
-}
-document.getElementById("holdAlert").addEventListener("click", () => document.getElementById("sec-my").scrollIntoView({ behavior: "smooth", block: "start" }));
 
 // ⚙ 설정의 '내 종목'
 let myClearArm = false;
@@ -1513,7 +1498,7 @@ function buildHelp() {
 <b>④ 내가 가진 종목은 괜찮은가, 관심 종목은 살 자리에 왔나?</b> → 4층 내 종목<br>
 <b>⑤ 아직 주도주는 아니지만 올라오는 종목은?</b> → 5층 전체 종목</div>
 <p>신호등이 <b>신규 매수 중지</b>나 <b>방어</b>면 3층에 좋은 차트가 있어도 새로 사지 않는다는 뜻입니다. 시장이 내 편일 때만 싸웁니다.</p>
-<p>매일 아침 할 일: ① 신호등과 그 아래 <b>보유 경고</b>(있을 때만 보임) 확인 → ② 3층 맨 앞 "이번 주 변화"에서 달라진 종목 확인 → ③ 3층 <b>돌파 중</b>, <b>준비</b> 종목과 4층 ★ 관심 종목의 차트 확인.</p>
+<p>매일 아침 할 일: ① 신호등과 고정 바의 <b>★★ 보유 경고 수</b> 확인 → ② 3층 맨 앞 "이번 주 변화"에서 달라진 종목 확인 → ③ 3층 <b>돌파 중</b>, <b>준비</b> 종목과 4층 ★ 관심 종목의 차트 확인.</p>
 <p>제목 옆 <b>?</b> 버튼을 누르면 그 층의 설명으로 바로 옵니다. 카드나 종목 줄을 누르면 주봉·일봉 차트를 크게 봅니다.</p>
 
 <h3 id="h-signal">신호등 <small>맨 위 큰 상자 · QQQ 일봉 기준</small></h3>
@@ -1608,7 +1593,7 @@ function buildHelp() {
 <tr><td>단계 · RS</td><td>지금 단계와 RS, 4주 사이 RS 변화.</td></tr>
 <tr><td>10주선 대비</td><td>주가가 10주선보다 몇 % 위(붉은색)·아래(파란색)인지. 아래로 내려가면 추세 이탈입니다.</td></tr>
 <tr><td>매도선(베이스 하단) 대비</td><td>주가가 감지된 베이스의 하단보다 몇 % 위인지. 베이스마다 매도선을 올리는 원칙의 기준선입니다. 마우스를 올리면 매도선 가격이 보입니다. 베이스가 아직 ${BASE_MIN_WEEKS}주가 안 됐으면 최근 고점 뒤 저점("형성 중 저점")을 대신 씁니다. 규칙으로 찾은 근사치이니 실제 매도선은 차트로 정하세요.</td></tr>
-<tr><td>경고</td><td><span class="wtag">추세 이탈</span><span class="wtag">베이스 이탈</span><span class="wtag">베이스 붕괴</span> 단계 · <span class="wtag">RS ${RS_LEADER} 아래</span> · <span class="wtag">실적 D-n</span> ${EARN_WARN_DAYS}일 안 실적 발표. 하나라도 있으면 줄 왼쪽에 붉은 띠가 생기고, <b>신호등 바로 아래에 보유 경고 한 줄</b>이 뜹니다(경고가 없으면 안 보임).</td></tr>
+<tr><td>경고</td><td><span class="wtag">추세 이탈</span><span class="wtag">베이스 이탈</span><span class="wtag">베이스 붕괴</span> 단계 · <span class="wtag">RS ${RS_LEADER} 아래</span> · <span class="wtag">실적 D-n</span> ${EARN_WARN_DAYS}일 안 실적 발표. 하나라도 있으면 줄 왼쪽에 붉은 띠가 생기고, 고정 바의 "★★ 보유" 옆에 경고 수가 붉게 나옵니다.</td></tr>
 </table>
 <p><b>★ 관심 점검 · 언제 사나</b> <span class="muted">'준비' 종목이 먼저, 그다음 피벗에 가까운 순서</span></p>
 <table>
