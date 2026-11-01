@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 18:50</title>
+<title>추세 대시보드 v2026-11-01 19:10</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -258,6 +258,7 @@
   table.mtable .msl { width: 150px; } table.mtable .mpv { width: 150px; } table.mtable .mrd { width: 200px; } table.mtable .mer { width: 130px; }
   #changes { scroll-margin-top: 60px; }
   table.mtable .stg { margin-right: 4px; }
+  table.mtable .mgr { width: 150px; }
   table.mtable .mst { width: 120px; } table.mtable .mrs { width: 120px; } table.mtable .m10 { width: 110px; } table.mtable .mhi { width: 90px; } table.mtable .mw { width: 330px; }
   table.mtable tr.mwarn td.tkc { box-shadow: inset 3px 0 0 var(--stop); }
   .wtag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-right: 4px; background: var(--stop-bg); color: var(--stop); border: 1px solid var(--stop); }
@@ -306,7 +307,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 18:50</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 19:10</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -954,7 +955,8 @@ const rsCell = (x) => "<b>" + x.rs + "</b> " + (x.rsChg == null ? "" : x.rsChg >
 const pctCell = (v) => (v == null ? '<span class="muted">-</span>' : '<b class="' + (v >= 0 ? "chg-up" : "chg-down") + '">' + pctf(v) + "</b>");
 const STAR2 = '<span class="star lv2" style="cursor:default">★★</span>', STAR1 = '<span class="star lv1" style="cursor:default">★</span>';
 function myRowHead(t) {
-  return '<td class="stc">' + starHtml(t) + '</td><td class="tkc"><span class="tk">' + t + '</span></td><td class="nm" title="' + TICKERS[t].name + '">' + TICKERS[t].name + "</td>";
+  return '<td class="stc">' + starHtml(t) + '</td><td class="tkc"><span class="tk">' + t + '</span></td><td class="nm" title="' + TICKERS[t].name + '">' + TICKERS[t].name + "</td>" +
+    '<td class="mgr muted" title="' + TICKERS[t].group + '">' + TICKERS[t].group + "</td>";
 }
 function renderMine() {
   const el = document.getElementById("mine"), wl = document.getElementById("watch");
@@ -981,7 +983,7 @@ function renderMine() {
     });
     el.innerHTML = '<div class="mh"><b>' + STAR2 + ' 보유 점검</b><span class="muted">언제 파나 · ' + MY.hold.length + "종목 · " +
       (nWarn ? '<b style="color:var(--stop)">경고 ' + nWarn + "</b>" : "경고 없음") + " · " + md(VIEW.asOf) + " 마감 기준</span></div>" +
-      '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="nm">종목명</th><th class="mst">단계</th>' +
+      '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="nm">종목명</th><th class="mgr">산업</th><th class="mst">단계</th>' +
       '<th class="mrs">RS (4주 변화)</th><th class="m10">10주선 대비</th><th class="msl">매도선(베이스 하단) 대비</th><th class="mer">실적</th><th class="mw">경고</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
   }
   // ★ 관심: 피벗(베이스 상단)에 가까운 순서
@@ -1008,7 +1010,7 @@ function renderMine() {
         '<td class="mrd">' + rd + '</td><td class="mer">' + earnCell(t) + "</td></tr>";
     });
     wl.innerHTML = '<div class="mh"><b>' + STAR1 + ' 관심 점검</b><span class="muted">언제 사나 · ' + MY.watch.length + "종목 · 준비, 그다음 피벗에 가까운 순서 · " + md(VIEW.asOf) + " 마감 기준</span></div>" +
-      '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="nm">종목명</th><th class="mst">단계</th>' +
+      '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="nm">종목명</th><th class="mgr">산업</th><th class="mst">단계</th>' +
       '<th class="mrs">RS (4주 변화)</th><th class="mpv">피벗(베이스 상단)까지</th><th class="mrd">준비</th><th class="mer">실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
   }
   [el, wl].forEach((box) => box.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t))));
