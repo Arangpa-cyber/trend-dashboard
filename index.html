@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 20:20</title>
+<title>추세 대시보드 v2026-11-01 20:40</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -176,13 +176,14 @@
   .placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 13px; text-align: center; padding: 0 16px; }
   .lsum { font-size: 12px; color: var(--sub); margin: 0 0 8px; line-height: 2; }
   .lsum a { text-decoration: none; color: var(--text); margin-right: 10px; white-space: nowrap; } .lsum .z { margin-right: 10px; white-space: nowrap; opacity: 0.6; }
-  table.ltable { min-width: 1560px; } table.ltable .bd, table.ltable th.bd { text-align: left; } table.ltable .bd .badge:first-child { margin-left: 0; }
-  table.ltable col.c-st { width: 40px; } table.ltable col.c-tk { width: 66px; } table.ltable col.c-nm { width: 130px; } table.ltable col.c-grp { width: 104px; }
-  table.ltable col.c-rs { width: 84px; } table.ltable col.c-sg { width: 104px; } table.ltable col.c-sp { width: 136px; } table.ltable col.c-pv { width: 250px; }
-  table.ltable col.c-todo { width: 330px; }
+  table.ltable { min-width: 1180px; } table.ltable .bd, table.ltable th.bd { text-align: left; } table.ltable .bd .badge:first-child { margin-left: 0; }
+  table.ltable col.c-st { width: 40px; } table.ltable col.c-tk { width: 66px; } table.ltable col.c-grp { width: 96px; }
+  table.ltable col.c-rs { width: 84px; } table.ltable col.c-sp { width: 130px; } table.ltable col.c-sg { width: 104px; } table.ltable col.c-pv { width: 232px; }
+  table.ltable col.c-todo { width: 290px; }
   table.ltable .nm, table.ltable .bd { width: auto; } table.ltable .nm { position: sticky; }
   table.ltable td { padding-top: 5px; padding-bottom: 5px; }
   table.ltable tr.sg td { padding: 10px 10px 4px; font-size: 12px; border-bottom: 2px solid var(--line); background: var(--bg); cursor: default; overflow: visible; }
+  table.ltable tr.sfirst { scroll-margin-top: 60px; } table.ltable tbody tr.sfirst:not(:first-child) td { border-top: 2px solid var(--line); }
   table.ltable tr.sg { scroll-margin-top: 60px; } table.ltable tr.sg:hover td { background: var(--bg); }
   table.ltable tr.sg .sgl { position: sticky; left: 10px; }
   .nbox { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
@@ -220,7 +221,7 @@
   .allwrap { max-height: 78vh; overflow: auto; border-top: 1px solid var(--line); }
   table.alltable { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; table-layout: fixed; }
   table.alltable col.c-rank { width: 44px; } table.alltable col.c-t { width: 70px; } table.alltable col.c-name { width: 160px; }
-  table.alltable col.c-grp { width: 150px; } table.alltable col.c-rs { width: 104px; } table.alltable col.c-rsChg { width: 54px; }
+  table.alltable col.c-grp { width: 150px; } table.alltable col.c-rs { width: 90px; }
   table.alltable col.c-spark { width: 132px; } table.alltable col.c-stage { width: 108px; } table.alltable col.c-fromHi, table.alltable col.c-fromLo { width: 76px; }
   table.alltable col.c-trend { width: 74px; } table.alltable col.c-tags { width: 320px; }
   table.alltable th { position: sticky; top: 0; z-index: 2; background: var(--card); text-align: left; font-size: 11px; color: var(--sub); font-weight: 700;
@@ -318,7 +319,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 20:20</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 20:40</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1326,24 +1327,22 @@ function renderLeaders() {
   disposeCharts(wrap);
   if (!list.length) { wrap.innerHTML = '<div class="muted" style="font-size:13px">해당하는 주도주가 없습니다.</div>'; return; }
   const ms = MARKET_STATE ? MARKET_STATE.cls : null;
-  const NC = 10;
   const by = {};
   list.forEach((x) => { const k = stateKey(x.cls); (by[k] = by[k] || []).push({ x, pl: watchPlan(x, ms) }); });
   // 맨 위 요약: 9단계 모두 숫자로, 누르면 그 단계 줄로
   let html = '<div class="lsum"><b>' + list.length + "종목</b>" + (MARKET_STATE ? ' · <span class="pill ' + MARKET_STATE.cls + '" style="padding:1px 8px;font-size:11px">시장 ' + MARKET_STATE.verdict + "</span> 기준" : "") + "<br>" +
     STAGES.map(([k, title]) => { const n = (by[k] || []).length; return n ? '<a href="#st-' + k + '"><span class="stg ' + k + '">' + title + "</span> <b>" + n + "</b></a>" : '<span class="muted z">' + title + " 0</span>"; }).join(" ") + "</div>";
-  html += '<div class="nbox"><table class="ntable ltable"><colgroup><col class="c-st"><col class="c-tk"><col class="c-nm"><col class="c-grp"><col class="c-rs"><col class="c-sg"><col class="c-sp"><col class="c-pv"><col class="c-todo"><col class="c-bd"></colgroup>' +
-    '<thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="nm">종목명</th><th>산업</th><th>RS (4주)</th><th>단계</th><th>26주 주봉</th><th>피벗 대비</th><th>다음 할 일</th><th class="bd">꼬리표</th></tr></thead><tbody>';
+  html += '<div class="nbox"><table class="ntable ltable"><colgroup><col class="c-st"><col class="c-tk"><col class="c-grp"><col class="c-rs"><col class="c-sp"><col class="c-sg"><col class="c-pv"><col class="c-todo"><col class="c-bd"></colgroup>' +
+    '<thead><tr><th class="stc">★</th><th class="tkc">티커</th><th>산업</th><th>RS (4주)</th><th>26주 주봉</th><th>단계</th><th>피벗 대비</th><th>다음 할 일</th><th class="bd">꼬리표</th></tr></thead><tbody>';
   STAGES.forEach(([k, title, desc]) => {
     const items = by[k];
     if (!items) return;
     if (k === "extended" || k === "forming" || k === "ready" || k === "base") items.sort((a, b) => a.pl.k - b.pl.k);
-    html += '<tr class="sg" id="st-' + k + '"><td colspan="' + NC + '"><span class="sgl"><b>' + title + "</b> " + items.length + '종목 <span class="muted">· ' + desc + "</span></span></td></tr>";
-    items.forEach(({ x, pl }) => {
+    items.forEach(({ x, pl }, i) => {      // 구분 줄 없이: 단계 첫 줄에 앵커(고정 바·요약에서 이동)와 단계 경계선
       const vol = x.cls.state === "breakout" && x.cls.vr != null ? (x.cls.weak ? ' · <span class="warn" title="돌파일 거래량이 50일 평균의 ' + BREAKOUT_VOL + '배 미만">거래량 ' + x.cls.vr.toFixed(1) + "배</span>" : ' <span class="muted">· 거래량 ' + x.cls.vr.toFixed(1) + "배</span>") : "";
-      html += '<tr data-t="' + x.t + '" title="' + reasonOf(x).replace(/<[^>]+>/g, "") + '"><td class="stc">' + starHtml(x.t) + '</td><td class="tkc"><span class="tk">' + x.t + "</span></td>" +
-        '<td class="nm">' + TICKERS[x.t].name + '</td><td class="muted">' + TICKERS[x.t].group + "</td><td>" + rsCell(x) + "</td>" +
-        '<td><span class="stg ' + k + '">' + LABEL[k] + "</span></td><td>" + weekSpark(x) + "</td>" +
+      html += '<tr data-t="' + x.t + '"' + (i === 0 ? ' id="st-' + k + '" class="sfirst"' : "") + ' title="' + TICKERS[x.t].name + " · " + reasonOf(x).replace(/<[^>]+>/g, "") + '"><td class="stc">' + starHtml(x.t) + '</td><td class="tkc" title="' + TICKERS[x.t].name + '"><span class="tk">' + x.t + "</span></td>" +
+        '<td class="muted" title="' + TICKERS[x.t].group + '">' + TICKERS[x.t].group + "</td><td>" + rsCell(x) + "</td>" +
+        "<td>" + weekSpark(x) + '</td><td title="' + title + " · " + desc + '"><span class="stg ' + k + '">' + LABEL[k] + "</span></td>" +
         "<td>" + pl.pv + vol + '</td><td class="todo" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + '</td><td class="bd">' + badgesFor(x.t, x, true) + "</td></tr>";
     });
   });
@@ -1358,7 +1357,7 @@ let ALL_SORT = { key: "rs", dir: -1 }, ALL_FILTER = "all", ALL_Q = "";
 const STAGE_ORDER = { breakout: 0, ready: 1, base: 2, extended: 3, forming: 4, inbox: 5, trendbreak: 6, basebreak: 7, basefail: 8 };
 const ALL_COLS = [   // [키, 제목, 너비, 정렬값]
   ["my", "★", 40, (x) => myLevel(x.t)], ["rank", "순위", 44, (x) => x.rs], ["t", "티커", 70, (x) => x.t], ["name", "종목명", 160, (x) => TICKERS[x.t].name],
-  ["grp", "산업", 150, (x) => TICKERS[x.t].group], ["rs", "RS", 104, (x) => x.rs], ["rsChg", "4주", 54, (x) => x.rsChg ?? -999],
+  ["grp", "산업", 150, (x) => TICKERS[x.t].group], ["rs", "RS (4주)", 90, (x) => x.rs],
   ["spark", "6개월", 132, null], ["stage", "단계", 108, (x) => STAGE_ORDER[stateKey(x.cls)]],
   ["fromHi", "고점 대비", 76, (x) => x.fromHi], ["fromLo", "저점 대비", 76, (x) => x.fromLo],
   ["trend", "10주·40주", 74, (x) => (x.above10 ? 2 : 0) + (x.above40 ? 1 : 0)], ["tags", "꼬리표", 0, null],
@@ -1409,7 +1408,7 @@ function renderUniverse() {
   // 티커·종목명 칸은 가로로 밀어도 왼쪽에 고정 (너비는 CSS col.c-* 에서)
   const STK = { my: " stk stk0", t: " stk stk1", name: " stk stk2" };
   const head = "<colgroup>" + ALL_COLS.map((c) => '<col class="c-' + c[0] + '">').join("") + "</colgroup><thead><tr>" +
-    ALL_COLS.map((c) => '<th data-k="' + c[0] + '" class="' + (STK[c[0]] || "") + (c[0] === ALL_SORT.key ? " on" : "") + (["rs", "rsChg", "fromHi", "fromLo", "rank"].includes(c[0]) ? " num" : "") + '"' +
+    ALL_COLS.map((c) => '<th data-k="' + c[0] + '" class="' + (STK[c[0]] || "") + (c[0] === ALL_SORT.key ? " on" : "") + (["fromHi", "fromLo", "rank"].includes(c[0]) ? " num" : "") + '"' +
       ">" + c[1] + (c[0] === ALL_SORT.key ? (ALL_SORT.dir < 0 ? " ▼" : " ▲") : "") + "</th>").join("") + "</tr></thead>";
   const showCut = ALL_SORT.key === "rs" || ALL_SORT.key === "rank";
   let cutDone = false, rows = "", prevRs = null;
@@ -1425,8 +1424,7 @@ function renderUniverse() {
       '<td class="num muted">' + rankOf[x.t] + "</td>" +
       '<td class="stk stk1"><span class="tk">' + x.t + "</span></td>" +
       '<td class="stk stk2" title="' + TICKERS[x.t].name + '">' + TICKERS[x.t].name + '</td><td class="muted" title="' + TICKERS[x.t].group + '">' + TICKERS[x.t].group + "</td>" +
-      '<td class="num"><span class="bar" style="width:' + Math.round(x.rs * 0.55) + 'px"></span><b>' + x.rs + "</b></td>" +
-      '<td class="num">' + (chg == null ? '<span class="muted">-</span>' : chg > 0 ? '<span class="chg-up">▲' + chg + "</span>" : chg < 0 ? '<span class="chg-down">▼' + -chg + "</span>" : '<span class="muted">0</span>') + "</td>" +
+      "<td>" + rsCell(x) + "</td>" +
       "<td>" + sparkSvg(x.d) + "</td>" +
       '<td title="' + reasonOf(x).replace(/<[^>]+>/g, "") + '"><span class="stg ' + sk + '">' + LABEL[sk] + "</span></td>" +
       '<td class="num">' + pct(x.fromHi) + '</td><td class="num">' + pct(x.fromLo) + "</td>" +
@@ -1708,7 +1706,7 @@ function buildHelp() {
 <h3 id="h-leaders">4층 · 주도주</h3>
 <p>나스닥100에서 <b>RS ${RS_LEADER} 이상</b>인 종목만 골라, 원칙상 <b>지금 무엇을 할 단계인지</b>로 나눕니다.</p>
 <div class="q2"><b>RS(상대강도)</b>: 최근 12개월 수익률을 오닐식으로 가중(최근 3개월 2배)해서, 나스닥100 100종목 안에서 1-99로 순위를 매긴 값입니다. RS ${RS_LEADER} = 상위 20%. IBD의 RS 등급은 전체 상장 종목 대비라 숫자가 다를 수 있습니다.</div>
-<p>차트 없이 <b>표 하나</b>에 모든 단계를 담아 한 화면에 봅니다. 맨 위 줄은 9단계의 종목 수(누르면 그 단계로 이동, 0종목 단계는 흐리게). 표는 단계 순서로 구분 줄을 두고, 한 종목 한 줄입니다. 줄을 누르면 주봉·일봉 차트가 크게 뜨고, 마우스를 올리면 단계 판정 근거가 보입니다.</p>
+<p>차트 없이 <b>표 하나</b>에 모든 단계를 담아 한 화면에 봅니다. 맨 위 줄은 9단계의 종목 수(누르면 그 단계로 이동, 0종목 단계는 흐리게). 표는 단계 순서로 놓고(단계가 바뀌는 곳에 굵은 선), 한 종목 한 줄입니다. 단계 칸에 마우스를 올리면 그 단계 설명이 보입니다. 줄을 누르면 주봉·일봉 차트가 크게 뜨고, 마우스를 올리면 종목명과 단계 판정 근거가 보입니다. 칸 순서: 티커 · 산업 · RS(4주) · 26주 주봉 · 단계 · 피벗 대비 · 다음 할 일 · 꼬리표.</p>
 <table>
 <tr><td>26주 주봉</td><td>최근 26주 주봉 종가 선(붉은색: 10주선 위, 파란색: 아래), 초록 10주선, 주황 점선 피벗(베이스 상단, 없으면 마지막 돌파 피벗). 베이스 모양과 피벗과의 위치를 한눈에 봅니다.</td></tr>
 <tr><td>피벗 대비 · 다음 할 일</td><td>5층 관심 점검과 같은 계산입니다. 시장 신호등에 맞춰 할 일이 바뀝니다. 돌파 중이면 돌파일 거래량(50일 평균 대비)을 함께 보여 주고, ${BREAKOUT_VOL}배에 못 미치면 붉게 표시합니다.</td></tr>
@@ -1731,8 +1729,7 @@ function buildHelp() {
 <h3 id="h-all">6층 · 전체 종목 <small>나스닥100 RS 순위</small></h3>
 <p>4층에 아직 못 들어온 종목까지 나스닥100 전체를 한 종목 한 줄로 보여 줍니다. 맨 위 줄에 요약(종목 수, RS ${RS_LEADER}+, 예비 주도주, 10주선 위)이 나옵니다. ★ 칸을 눌러 바로 보유·관심으로 지정할 수 있고, ★★ 보유·★ 관심 거르기 버튼도 있습니다.</p>
 <table>
-<tr><td>순위 · RS</td><td>RS 높은 순 순위와 RS 값. 기본 정렬은 RS 높은 순이고, 주황 구분선 위가 4층 주도주입니다.</td></tr>
-<tr><td>4주</td><td>4주 전 대비 RS 변화. <span class="chg-up">▲</span> 상대강도가 좋아지는 중.</td></tr>
+<tr><td>순위 · RS (4주)</td><td>RS 높은 순 순위, RS 값과 4주 전 대비 RS 변화(<span class="chg-up">▲</span> 상대강도가 좋아지는 중). 다른 층과 같은 표기입니다. 기본 정렬은 RS 높은 순이고, 주황 구분선 위가 4층 주도주입니다.</td></tr>
 <tr><td>6개월</td><td>6개월 종가 선(붉은색: 50일선 위, 파란색: 50일선 아래)과 초록 50일선.</td></tr>
 <tr><td>단계</td><td>4층과 같은 단계 판정을 모든 종목에 적용. 마우스를 올리면 판정 근거가 보입니다.</td></tr>
 <tr><td>고점 대비 / 저점 대비</td><td>최근 52주 최고가에서 몇 % 아래인지, 52주 최저가에서 몇 % 위인지. 고점 근처이면서 저점에서 멀리 올라온 종목이 강한 종목입니다(미너비니 기준: 고점 25% 이내, 저점 30% 이상 위).</td></tr>
