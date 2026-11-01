@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 19:10</title>
+<title>추세 대시보드 v2026-11-01 19:25</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -255,7 +255,7 @@
   .mycard { margin-top: 10px; border-radius: 10px; padding: 10px 14px; border: 1px solid var(--line); background: var(--card); font-size: 13px; scroll-margin-top: 60px; }
   .mycard .mh { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
   .mycard .mbox { margin-top: 8px; overflow-x: auto; border-top: 1px solid var(--line); }
-  table.mtable .msl { width: 150px; } table.mtable .mpv { width: 150px; } table.mtable .mrd { width: 200px; } table.mtable .mer { width: 130px; }
+  table.mtable .msl { width: 150px; } table.mtable .mpv { width: 220px; } table.mtable .mrd { width: 380px; } table.mtable .mer { width: 130px; }
   #changes { scroll-margin-top: 60px; }
   table.mtable .stg { margin-right: 4px; }
   table.mtable .mgr { width: 150px; }
@@ -307,7 +307,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 19:10</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 19:25</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -693,9 +693,9 @@ function classify(d, w) {
   if (box && price < bottom) return { state: "basebreak", reason: "베이스 하단 이탈 (하단 " + pctf(price / bottom - 1) + ")" + t10, box };
   if (below10) return { state: "trendbreak", reason: "10주선 아래 (" + pctf(dist10) + ")", box };
   if (!box) {                                   // 고점 뒤 5주가 안 됨: 아직 베이스로 보지 않음
-    if (price <= top && toTop > NEAR_TOP) return { state: "inbox", reason: "고점 뒤 " + L + "주 조정 중 · 고점까지 " + pctf(toTop), box };
-    if (dist10 > 0.10) return { state: "extended", reason: "새 베이스 형성 전 · 10주선 " + pctf(dist10) + " · 다음 베이스 대기", box };
-    return { state: "forming", reason: "신고가 부근 · 새 베이스 형성 중 (" + L + "주) · 10주선 " + pctf(dist10), box };
+    if (price <= top && toTop > NEAR_TOP) return { state: "inbox", reason: "고점 뒤 " + L + "주 조정 중 · 고점까지 " + pctf(toTop), box, hi: top, weeks: L };
+    if (dist10 > 0.10) return { state: "extended", reason: "새 베이스 형성 전 · 10주선 " + pctf(dist10) + " · 다음 베이스 대기", box, hi: top, weeks: L };
+    return { state: "forming", reason: "신고가 부근 · 새 베이스 형성 중 (" + L + "주) · 10주선 " + pctf(dist10), box, hi: top, weeks: L };
   }
   if (price > top) {
     const over = price / top - 1;
@@ -958,6 +958,53 @@ function myRowHead(t) {
   return '<td class="stc">' + starHtml(t) + '</td><td class="tkc"><span class="tk">' + t + '</span></td><td class="nm" title="' + TICKERS[t].name + '">' + TICKERS[t].name + "</td>" +
     '<td class="mgr muted" title="' + TICKERS[t].group + '">' + TICKERS[t].group + "</td>";
 }
+// 관심 종목 한 줄 판정: g = 할 일 순서 묶음(0 매수 범위 · 1 준비 · 2 피벗 아래 · 3 지나감 · 4 이탈), k = 묶음 안 정렬값
+// pv = '피벗 대비' 칸, todo = '다음 할 일' 칸(0층 시장 판정에 맞춤)
+function watchPlan(x, ms) {
+  if (!x || !x.cls) return { g: 9, k: 0, pv: "", todo: "" };
+  const c = x.d[x.d.length - 1].c, bx = x.cls.box, st = x.cls.state, t = x.t;
+  const tt = bx ? bx.top / c - 1 : null, near = nearPullback(x);
+  const d10 = x.dist10 == null ? "" : "10주선 " + pctf(x.dist10);
+  const ed = earnDays(t), earnSoon = ed != null && ed >= 0 && ed <= EARN_WARN_DAYS;
+  const earnNote = earnSoon ? " · 실적 D-" + ed + " 지난 뒤" : "";
+  const M_WAIT = "시장 신규 매수 중지라 사지 않음", M_STOP = "시장 방어라 사지 않음";
+  const pivot = bx ? bx.top.toFixed(2) : "";
+  let g, k, pv, todo;
+  if (BROKEN.has(st)) {
+    g = 4; k = -x.rs;
+    pv = tt == null ? '<span class="muted">' + (d10 || "베이스 없음") + "</span>" : tt >= 0 ? '<span class="muted">' + (tt * 100).toFixed(1) + "% 남음</span>" : '<span class="muted">돌파 ' + pctf(-tt) + "</span>";
+    todo = st === "trendbreak" ? '<span class="muted">10주선 회복 전까지 매수 안 함</span>' : '<span class="muted">베이스 실패 · 새 베이스가 생길 때까지 제외 검토</span>';
+  } else if (bx && tt < 0 && -tt <= BUY_RANGE) {
+    g = 0; k = -tt;
+    pv = '<b class="chg-up">돌파 ' + pctf(-tt) + '</b> <span class="muted">· 매수 범위</span>';
+    todo = ms === "go" ? "<b>매수 검토</b> · 돌파 거래량 확인" + earnNote : ms === "wait" ? M_WAIT + " · 범위 안에서 시장 회복 시 재검토" : ms === "stop" ? M_STOP : "시장 판정 확인 후 매수 검토";
+  } else if (bx && tt >= 0 && st !== "inbox") {
+    g = x.cls.ready ? 1 : 2; k = tt;
+    pv = "<b>" + (tt * 100).toFixed(1) + '%</b> <span class="muted">남음</span>';
+    todo = ms === "go" ? "피벗 <b>" + pivot + "</b> 돌파 + 거래량 시 매수" + earnNote : ms === "wait" ? "피벗 " + pivot + " 표시만 · 시장이 공격 가능으로 바뀐 뒤 돌파 시 매수" : ms === "stop" ? "관찰만 · " + M_STOP : "피벗 " + pivot + " 표시";
+  } else if (!bx && st === "inbox") {
+    const th = x.cls.hi ? x.cls.hi / c - 1 : null;
+    g = 2; k = 1 + (th ?? 1);
+    pv = '<span class="muted">베이스 전 · 고점까지 </span>' + (th == null ? "-" : (th * 100).toFixed(1) + "%");
+    todo = '<span class="muted">고점 뒤 ' + (x.cls.weeks ?? "") + "주째 조정 · " + BASE_MIN_WEEKS + "주가 지나 베이스가 생기면 피벗이 잡힘</span>";
+  } else if (!bx && st === "forming") {
+    g = 3; k = (near ? -1 : 0) + (x.dist10 ?? 1);
+    pv = '<span class="muted">베이스 형성 중 · </span>' + d10 + (near ? ' <span class="badge p10">10주선 근접</span>' : "");
+    todo = near ? (ms === "go" ? "<b>10주선 첫 눌림</b> · 반등 확인 시 매수 검토" + earnNote : "10주선 지지 관찰 · " + (ms === "stop" ? M_STOP : ms === "wait" ? M_WAIT : "시장 판정 확인"))
+                : '<span class="muted">신고가 부근에서 쉬는 중 · ' + BASE_MIN_WEEKS + "주가 지나 베이스가 생기면 피벗이 잡힘</span>";
+  } else if (bx && tt >= 0) {
+    g = 2; k = tt;
+    pv = "<b>" + (tt * 100).toFixed(1) + '%</b> <span class="muted">남음</span>';
+    todo = '<span class="muted">피벗까지 멂 · 베이스 오른쪽을 다질 때까지 기다림</span>';
+  } else {
+    g = 3; k = (near ? -1 : 0) + (x.dist10 ?? 1);
+    pv = (bx ? '<span class="muted">돌파 ' + pctf(-tt) + " · 매수 범위 지남</span>" : '<span class="muted">베이스 없음 · </span>' + d10) +
+         (near ? ' <span class="badge p10">10주선 근접</span>' : "");
+    todo = near ? (ms === "go" ? "<b>10주선 첫 눌림</b> · 반등 확인 시 매수 검토" + earnNote : "10주선 지지 관찰 · " + (ms === "stop" ? M_STOP : ms === "wait" ? M_WAIT : "시장 판정 확인"))
+                : '<span class="muted">추격 금지 · 다음 베이스나 10주선 눌림 기다림</span>';
+  }
+  return { g, k, pv, todo };
+}
 function renderMine() {
   const el = document.getElementById("mine"), wl = document.getElementById("watch");
   if (!el || !wl) return;
@@ -990,28 +1037,27 @@ function renderMine() {
   if (!MY.watch.length) wl.innerHTML = '<div class="mh"><b>' + STAR1 + ' 관심 점검</b><span class="muted">관심 종목이 없습니다. 종목 맨 앞의 ☆을 한 번 누르세요.</span></div>';
   else if (!VIEW) wl.innerHTML = '<div class="mh"><b>' + STAR1 + ' 관심 점검</b><span class="muted">데이터를 받으면 표시됩니다.</span></div>';
   else {
-    const toTop = (t) => { const x = VIEW.info[t]; if (!x || !x.cls || !x.cls.box) return null; return x.cls.box.top / x.d[x.d.length - 1].c - 1; };
+    const ms = MARKET_STATE ? MARKET_STATE.cls : null;   // go 공격 가능 · wait 신규 매수 중지 · stop 방어
+    const plan = (t) => watchPlan(VIEW.info[t], ms);
     const list = [...MY.watch].sort((a, b) => {
-      const ra = VIEW.info[a]?.cls?.ready ? 0 : 1, rb = VIEW.info[b]?.cls?.ready ? 0 : 1;
-      const ta = toTop(a), tb = toTop(b);
-      return ra - rb || (ta == null ? 9 : Math.abs(ta)) - (tb == null ? 9 : Math.abs(tb));
+      const pa = plan(a), pb = plan(b);
+      return pa.g - pb.g || pa.k - pb.k;
     });
+    const GTXT = ["매수 범위", "준비", "피벗 아래", "지나감", "이탈"];
     const rows = list.map((t) => {
       const x = VIEW.info[t];
       if (!x || !x.cls) return "<tr>" + myRowHead(t) + '<td colspan="5" class="muted">데이터 없음</td></tr>';
-      const sk = stateKey(x.cls), tt = toTop(t);
-      const pv = tt == null ? '<span class="muted">베이스 없음</span>' : tt >= 0 ? "<b>" + (tt * 100).toFixed(1) + '%</b> <span class="muted">남음</span>'
-                                                                       : '<b class="chg-up">돌파 ' + pctf(-tt) + "</b>";
-      const rd = x.cls.ready ? '<span class="ready">준비</span> <span class="muted">변동폭 조임 · 거래량 마름</span>' : '<span class="muted">-</span>';
-      return '<tr data-t="' + t + '">' + myRowHead(t) +
+      const sk = stateKey(x.cls), pl = plan(t);
+      return '<tr data-t="' + t + '" class="wg' + pl.g + '">' + myRowHead(t) +
         '<td class="mst"><span class="stg ' + sk + '">' + LABEL[sk] + "</span></td>" +
         '<td class="mrs">' + rsCell(x) + "</td>" +
-        '<td class="mpv"' + (x.cls.box ? ' title="피벗(베이스 상단) ' + x.cls.box.top.toFixed(2) + '"' : "") + ">" + pv + "</td>" +
-        '<td class="mrd">' + rd + '</td><td class="mer">' + earnCell(t) + "</td></tr>";
+        '<td class="mpv"' + (x.cls.box ? ' title="피벗(베이스 상단) ' + x.cls.box.top.toFixed(2) + '"' : "") + ">" + pl.pv + "</td>" +
+        '<td class="mrd" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + '</td><td class="mer">' + earnCell(t) + "</td></tr>";
     });
-    wl.innerHTML = '<div class="mh"><b>' + STAR1 + ' 관심 점검</b><span class="muted">언제 사나 · ' + MY.watch.length + "종목 · 준비, 그다음 피벗에 가까운 순서 · " + md(VIEW.asOf) + " 마감 기준</span></div>" +
+    const mtxt = MARKET_STATE ? '<span class="pill ' + MARKET_STATE.cls + '" style="padding:1px 8px;font-size:11px">시장 ' + MARKET_STATE.verdict + "</span> 기준" : "시장 판정 전";
+    wl.innerHTML = '<div class="mh"><b>' + STAR1 + ' 관심 점검</b><span class="muted">언제 사나 · ' + MY.watch.length + "종목 · 할 일 순서(매수 범위 → 준비 → 피벗 아래 → 지나감 → 이탈) · " + mtxt + " · " + md(VIEW.asOf) + " 마감 기준</span></div>" +
       '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="nm">종목명</th><th class="mgr">산업</th><th class="mst">단계</th>' +
-      '<th class="mrs">RS (4주 변화)</th><th class="mpv">피벗(베이스 상단)까지</th><th class="mrd">준비</th><th class="mer">실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
+      '<th class="mrs">RS (4주 변화)</th><th class="mpv">피벗 대비</th><th class="mrd">다음 할 일</th><th class="mer">실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
   }
   [el, wl].forEach((box) => box.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t))));
 }
@@ -1652,10 +1698,10 @@ function buildHelp() {
 <tr><td>매도선(베이스 하단) 대비</td><td>주가가 감지된 베이스의 하단보다 몇 % 위인지. 베이스마다 매도선을 올리는 원칙의 기준선입니다. 마우스를 올리면 매도선 가격이 보입니다. 베이스가 아직 ${BASE_MIN_WEEKS}주가 안 됐으면 최근 고점 뒤 저점("형성 중 저점")을 대신 씁니다. 규칙으로 찾은 근사치이니 실제 매도선은 차트로 정하세요.</td></tr>
 <tr><td>경고</td><td><span class="wtag">추세 이탈</span><span class="wtag">베이스 이탈</span><span class="wtag">베이스 붕괴</span> 단계 · <span class="wtag">RS ${RS_LEADER} 아래</span> · <span class="wtag">실적 D-n</span> ${EARN_WARN_DAYS}일 안 실적 발표. 하나라도 있으면 줄 왼쪽에 붉은 띠가 생기고, 고정 바의 "★★ 보유" 옆에 경고 수가 붉게 나옵니다.</td></tr>
 </table>
-<p><b>★ 관심 점검 · 언제 사나</b> <span class="muted">'준비' 종목이 먼저, 그다음 피벗에 가까운 순서</span></p>
+<p><b>★ 관심 점검 · 언제 사나</b> <span class="muted">지금 할 수 있는 일 순서: 매수 범위 → 준비 → 피벗 아래(가까운 순) → 지나감(10주선 근접 먼저) → 이탈</span></p>
 <table>
-<tr><td>피벗(베이스 상단)까지</td><td>돌파 기준까지 몇 % 남았는지. 이미 넘었으면 "돌파 +n%". 매수 범위는 피벗 위 ${P(BUY_RANGE)}까지입니다.</td></tr>
-<tr><td>준비</td><td>최근 3주 변동폭이 조여지고 거래량이 마른 종목. 돌파 지점을 미리 표시해 둘 때입니다.</td></tr>
+<tr><td>피벗 대비</td><td>피벗(베이스 상단) 아래면 "n% 남음". 넘었고 피벗 위 ${P(BUY_RANGE)} 이내면 "돌파 +n% · 매수 범위", 그보다 위면 "매수 범위 지남"(회색). 베이스가 없는 종목은 10주선과의 거리를 보여 주고, 10주선 위 ${P(PULLBACK_NEAR)} 이내면 "10주선 근접"이 붙습니다.</td></tr>
+<tr><td>다음 할 일</td><td>단계와 <b>맨 위 시장 신호등</b>을 함께 보고 정합니다. 시장이 <b>공격 가능</b>일 때만 "매수 검토", "돌파 + 거래량 시 매수"가 나옵니다. <b>신규 매수 중지</b>면 피벗 표시와 관찰까지만, <b>방어</b>면 관찰만입니다. 실적이 ${EARN_WARN_DAYS}일 안이면 "실적 지난 뒤"를 덧붙입니다. 매수 범위를 지난 종목은 추격하지 않고 다음 베이스나 10주선 눌림을 기다립니다. '준비'는 단계 칸에 표시됩니다.</td></tr>
 <tr><td>실적</td><td>${EARN_WARN_DAYS}일 안이면 붉게. 실적 직전 돌파 매수는 갭 위험이 있습니다.</td></tr>
 </table>
 <table>
