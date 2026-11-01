@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 21:20</title>
+<title>추세 대시보드 v2026-11-01 22:30</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -320,7 +320,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 21:20</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 22:30</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1233,8 +1233,9 @@ function renderSticky() {
     html += '<span class="sep">|</span><a class="chip' + (nPre ? " hot" : "") + '" href="#sec-all" id="preChip">예비 주도주 <b>' + nPre + "</b></a>";
     const list = leaderList(), cnt = (k) => list.filter((x) => stateKey(x.cls) === k).length;
     const nNear = list.filter((x) => stateKey(x.cls) === "base" && pivotNear(x.cls)).length;
-    const chips = [["breakout", "돌파", cnt("breakout")], ["base", "베이스", cnt("base"), nNear > 0, nNear ? " <small>(임박 " + nNear + ")</small>" : ""],
-                   ["extended", "상승", cnt("extended"), leaderList().some(nearPullback)], ["broken", "훼손", cnt("broken")]];
+    // 가격 위치 순서(피벗 위 → 아래): 상승 → 돌파 → 베이스 → 훼손
+    const chips = [["extended", "상승", cnt("extended"), leaderList().some(nearPullback)], ["breakout", "돌파", cnt("breakout")],
+                   ["base", "베이스", cnt("base"), nNear > 0, nNear ? " <small>(임박 " + nNear + ")</small>" : ""], ["broken", "훼손", cnt("broken")]];
     html += '<span class="sep">|</span>' + chips.map(([id, lbl, n, hot, extra]) =>
       '<a class="chip' + ((id === "breakout" || hot) && n ? " hot" : "") + '" href="#st-' + id + '">' + lbl + " <b>" + n + "</b>" + (extra || "") + "</a>").join(" · ");
     if (selectedGroup) html += '<span class="sep">|</span><span class="chip">' + selectedGroup + "만 보는 중</span>";
@@ -1330,10 +1331,10 @@ function renderFlow() {
 }
 
 // 4층: 단계 4가지를 표 하나에. 단계 경계에 굵은 선, 0종목 단계는 맨 위 요약에만. 줄을 누르면 주봉·일봉 팝업
-const STAGES = [   // [키(stateKey), 제목, 설명]
+const STAGES = [   // [키(stateKey), 제목, 설명] · 가격 위치 순서: 피벗 대비 숫자가 위에서 아래로 줄어드는 사다리
+  ["extended", "상승", "피벗 위 5% 넘게 오름 · 추격 금지 · 10주선 근접이 맨 앞"],
   ["breakout", "돌파", "피벗(베이스 상단) 위 5% 이내 · 매수 범위"],
   ["base", "베이스", "피벗(최근 고점) 아래에서 쉬는 중 · 준비 → 임박(완성된 베이스의 피벗 10% 이내) → 나머지 순"],
-  ["extended", "상승", "피벗 위 5% 넘게 오름 · 추격 금지 · 10주선 근접이 맨 앞"],
   ["broken", "훼손", "이탈(10주선 아래) → 붕괴(베이스 하단 아래이거나 35% 넘게 깊음) 순"],
 ];
 // 26주 주봉 종가 선 + 10주선(초록) + 피벗(주황 점선)
@@ -1389,7 +1390,7 @@ document.getElementById("clearFilter").addEventListener("click", () => { selecte
 
 // ═════════════ 6층: 전체 종목 ═════════════
 let ALL_SORT = { key: "rs", dir: -1 }, ALL_FILTER = "all", ALL_Q = "";
-const STAGE_ORDER = { breakout: 0, base: 1, extended: 2, broken: 3 };
+const STAGE_ORDER = { extended: 0, breakout: 1, base: 2, broken: 3 };   // 가격 위치 순서
 const ALL_COLS = [   // [키, 제목, 너비, 정렬값]
   ["my", "★", 40, (x) => myLevel(x.t)], ["rank", "순위", 44, (x) => x.rs], ["t", "티커", 70, (x) => x.t], ["name", "종목명", 160, (x) => TICKERS[x.t].name],
   ["grp", "산업", 150, (x) => TICKERS[x.t].group], ["rs", "RS (4주)", 90, (x) => x.rs],
@@ -1741,7 +1742,7 @@ function buildHelp() {
 <h3 id="h-leaders">4층 · 주도주</h3>
 <p>나스닥100에서 <b>RS ${RS_LEADER} 이상</b>인 종목만 골라, 원칙상 <b>지금 무엇을 할 단계인지</b>로 나눕니다.</p>
 <div class="q2"><b>RS(상대강도)</b>: 최근 12개월 수익률을 오닐식으로 가중(최근 3개월 2배)해서, 나스닥100 100종목 안에서 1-99로 순위를 매긴 값입니다. RS ${RS_LEADER} = 상위 20%. IBD의 RS 등급은 전체 상장 종목 대비라 숫자가 다를 수 있습니다.</div>
-<p>차트 없이 <b>표 하나</b>에 모든 단계를 담아 한 화면에 봅니다. 맨 위 줄은 4단계의 종목 수(누르면 그 단계로 이동, 0종목 단계는 흐리게). 표는 단계 순서로 놓고(단계가 바뀌는 곳에 굵은 선), 한 종목 한 줄입니다. 단계 칸에 마우스를 올리면 그 단계 설명이 보입니다. 줄을 누르면 주봉·일봉 차트가 크게 뜨고, 마우스를 올리면 종목명과 단계 판정 근거가 보입니다. 칸 순서: 티커 · 산업 · RS(4주) · 26주 주봉 · 단계 · 피벗 대비 · 다음 할 일 · 꼬리표.</p>
+<p>차트 없이 <b>표 하나</b>에 모든 단계를 담아 한 화면에 봅니다. 맨 위 줄은 4단계의 종목 수(누르면 그 단계로 이동, 0종목 단계는 흐리게). 표는 가격 위치 순서인 <b>상승 → 돌파 → 베이스 → 훼손</b>으로 놓아, 피벗 대비 숫자가 위에서 아래로 줄어드는 사다리처럼 읽힙니다(단계가 바뀌는 곳에 굵은 선), 한 종목 한 줄입니다. 단계 칸에 마우스를 올리면 그 단계 설명이 보입니다. 줄을 누르면 주봉·일봉 차트가 크게 뜨고, 마우스를 올리면 종목명과 단계 판정 근거가 보입니다. 칸 순서: 티커 · 산업 · RS(4주) · 26주 주봉 · 단계 · 피벗 대비 · 다음 할 일 · 꼬리표.</p>
 <table>
 <tr><td>26주 주봉</td><td>최근 26주 주봉 종가 선(붉은색: 10주선 위, 파란색: 아래), 초록 10주선, 주황 점선 피벗(베이스 상단, 없으면 마지막 돌파 피벗). 베이스 모양과 피벗과의 위치를 한눈에 봅니다.</td></tr>
 <tr><td>단계 · 피벗 대비</td><td>단계와 위치를 한 칸에: <b>[단계] ±n% · 보조 정보</b>. 앞 숫자는 언제나 <b>피벗 대비</b>입니다(− 피벗 아래, + 피벗 위). 피벗은 베이스 상단이고, 베이스가 아직 완성 전이면 최근 고점(완성되면 그대로 피벗이 됨), 상승 단계는 마지막으로 돌파한 피벗입니다. 숫자에 마우스를 올리면 피벗 가격이 보입니다.<br>
@@ -1769,7 +1770,7 @@ function buildHelp() {
 <table>
 <tr><td>순위 · RS (4주)</td><td>RS 높은 순 순위, RS 값과 4주 전 대비 RS 변화(<span class="chg-up">▲</span> 상대강도가 좋아지는 중). 다른 층과 같은 표기입니다. 기본 정렬은 RS 높은 순이고, 주황 구분선 위가 4층 주도주입니다.</td></tr>
 <tr><td>6개월</td><td>6개월 종가 선(붉은색: 50일선 위, 파란색: 50일선 아래)과 초록 50일선.</td></tr>
-<tr><td>단계</td><td>4층과 같은 단계 판정을 모든 종목에 적용. 마우스를 올리면 판정 근거가 보입니다.</td></tr>
+<tr><td>단계</td><td>4층과 같은 단계 판정을 모든 종목에 적용. 마우스를 올리면 판정 근거가 보입니다. 칸 제목을 누르면 가격 위치 순서(상승 → 돌파 → 베이스 → 훼손)로 정렬합니다.</td></tr>
 <tr><td>고점 대비 / 저점 대비</td><td>최근 52주 최고가에서 몇 % 아래인지, 52주 최저가에서 몇 % 위인지. 고점 근처이면서 저점에서 멀리 올라온 종목이 강한 종목입니다(미너비니 기준: 고점 25% 이내, 저점 30% 이상 위).</td></tr>
 <tr><td><span class="dot on10"></span><span class="dot on40"></span></td><td>왼쪽 점은 10주선, 오른쪽 점은 40주선. 채워져 있으면 그 선 위, 빈 원이면 아래.</td></tr>
 <tr><td>${b("pre", "예비 주도주")}</td><td>다음 네 가지를 모두 갖춘 종목: ① RS ${PRE_RS_MIN}-${RS_LEADER - 1} ② 4주 사이 RS +${PRE_RS_GAIN} 이상 ③ 10주선 위 ④ <b>건전한 베이스</b>(베이스 저점이 고점보다 ${P(BASE_MAX_DEPTH)} 이내로 얕고, 주가가 베이스 하단 위. 아직 베이스가 생기기 전이면 통과). 크게 떨어졌다가 바닥에서 반등만 하는 종목은 RS가 빨리 올라도 ④에서 걸러집니다. 3층에 들어오기 전 미리 볼 후보입니다. 줄 배경이 옅은 초록입니다.</td></tr>
