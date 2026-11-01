@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 18:35</title>
+<title>추세 대시보드 v2026-11-01 18:50</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -140,6 +140,7 @@
   .badge { display: inline-block; font-size: 10px; font-weight: 800; padding: 0 5px; border-radius: 4px; margin-left: 4px; vertical-align: 1px; }
   .badge.new { background: var(--accent); color: #fff; }
   .badge.rsh { background: var(--go-bg); color: var(--go); border: 1px solid var(--go); }
+  .badge.p10 { background: var(--gold); color: #fff; }
   .badge.earn { background: var(--stop-bg); color: var(--stop); border: 1px solid var(--stop); }
   .badge.earn.far { background: transparent; color: var(--sub); border-color: var(--line); }
   .legend { font-size: 11px; color: var(--sub); padding: 4px 10px 8px; }
@@ -305,7 +306,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 18:35</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 18:50</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -447,6 +448,7 @@ const DD_LIMIT = 5;                 // 최근 25거래일 분산일이 이 이�
 const BASE_MIN_WEEKS = 5;           // 베이스로 인정하는 최소 길이 (오닐 플랫 베이스 5주)
 const BASE_LOOKBACK = 26, BASE_MAX_DEPTH = 0.35;
 const NEAR_TOP = 0.10;              // 베이스 상단에서 10% 이내만 '돌파 대기', 더 멀면 '베이스 안'
+const PULLBACK_NEAR = 0.05;        // 상승 중 종목이 10주선 위 5% 이내로 눌리면 '10주선 근접'
 const BUY_RANGE = 0.05;             // 베이스 상단에서 5% 이내까지만 '돌파 중', 넘으면 '상승 중'
 const BREAKOUT_VOL = 1.4;           // 돌파일 거래량이 50일 평균의 1.4배 이상이어야 정상 돌파
 const TIGHT_3W = 0.10;              // 최근 3주 변동폭 10% 이하면 '조여짐'
@@ -918,9 +920,11 @@ function earnBadge(t) {
   return '<span class="badge earn' + (days > EARN_WARN_DAYS ? " far" : "") + '">실적 ' + e.date.slice(5).replace("-", "/") +
          " D-" + days + "</span>";
 }
+function nearPullback(x) { return !!(x && x.cls && (x.cls.state === "extended" || x.cls.state === "forming") && x.dist10 != null && x.dist10 >= 0 && x.dist10 <= PULLBACK_NEAR); }
 function badgesFor(t, x) {
   let s = "";
   if (DIFF && DIFF.badges[t]) s += '<span class="badge new" title="' + cmpWord() + "(" + md(PREV_ASOF) + ' 마감) 대비">' + DIFF.badges[t] + "</span>";
+  if (nearPullback(x)) s += '<span class="badge p10" title="돌파 후 오른 종목이 10주선 위 ' + pctf(x.dist10) + '까지 눌림 · 첫 눌림 반등은 추가 매수 자리">10주선 근접</span>';
   if (x.rsHigh) s += '<span class="badge rsh">RS선 신고가</span>';
   return s + earnBadge(t);
 }
@@ -1093,7 +1097,7 @@ function renderSticky() {
     html += '<span class="sep">|</span><a class="chip' + (nPre ? " hot" : "") + '" href="#sec-all" id="preChip">예비 주도주 <b>' + nPre + "</b></a>";
     const list = leaderList(), cnt = (k) => list.filter((x) => stateKey(x.cls) === k).length;
     const chips = [["breakout", "돌파 중", cnt("breakout")], ["base", "준비", cnt("ready"), true], ["base", "대기", cnt("base")],
-                   ["extended", "상승 중", cnt("extended")], ["forming", "형성 중", cnt("forming")], ["inbox", "베이스 안", cnt("inbox")], ["trendbreak", "추세 이탈", cnt("trendbreak")], ["basebreak", "베이스 이탈", cnt("basebreak")], ["basefail", "베이스 붕괴", cnt("basefail")]];
+                   ["extended", "상승 중", cnt("extended"), leaderList().some(nearPullback)], ["forming", "형성 중", cnt("forming")], ["inbox", "베이스 안", cnt("inbox")], ["trendbreak", "추세 이탈", cnt("trendbreak")], ["basebreak", "베이스 이탈", cnt("basebreak")], ["basefail", "베이스 붕괴", cnt("basefail")]];
     html += '<span class="sep">|</span>' + chips.map(([id, lbl, n, hot]) =>
       '<a class="chip' + ((id === "breakout" || hot) && n ? " hot" : "") + '" href="#st-' + id + '">' + lbl + " <b>" + n + "</b></a>").join(" · ");
     if (selectedGroup) html += '<span class="sep">|</span><span class="chip">' + selectedGroup + "만 보는 중</span>";
@@ -1190,10 +1194,10 @@ function renderFlow() {
 const CHART_STATES = [
   ["breakout", "돌파 중", "베이스 상단을 넘었고 아직 매수 범위(상단 +5% 이내) 안"],
   ["base", "돌파 대기", "베이스 상단 10% 이내에서 숨 고르는 중 · '준비'는 변동폭이 조여지고 거래량이 마른 종목"],
-  ["extended", "상승 중", "베이스를 돌파한 뒤 매수 범위(상단 +5%)를 벗어나 오르는 중 · 추격하지 않고 다음 베이스를 기다림"],
 ];
 const NAME_STATES = [
-  ["forming", "베이스 형성 중", "신고가 부근에서 1-4주째 · 5주가 지나 베이스가 되면 '돌파 대기'로 올라옴 · 차트 생략"],
+  ["extended", "상승 중", "매수 범위(상단 +5%)를 벗어나 오르는 중 · 추격 금지 · 10주선 +5% 이내로 눌리면 '10주선 근접'(첫 눌림 추가 매수 자리) · 차트 생략"],
+  ["forming", "베이스 형성 중", "신고가 부근에서 1-4주째 · 5주가 지나 베이스가 되면 '돌파 대기'로 올라옴 · 10주선 +5% 이내면 '10주선 근접' · 차트 생략"],
   ["inbox", "베이스 안", "베이스 상단까지 10% 넘게 남음 · 아직 후보 아님 · 차트 생략"],
   ["trendbreak", "추세 이탈", "RS는 높지만 주가가 10주선 아래 · 차트 생략"],
   ["basebreak", "베이스 이탈", "주가가 베이스 하단 아래로 내려감 · 차트 생략"],
@@ -1232,7 +1236,8 @@ function renderLeaders() {
     });
   });
   NAME_STATES.forEach(([key, title, desc]) => {
-    const items = list.filter((x) => x.cls.state === key);
+    let items = list.filter((x) => x.cls.state === key);
+    if (key === "extended" || key === "forming") items = items.map((x, i) => [x, i]).sort((a, b) => (nearPullback(b[0]) ? 1 : 0) - (nearPullback(a[0]) ? 1 : 0) || a[1] - b[1]).map((p) => p[0]);
     head(key, title, items.length, desc);
     if (!items.length) return;
     // 한 종목 = 한 줄: 티커 · 이름 · 산업·RS · 판정 근거 · 꼬리표
@@ -1243,7 +1248,7 @@ function renderLeaders() {
       '<tr data-t="' + x.t + '"><td class="stc">' + starHtml(x.t) + '</td><td class="tkc"><span class="tk">' + x.t + "</span></td>" +
       '<td class="nm" title="' + TICKERS[x.t].name + '">' + TICKERS[x.t].name + "</td>" +
       '<td class="muted grp">' + TICKERS[x.t].group + " · RS <b>" + x.rs + "</b></td>" +
-      '<td class="rs">' + x.cls.reason + "</td>" +
+      '<td class="rs">' + x.cls.reason + (key === "extended" && x.dist10 != null && !/10주선/.test(x.cls.reason) ? " · 10주선 " + pctf(x.dist10) : "") + "</td>" +
       '<td class="bd">' + badgesFor(x.t, x) + "</td></tr>").join("") + "</tbody></table>";
     box.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t)));
     wrap.appendChild(box);
@@ -1615,8 +1620,8 @@ function buildHelp() {
 <tr><td>돌파 중</td><td>베이스 상단을 넘었고, 아직 상단에서 ${P(BUY_RANGE)} 이내(매수 범위). <b>할 일: 매수 검토.</b> 돌파일 거래량이 50일 평균의 ${BREAKOUT_VOL}배에 못 미치면 "거래량 부족"이 붉게 표시됩니다. 거래량 없는 돌파는 큰 자본의 흔적이 아닙니다.</td></tr>
 <tr><td>준비</td><td>"돌파 대기" 중 최근 3주 변동폭이 ${P(TIGHT_3W)} 이하로 조여지고, 최근 2주 거래량이 그 전 10주 평균의 ${P(DRY_VOL)} 이하로 마른 종목. 돌파 대기 맨 앞에 놓입니다. <b>할 일: 돌파 지점 미리 표시.</b></td></tr>
 <tr><td>돌파 대기</td><td>베이스 상단까지 ${P(NEAR_TOP)} 이내에서 숨 고르는 중. <b>할 일: 관심 목록.</b></td></tr>
-<tr><td>상승 중</td><td>베이스 상단보다 ${P(BUY_RANGE)} 넘게 올랐거나, 베이스 없이 10주선보다 10% 넘게 위. <b>할 일: 추격하지 않고 다음 베이스를 기다림.</b></td></tr>
-<tr><td>베이스 형성 중</td><td>신고가 부근에서 1-${BASE_MIN_WEEKS - 1}주째 쉬는 중. ${BASE_MIN_WEEKS}주가 지나 베이스가 되면 돌파 대기로 올라옵니다. 상장한 지 6주가 안 돼 판단할 수 없는 종목도 여기에 둡니다. 차트 생략.</td></tr>
+<tr><td>상승 중</td><td>베이스 상단보다 ${P(BUY_RANGE)} 넘게 올랐거나, 베이스 없이 10주선보다 10% 넘게 위. <b>할 일: 추격하지 않고 다음 베이스를 기다림.</b> 다만 10주선 위 ${P(PULLBACK_NEAR)} 이내로 눌리면 "10주선 근접" 꼬리표가 붙고 맨 앞에 놓입니다. 돌파 후 처음 10주선까지 눌렸다 반등하는 자리는 오닐이 말한 추가 매수 자리입니다. 차트 생략.</td></tr>
+<tr><td>베이스 형성 중</td><td>신고가 부근에서 1-${BASE_MIN_WEEKS - 1}주째 쉬는 중. ${BASE_MIN_WEEKS}주가 지나 베이스가 되면 돌파 대기로 올라옵니다. 상장한 지 6주가 안 돼 판단할 수 없는 종목도 여기에 둡니다. 상승 중이던 종목이 10주선 쪽으로 쉬기 시작하면 대개 여기로 내려오므로, 10주선 위 ${P(PULLBACK_NEAR)} 이내면 여기서도 "10주선 근접" 꼬리표를 붙이고 맨 앞에 놓습니다. 차트 생략.</td></tr>
 <tr><td>베이스 안</td><td>베이스 상단까지 ${P(NEAR_TOP)} 넘게 남음. 아직 후보 아님. 차트 생략.</td></tr>
 <tr><td>추세 이탈</td><td>RS는 높지만 주가가 10주선 아래. 중기 추세가 꺾였을 수 있음. 차트 생략.</td></tr>
 <tr><td>베이스 이탈</td><td>주가가 베이스 하단(베이스 안 최저가) 아래로 내려감. 베이스가 지지선 역할을 못 함. 차트 생략.</td></tr>
@@ -1660,6 +1665,7 @@ function buildHelp() {
 <table>
 <tr><td>${b("new", "NEW")}</td><td>1주 전 이후 RS ${RS_LEADER} 이상으로 새로 들어온 종목. 비교 날짜는 3층 자금 이동의 종목별 제목에 나오고, 꼬리표에 마우스를 올려도 보입니다.</td></tr>
 <tr><td>${b("new", "대기→돌파 중")}</td><td>1주 전 이후 단계가 바뀐 종목. 화살표 앞이 예전, 뒤가 지금.</td></tr>
+<tr><td>${b("p10", "10주선 근접")}</td><td>상승 중 또는 베이스 형성 중 종목이 10주선 위 ${P(PULLBACK_NEAR)} 이내까지 눌림. 돌파 후 첫 10주선 눌림에서 반등하면 추가 매수 자리. 10주선 아래로 내려가면 추세 이탈로 바뀝니다.</td></tr>
 <tr><td>${b("rsh", "RS선 신고가")}</td><td>종목 ÷ QQQ 선이 52주 신고가. 주가보다 상대강도가 먼저 신고가를 내면 큰 자본이 사 모으는 흔적일 수 있습니다.</td></tr>
 <tr><td>${b("earn", "실적 11/05 D-5")}</td><td>${EARN_WARN_DAYS}일 안에 실적 발표. 실적 직후 갭 하락은 계획보다 큰 손실을 만들 수 있어 붉게 표시합니다.</td></tr>
 <tr><td>${b("earn far", "실적 12/01 D-31")}</td><td>${EARN_WARN_DAYS + 1}-45일 뒤 실적 발표(회색).</td></tr>
