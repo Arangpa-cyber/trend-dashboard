@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 20:55</title>
+<title>추세 대시보드 v2026-11-01 21:20</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -178,7 +178,7 @@
   .lsum a { text-decoration: none; color: var(--text); margin-right: 10px; white-space: nowrap; } .lsum .z { margin-right: 10px; white-space: nowrap; opacity: 0.6; }
   table.ltable { min-width: 1180px; } table.ltable .bd, table.ltable th.bd { text-align: left; } table.ltable .bd .badge:first-child { margin-left: 0; }
   table.ltable col.c-st { width: 40px; } table.ltable col.c-tk { width: 66px; } table.ltable col.c-grp { width: 96px; }
-  table.ltable col.c-rs { width: 84px; } table.ltable col.c-sp { width: 130px; } table.ltable col.c-sg { width: 104px; } table.ltable col.c-pv { width: 232px; }
+  table.ltable col.c-rs { width: 84px; } table.ltable col.c-sp { width: 130px; } table.ltable col.c-pos { width: 320px; }
   table.ltable col.c-todo { width: 290px; }
   table.ltable .nm, table.ltable .bd { width: auto; } table.ltable .nm { position: sticky; }
   table.ltable td { padding-top: 5px; padding-bottom: 5px; }
@@ -243,6 +243,7 @@
   .stg.broken { color: var(--down); border-color: transparent; }
   .stg2 { font-size: 10px; font-weight: 700; padding: 0 5px; border-radius: 4px; border: 1px solid var(--accent); color: var(--accent); white-space: nowrap; }
   .stg2.rdy { background: var(--accent); color: #fff; }
+  .stg2.brk { border-color: var(--down); color: var(--down); } .stg2.brk.hard { background: var(--down); color: #fff; }
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #9ca3af; margin-right: 3px; vertical-align: -1px; }
   .dot.on10 { background: #16a34a; border-color: #16a34a; } .dot.on40 { background: #7c3aed; border-color: #7c3aed; }
   .badge.pre { background: #16a34a; color: #fff; }
@@ -270,7 +271,7 @@
   table.mtable .msl { width: 150px; } table.mtable .mpv { width: 220px; } table.mtable .mrd { width: 380px; } table.mtable .mer { width: 130px; }
   #changes { scroll-margin-top: 60px; }
   table.mtable .stg { margin-right: 4px; }
-  table.mtable .mgr { width: 150px; } table.mtable .mlp { width: 150px; }
+  table.mtable .mgr { width: 150px; } table.mtable .mpos { width: 320px; } table.mtable .mlp { width: 150px; }
   table.mtable .mst { width: 120px; } table.mtable .mrs { width: 120px; } table.mtable .m10 { width: 110px; } table.mtable .mhi { width: 90px; } table.mtable .mw { width: 330px; }
   table.mtable tr.mwarn td.tkc { box-shadow: inset 3px 0 0 var(--stop); }
   .wtag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-right: 4px; background: var(--stop-bg); color: var(--stop); border: 1px solid var(--stop); }
@@ -319,7 +320,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 20:55</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 21:20</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -456,9 +457,11 @@ const CORRECTION_PCT = 0.08;        // QQQ가 고점 대비 이만큼 빠지면 
 const FTD_GAIN = 0.0125;            // 팔로스루 데이: 랠리 4일차 이후 +1.25% 이상, 전일보다 거래량 증가
 const DD_DROP = -0.002;             // 분산일: -0.2% 이상 하락, 전일보다 거래량 증가
 const DD_LIMIT = 5;                 // 최근 25거래일 분산일이 이 이상이면 신규 매수 중지
-const BASE_MIN_WEEKS = 5;           // 베이스로 인정하는 최소 길이 (오닐 플랫 베이스 5주)
+const BASE_MIN_WEEKS = 5;           // 베이스 최소 길이: 깊이 15% 이내(오닐 플랫 베이스)면 5주
+const CUP_MIN_WEEKS = 7, FLAT_MAX_DEPTH = 0.15;   // 그보다 깊으면(오닐 컵·더블 바텀) 7주
+const minWeeks = (depth) => (depth <= FLAT_MAX_DEPTH ? BASE_MIN_WEEKS : CUP_MIN_WEEKS);
 const BASE_LOOKBACK = 26, BASE_MAX_DEPTH = 0.35;
-const NEAR_TOP = 0.10;              // 베이스 상단에서 10% 이내만 '돌파 대기', 더 멀면 '베이스 안'
+const NEAR_TOP = 0.10;              // 완성된 베이스의 상단(피벗)에서 10% 이내면 '임박'
 const PULLBACK_NEAR = 0.05;        // 상승 중 종목이 10주선 위 5% 이내로 눌리면 '10주선 근접'
 const BUY_RANGE = 0.05;             // 베이스 상단에서 5% 이내까지만 '돌파 중', 넘으면 '상승 중'
 const BREAKOUT_VOL = 1.4;           // 돌파일 거래량이 50일 평균의 1.4배 이상이어야 정상 돌파
@@ -694,8 +697,8 @@ function lastPivot(w) {
     const prior = w.slice(Math.max(0, e + 1 - BASE_LOOKBACK), e + 1);
     let p = 0; prior.forEach((y, i) => { if (y.h >= prior[p].h) p = i; });
     const base = prior.slice(p);
-    if (base.length < BASE_MIN_WEEKS) continue;
     const top = prior[p].h, bottom = Math.min(...base.map((y) => y.l));
+    if (base.length < minWeeks((top - bottom) / top)) continue;
     if ((top - bottom) / top > BASE_MAX_DEPTH) continue;
     if (w[e + 1].h <= top) continue;                       // 바로 다음 주에 고가로 상단을 건드려야 돌파 시도
     let b = -1;
@@ -739,46 +742,72 @@ function classify(d, w) {
   const base = prior.slice(p), L = base.length;
   const top = prior[p].h, bottom = Math.min(...base.map((x) => x.l));
   const depth = (top - bottom) / top, toTop = top / price - 1;
-  const box = L >= BASE_MIN_WEEKS ? { from: base[0].t, top, bottom } : null;
+  const need = minWeeks(depth);                 // 얕으면(15% 이내) 5주, 깊으면 7주가 지나야 베이스
+  const box = L >= need ? { from: base[0].t, top, bottom } : null;
+  const M = (o) => Object.assign({ hi: top, weeks: L, need, depth }, o);   // 모든 판정에 피벗(최근 고점)·베이스 주수 붙임
 
   // 문제가 겹치면 더 심각한 쪽으로: 베이스 붕괴 > 베이스 이탈 > 추세 이탈
   const below10 = ma10 && price < ma10, t10 = below10 ? " · 10주선 아래 (" + pctf(dist10) + ")" : "";
-  if (box && depth > BASE_MAX_DEPTH) return { state: "basefail", reason: "베이스 저점이 너무 깊음 (고점 대비 -" + (depth * 100).toFixed(0) + "%)" + t10, box };
-  if (box && price < bottom) return { state: "basebreak", reason: "베이스 하단 이탈 (하단 " + pctf(price / bottom - 1) + ")" + t10, box };
-  if (below10) return { state: "trendbreak", reason: "10주선 아래 (" + pctf(dist10) + ")", box };
-  if (!box) {                                   // 고점 뒤 5주가 안 됨: 아직 베이스로 보지 않음
+  if (box && depth > BASE_MAX_DEPTH) return M({ state: "basefail", reason: "베이스 저점이 너무 깊음 (고점 대비 -" + (depth * 100).toFixed(0) + "%)" + t10, box });
+  if (box && price < bottom) return M({ state: "basebreak", reason: "베이스 하단 이탈 (하단 " + pctf(price / bottom - 1) + ")" + t10, box });
+  if (below10) return M({ state: "trendbreak", reason: "10주선 아래 (" + pctf(dist10) + ")", box });
+  if (!box) {                                   // 고점 뒤 기간이 짧음(5주 또는 7주 전): 아직 베이스로 보지 않음
     // 단, 최근 2주 안에 돌파한 베이스가 있고 아직 매수 범위 안이면 그 베이스 기준으로 '돌파 중'
     const lp = lastPivot(w);
-    if (lp && lp.ago <= 2 && price > lp.top && price / lp.top - 1 <= BUY_RANGE) return breakoutOf(d, lp.top, { from: lp.from, top: lp.top, bottom: lp.bottom });
-    if (price <= top && toTop > NEAR_TOP) return { state: "inbox", reason: "고점 뒤 " + L + "주 조정 중 · 고점까지 " + pctf(toTop), box, hi: top, weeks: L };
-    if (dist10 > 0.10) return { state: "extended", reason: "새 베이스 형성 전 · 10주선 " + pctf(dist10) + " · 다음 베이스 대기", box, hi: top, weeks: L };
-    return { state: "forming", reason: "신고가 부근 " + L + "주째 · 새 베이스를 만드는 중 · 10주선 " + pctf(dist10), box, hi: top, weeks: L };
+    if (lp && lp.ago <= 2 && price > lp.top && price / lp.top - 1 <= BUY_RANGE) return M(breakoutOf(d, lp.top, { from: lp.from, top: lp.top, bottom: lp.bottom }));
+    if (price <= top && toTop > NEAR_TOP) return M({ state: "inbox", reason: "고점 뒤 " + L + "주 조정 중 · 고점까지 " + pctf(toTop), box, hi: top, weeks: L });
+    if (dist10 > 0.10) return M({ state: "extended", reason: "새 베이스 형성 전 · 10주선 " + pctf(dist10) + " · 다음 베이스 대기", box, hi: top, weeks: L });
+    return M({ state: "forming", reason: "신고가 부근 " + L + "주째 · 새 베이스를 만드는 중 · 10주선 " + pctf(dist10), box, hi: top, weeks: L });
   }
   if (price > top) {
-    if (price / top - 1 > BUY_RANGE) return { state: "extended", reason: "베이스 상단 " + pctf(price / top - 1) + " · 추격 금지, 다음 베이스 대기", box };
-    return breakoutOf(d, top, box);
+    if (price / top - 1 > BUY_RANGE) return M({ state: "extended", reason: "베이스 상단 " + pctf(price / top - 1) + " · 추격 금지, 다음 베이스 대기", box });
+    return M(breakoutOf(d, top, box));
   }
-  if (toTop > NEAR_TOP) return { state: "inbox", reason: "베이스 " + L + "주 · 상단까지 " + pctf(toTop), box };
+  if (toTop > NEAR_TOP) return M({ state: "inbox", reason: "베이스 " + L + "주 · 상단까지 " + pctf(toTop), box });
   const last3 = prior.slice(-3);
   const r3 = (Math.max(...last3.map((x) => x.h)) - Math.min(...last3.map((x) => x.l))) / Math.max(...last3.map((x) => x.h));
   const recent = prior.slice(-2), before = prior.slice(-12, -2);
   const avg = (a) => a.reduce((s, x) => s + x.v, 0) / Math.max(1, a.length);
   const dry = before.length >= 5 && avg(recent) <= avg(before) * DRY_VOL;
   const ready = r3 <= TIGHT_3W && dry;
-  return { state: "base", ready, box,
+  return M({ state: "base", ready, box,
            reason: (ready ? '<span class="ready">준비</span> · ' : "") + "베이스 " + L + "주 · 깊이 " + (depth * 100).toFixed(0) +
-                   "% · 최근 3주 폭 " + (r3 * 100).toFixed(0) + "%" + (dry ? " · 거래량 마름" : "") + " · 상단까지 " + pctf(toTop) };
+                   "% · 최근 3주 폭 " + (r3 * 100).toFixed(0) + "%" + (dry ? " · 거래량 마름" : "") + " · 상단까지 " + pctf(toTop) });
 }
 // 화면 단계 4가지: 베이스 → 돌파 → 상승 → 베이스, 어느 단계에서든 깨지면 이탈
 // (판정은 세부 상태로 하고, 보여 줄 때만 4가지로 묶음. 세부 상태는 '준비'·'임박' 표시와 이탈 이유로 남김)
 const BROKEN = new Set(["trendbreak", "basebreak", "basefail"]);
 const stateKey = (c) => (c.state === "breakout" ? "breakout" : c.state === "extended" ? "extended" : BROKEN.has(c.state) ? "broken" : "base");
-const LABEL = { breakout: "돌파", base: "베이스", extended: "상승", broken: "이탈" };
-const pivotNear = (c) => c.state === "base";            // 완성된 베이스(5주 이상)의 피벗까지 10% 이내
+const LABEL = { breakout: "돌파", base: "베이스", extended: "상승", broken: "훼손" };
+// 훼손의 세부: 이탈(10주선 아래, 추세만 꺾임) < 붕괴(베이스 하단 아래이거나 베이스가 35% 넘게 깊음)
+const SUB = { trendbreak: "이탈", basebreak: "붕괴", basefail: "붕괴" };
+const subRank = (c) => (SUB[c.state] === "붕괴" ? 1 : 0);
+const pivotNear = (c) => c.state === "base";            // 완성된 베이스의 피벗까지 10% 이내
 // 단계 칸: 단계 + 베이스면 '준비'·'임박' 표시
 const stageHtml = (c) => '<span class="stg ' + stateKey(c) + '">' + LABEL[stateKey(c)] + "</span>" +
-  (c.ready ? ' <span class="stg2 rdy" title="피벗까지 10% 이내 · 변동폭이 조여지고 거래량이 마름">준비</span>' : pivotNear(c) ? ' <span class="stg2 nr" title="완성된 베이스의 피벗까지 10% 이내">임박</span>' : "");
-const DETAIL = { breakout: "돌파 중", ready: "준비", base: "돌파 대기", forming: "베이스 형성 중", extended: "상승 중", inbox: "베이스 안", trendbreak: "추세 이탈", basebreak: "베이스 이탈", basefail: "베이스 붕괴" };
+  (c.ready ? ' <span class="stg2 rdy" title="피벗까지 10% 이내 · 변동폭이 조여지고 거래량이 마름">준비</span>' : pivotNear(c) ? ' <span class="stg2 nr" title="완성된 베이스의 피벗까지 10% 이내">임박</span>' : "") +
+  (SUB[c.state] ? ' <span class="stg2 brk' + (SUB[c.state] === "붕괴" ? " hard" : "") + '" title="' + (SUB[c.state] === "붕괴" ? "베이스 하단 아래이거나 베이스가 35% 넘게 깊음 · 베이스를 새로 만들어야 함" : "주가가 10주선 아래 · 10주선을 회복하면 돌아올 수 있음") + '">' + SUB[c.state] + "</span>" : "");
+// 단계 · 피벗 대비 한 칸: 단계 + 피벗(최근 고점) 대비 ±% + 단계마다 보조 정보 하나
+function pivotPos(x) {
+  const c = x.d[x.d.length - 1].c, cl = x.cls;
+  const piv = cl.state === "extended" ? (x.lp ? x.lp.top : null) : cl.box ? cl.box.top : cl.hi;
+  return piv ? c / piv - 1 : null;
+}
+function posHtml(x) {
+  const cl = x.cls, k = stateKey(cl), v = pivotPos(x), c = x.d[x.d.length - 1].c;
+  const mu = (s) => '<span class="muted">' + s + "</span>";
+  const piv = cl.state === "extended" ? (x.lp ? x.lp.top : null) : cl.box ? cl.box.top : cl.hi;
+  const main = v == null ? mu(k === "extended" ? "베이스 없이 상승" : "-") : '<b' + (v > 0 ? ' class="chg-up"' : "") + ' title="피벗 ' + piv.toFixed(2) + '">' + pctf(v) + "</b>";
+  let sub = "";
+  if (k === "breakout") sub = cl.vr == null ? "" : cl.weak ? '<span class="warn" title="돌파일 거래량이 50일 평균의 ' + BREAKOUT_VOL + '배 미만">거래량 ' + cl.vr.toFixed(1) + "배</span>" : mu("거래량 " + cl.vr.toFixed(1) + "배");
+  else if (k === "base") sub = cl.weeks == null ? "" : cl.weeks < cl.need ? '<span class="muted" style="opacity:.7" title="베이스 완성 전: ' + cl.need + '주가 지나야 피벗이 확정됨">' + cl.weeks + "주</span>" : mu(cl.weeks + "주");
+  else if (k === "extended") sub = x.dist10 == null ? "" : mu("10주선 ") + pctf(x.dist10) + (x.lp ? mu(" · " + agoTxt(x.lp) + " 돌파") : "");
+  else if (cl.state === "trendbreak") sub = x.dist10 == null ? "" : mu("10주선 ") + pctf(x.dist10);
+  else if (cl.state === "basebreak") sub = mu("하단 ") + pctf(c / cl.box.bottom - 1);
+  else sub = mu("깊이 " + (cl.depth * 100).toFixed(0) + "%");
+  return stageHtml(cl) + " " + main + (sub ? mu(" · ") + sub : "");
+}
+const DETAIL = { trendbreak: "훼손 · 이탈", basebreak: "훼손 · 붕괴", basefail: "훼손 · 붕괴" };
 
 // k 거래일 전 시점으로 잘라서 전체를 계산 (k=0 지금, 1 전일, 5 1주 전)
 function computeView(k) {
@@ -1032,7 +1061,7 @@ function watchPlan(x, ms) {
   const nearTodo = () => (ms === "go" ? "<b>10주선 첫 눌림</b> · 반등 시 매수 검토" + earnNote : "10주선 지지 관찰 (" + MK + ")");
   let g, k, pv, todo;
   if (BROKEN.has(st)) {
-    g = 4; k = -x.rs;
+    g = 4; k = subRank(x.cls) * 1000 - x.rs;     // 훼손 안에서 이탈 먼저, 붕괴 나중
     pv = st === "trendbreak" ? mu(d10) : st === "basebreak" ? mu("베이스 하단 " + pctf(c / bx.bottom - 1)) : mu("베이스 깊이 -" + (((bx.top - bx.bottom) / bx.top) * 100).toFixed(0) + "%");
     todo = mu(st === "trendbreak" ? "10주선 회복 전 매수 안 함" : "베이스 실패 · 새 베이스까지 제외");
   } else if (bx && tt < 0 && -tt <= BUY_RANGE) {
@@ -1047,15 +1076,15 @@ function watchPlan(x, ms) {
     const th = x.cls.hi ? x.cls.hi / c - 1 : null;
     g = 2; k = 1 + (th ?? 1);
     pv = mu("베이스 전 · 고점까지 ") + (th == null ? "-" : (th * 100).toFixed(1) + "%");
-    todo = mu("고점 뒤 " + (x.cls.weeks ?? "") + "주째 · " + BASE_MIN_WEEKS + "주 지나면 피벗 잡힘");
+    todo = mu("베이스 다지기 기다림");
   } else if (!bx && st === "forming") {
     g = 2; k = 0.1 + (x.dist10 ?? 0) / 1000;           // 베이스 단계: 임박 다음, 피벗 먼 베이스 앞
     pv = mu("신고가 부근 " + (x.cls.weeks ?? "") + "주째 · ") + d10 + (near ? ' <span class="badge p10">10주선 근접</span>' : "");
-    todo = near ? nearTodo() : mu("신고가 부근 휴식 · " + BASE_MIN_WEEKS + "주 지나면 피벗 잡힘");
+    todo = near ? nearTodo() : mu("베이스 다지기 기다림");
   } else if (bx && tt >= 0) {
     g = 2; k = tt;
     pv = "<b>" + (tt * 100).toFixed(1) + "%</b> " + mu("남음");
-    todo = mu("피벗까지 멂 · 베이스 다지기 기다림");
+    todo = mu("베이스 다지기 기다림");
   } else {
     g = 3; k = (near ? -1 : 0) + (x.dist10 ?? 1);
     pv = extText(x, true) + (near ? ' <span class="badge p10">10주선 근접</span>' : "");
@@ -1106,18 +1135,17 @@ function renderMine() {
     const GTXT = ["매수 범위", "준비", "피벗 아래", "지나감", "이탈"];
     const rows = list.map((t) => {
       const x = VIEW.info[t];
-      if (!x || !x.cls) return "<tr>" + myRowHead(t) + '<td colspan="5" class="muted">데이터 없음</td></tr>';
-      const sk = stateKey(x.cls), pl = plan(t);
+      if (!x || !x.cls) return "<tr>" + myRowHead(t) + '<td colspan="4" class="muted">데이터 없음</td></tr>';
+      const pl = plan(t);
       return '<tr data-t="' + t + '" class="wg' + pl.g + '">' + myRowHead(t) +
-        '<td class="mst">' + stageHtml(x.cls) + "</td>" +
         '<td class="mrs">' + rsCell(x) + "</td>" +
-        '<td class="mpv"' + (x.cls.box ? ' title="피벗(베이스 상단) ' + x.cls.box.top.toFixed(2) + '"' : "") + ">" + pl.pv + "</td>" +
+        '<td class="mpos">' + posHtml(x) + "</td>" +
         '<td class="mrd" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + '</td><td class="mer">' + earnCell(t) + "</td></tr>";
     });
     const mtxt = MARKET_STATE ? '<span class="pill ' + MARKET_STATE.cls + '" style="padding:1px 8px;font-size:11px">시장 ' + MARKET_STATE.verdict + "</span> 기준" : "시장 판정 전";
-    wl.innerHTML = '<div class="mh"><b>' + STAR1 + ' 관심 점검</b><span class="muted">언제 사나 · ' + MY.watch.length + "종목 · 할 일 순서(돌파 → 준비 → 임박 → 베이스 → 상승 → 이탈) · " + mtxt + " · " + md(VIEW.asOf) + " 마감 기준</span></div>" +
-      '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="nm">종목명</th><th class="mgr">산업</th><th class="mst">단계</th>' +
-      '<th class="mrs">RS (4주 변화)</th><th class="mpv">피벗 대비</th><th class="mrd">다음 할 일</th><th class="mer">실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
+    wl.innerHTML = '<div class="mh"><b>' + STAR1 + ' 관심 점검</b><span class="muted">언제 사나 · ' + MY.watch.length + "종목 · 할 일 순서(돌파 → 준비 → 임박 → 베이스 → 상승 → 훼손) · " + mtxt + " · " + md(VIEW.asOf) + " 마감 기준</span></div>" +
+      '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="nm">종목명</th><th class="mgr">산업</th>' +
+      '<th class="mrs">RS (4주 변화)</th><th class="mpos">단계 · 피벗 대비</th><th class="mrd">다음 할 일</th><th class="mer">실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
   }
   [el, wl].forEach((box) => box.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t))));
 }
@@ -1206,7 +1234,7 @@ function renderSticky() {
     const list = leaderList(), cnt = (k) => list.filter((x) => stateKey(x.cls) === k).length;
     const nNear = list.filter((x) => stateKey(x.cls) === "base" && pivotNear(x.cls)).length;
     const chips = [["breakout", "돌파", cnt("breakout")], ["base", "베이스", cnt("base"), nNear > 0, nNear ? " <small>(임박 " + nNear + ")</small>" : ""],
-                   ["extended", "상승", cnt("extended"), leaderList().some(nearPullback)], ["broken", "이탈", cnt("broken")]];
+                   ["extended", "상승", cnt("extended"), leaderList().some(nearPullback)], ["broken", "훼손", cnt("broken")]];
     html += '<span class="sep">|</span>' + chips.map(([id, lbl, n, hot, extra]) =>
       '<a class="chip' + ((id === "breakout" || hot) && n ? " hot" : "") + '" href="#st-' + id + '">' + lbl + " <b>" + n + "</b>" + (extra || "") + "</a>").join(" · ");
     if (selectedGroup) html += '<span class="sep">|</span><span class="chip">' + selectedGroup + "만 보는 중</span>";
@@ -1304,9 +1332,9 @@ function renderFlow() {
 // 4층: 단계 4가지를 표 하나에. 단계 경계에 굵은 선, 0종목 단계는 맨 위 요약에만. 줄을 누르면 주봉·일봉 팝업
 const STAGES = [   // [키(stateKey), 제목, 설명]
   ["breakout", "돌파", "피벗(베이스 상단) 위 5% 이내 · 매수 범위"],
-  ["base", "베이스", "고점 아래에서 쉬는 중 · 준비 → 임박(피벗 10% 이내) → 나머지 순"],
+  ["base", "베이스", "피벗(최근 고점) 아래에서 쉬는 중 · 준비 → 임박(완성된 베이스의 피벗 10% 이내) → 나머지 순"],
   ["extended", "상승", "피벗 위 5% 넘게 오름 · 추격 금지 · 10주선 근접이 맨 앞"],
-  ["broken", "이탈", "10주선 아래, 베이스 하단 아래, 또는 베이스가 35% 넘게 깊음"],
+  ["broken", "훼손", "이탈(10주선 아래) → 붕괴(베이스 하단 아래이거나 35% 넘게 깊음) 순"],
 ];
 // 26주 주봉 종가 선 + 10주선(초록) + 피벗(주황 점선)
 function weekSpark(x) {
@@ -1336,21 +1364,21 @@ function renderLeaders() {
   // 맨 위 요약: 4단계 모두 숫자로, 누르면 그 단계 줄로
   let html = '<div class="lsum"><b>' + list.length + "종목</b>" + (MARKET_STATE ? ' · <span class="pill ' + MARKET_STATE.cls + '" style="padding:1px 8px;font-size:11px">시장 ' + MARKET_STATE.verdict + "</span> 기준" : "") + "<br>" +
     STAGES.map(([k, title]) => { const n = (by[k] || []).length; const nn = k === "base" ? (by[k] || []).filter((y) => pivotNear(y.x.cls)).length : 0;
-      return n ? '<a href="#st-' + k + '"><span class="stg ' + k + '">' + title + "</span> <b>" + n + "</b>" + (nn ? ' <span class="muted">(임박 ' + nn + ")</span>" : "") + "</a>" : '<span class="muted z">' + title + " 0</span>"; }).join(" ") + "</div>";
-  html += '<div class="nbox"><table class="ntable ltable"><colgroup><col class="c-st"><col class="c-tk"><col class="c-grp"><col class="c-rs"><col class="c-sp"><col class="c-sg"><col class="c-pv"><col class="c-todo"><col class="c-bd"></colgroup>' +
-    '<thead><tr><th class="stc">★</th><th class="tkc">티커</th><th>산업</th><th>RS (4주)</th><th>26주 주봉</th><th>단계</th><th>피벗 대비</th><th>다음 할 일</th><th class="bd">꼬리표</th></tr></thead><tbody>';
+      const nb = k === "broken" ? (by[k] || []).filter((y) => subRank(y.x.cls)).length : 0;
+      return n ? '<a href="#st-' + k + '"><span class="stg ' + k + '">' + title + "</span> <b>" + n + "</b>" + (nn ? ' <span class="muted">(임박 ' + nn + ")</span>" : "") + (k === "broken" && n ? ' <span class="muted">(이탈 ' + (n - nb) + " · 붕괴 " + nb + ")</span>" : "") + "</a>" : '<span class="muted z">' + title + " 0</span>"; }).join(" ") + "</div>";
+  html += '<div class="nbox"><table class="ntable ltable"><colgroup><col class="c-st"><col class="c-tk"><col class="c-grp"><col class="c-rs"><col class="c-sp"><col class="c-pos"><col class="c-todo"><col class="c-bd"></colgroup>' +
+    '<thead><tr><th class="stc">★</th><th class="tkc">티커</th><th>산업</th><th>RS (4주)</th><th>26주 주봉</th><th>단계 · 피벗 대비</th><th>다음 할 일</th><th class="bd">꼬리표</th></tr></thead><tbody>';
   STAGES.forEach(([k, title, desc]) => {
     const items = by[k];
     if (!items) return;
     const bRank = (c) => (c.ready ? 0 : pivotNear(c) ? 1 : c.state === "forming" ? 2 : 3);
     if (k === "base") items.sort((a, b) => bRank(a.x.cls) - bRank(b.x.cls) || a.pl.k - b.pl.k);
     else if (k === "extended") items.sort((a, b) => a.pl.k - b.pl.k);
+    else if (k === "broken") items.sort((a, b) => subRank(a.x.cls) - subRank(b.x.cls) || b.x.rs - a.x.rs);
     items.forEach(({ x, pl }, i) => {      // 구분 줄 없이: 단계 첫 줄에 앵커(고정 바·요약에서 이동)와 단계 경계선
-      const vol = x.cls.state === "breakout" && x.cls.vr != null ? (x.cls.weak ? ' · <span class="warn" title="돌파일 거래량이 50일 평균의 ' + BREAKOUT_VOL + '배 미만">거래량 ' + x.cls.vr.toFixed(1) + "배</span>" : ' <span class="muted">· 거래량 ' + x.cls.vr.toFixed(1) + "배</span>") : "";
       html += '<tr data-t="' + x.t + '"' + (i === 0 ? ' id="st-' + k + '" class="sfirst"' : "") + ' title="' + TICKERS[x.t].name + " · " + reasonOf(x).replace(/<[^>]+>/g, "") + '"><td class="stc">' + starHtml(x.t) + '</td><td class="tkc" title="' + TICKERS[x.t].name + '"><span class="tk">' + x.t + "</span></td>" +
         '<td class="muted" title="' + TICKERS[x.t].group + '">' + TICKERS[x.t].group + "</td><td>" + rsCell(x) + "</td>" +
-        "<td>" + weekSpark(x) + '</td><td title="' + title + " · " + desc + '">' + stageHtml(x.cls) + "</td>" +
-        "<td>" + pl.pv + vol + '</td><td class="todo" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + '</td><td class="bd">' + badgesFor(x.t, x, true) + "</td></tr>";
+        "<td>" + weekSpark(x) + '</td><td title="' + title + " · " + desc + '">' + posHtml(x) + '</td><td class="todo" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + '</td><td class="bd">' + badgesFor(x.t, x) + "</td></tr>";
     });
   });
   wrap.innerHTML = html + "</tbody></table></div>";
@@ -1365,11 +1393,11 @@ const STAGE_ORDER = { breakout: 0, base: 1, extended: 2, broken: 3 };
 const ALL_COLS = [   // [키, 제목, 너비, 정렬값]
   ["my", "★", 40, (x) => myLevel(x.t)], ["rank", "순위", 44, (x) => x.rs], ["t", "티커", 70, (x) => x.t], ["name", "종목명", 160, (x) => TICKERS[x.t].name],
   ["grp", "산업", 150, (x) => TICKERS[x.t].group], ["rs", "RS (4주)", 90, (x) => x.rs],
-  ["spark", "6개월", 132, null], ["stage", "단계", 108, (x) => STAGE_ORDER[stateKey(x.cls)] + (x.cls.ready ? 0 : pivotNear(x.cls) ? 0.1 : 0.2)],
+  ["spark", "6개월", 132, null], ["stage", "단계", 108, (x) => STAGE_ORDER[stateKey(x.cls)] + (x.cls.ready ? 0 : pivotNear(x.cls) ? 0.1 : 0.2) + subRank(x.cls) * 0.5],
   ["fromHi", "고점 대비", 76, (x) => x.fromHi], ["fromLo", "저점 대비", 76, (x) => x.fromLo],
   ["trend", "10주·40주", 74, (x) => (x.above10 ? 2 : 0) + (x.above40 ? 1 : 0)], ["tags", "꼬리표", 0, null],
 ];
-const ALL_FILTERS = [["all", "전체"], ["pre", "예비 주도주"], ["above10", "10주선 위"], ["nearHi", "고점 10% 이내"], ["noBroken", "이탈 제외"], ["hold", "★★ 보유"], ["watch", "★ 관심"]];
+const ALL_FILTERS = [["all", "전체"], ["pre", "예비 주도주"], ["above10", "10주선 위"], ["nearHi", "고점 10% 이내"], ["noBroken", "훼손 제외"], ["hold", "★★ 보유"], ["watch", "★ 관심"]];
 
 // 6개월 종가 선 + 50일선 (작은 SVG)
 function sparkSvg(d) {
@@ -1703,8 +1731,8 @@ function buildHelp() {
 <p><b>맨 위 요약</b>: 산업별로 들어온 종목 수(+)와 빠진 종목 수(−)를 묶어 보여 줍니다. 한 산업이 양쪽에 다 나올 수도 있습니다. 산업 이름을 누르면 4층·6층이 그 산업만 보여 주고, 다시 누르면 풀립니다.</p>
 <table>
 <tr><td><span class="kind in">진입</span></td><td>들어옴. RS가 ${RS_LEADER} 이상으로 새로 올라옴. "무엇이 바뀌었나" 칸에 지금 단계.</td></tr>
-<tr><td><span class="kind up">단계 ↑</span></td><td>들어옴. 베이스 → 돌파, 또는 이탈에서 벗어남(이탈 → 베이스·돌파·상승).</td></tr>
-<tr><td><span class="kind dn">단계 ↓</span></td><td>빠짐. 어느 단계에서든 이탈로 감.</td></tr>
+<tr><td><span class="kind up">단계 ↑</span></td><td>들어옴. 베이스 → 돌파, 또는 훼손에서 벗어남(훼손 → 베이스·돌파·상승).</td></tr>
+<tr><td><span class="kind dn">단계 ↓</span></td><td>빠짐. 어느 단계에서든 훼손으로 감.</td></tr>
 <tr><td><span class="kind out">탈락</span></td><td>빠짐. RS가 ${RS_LEADER} 아래로 내려감.</td></tr>
 <tr><td><span class="kind nt">단계 변화</span></td><td>중립. 정상적인 순환. 돌파 → 상승(오름), 상승 → 베이스(오른 뒤 쉼), 베이스 → 상승. 요약에는 넣지 않습니다.</td></tr>
 </table>
@@ -1716,23 +1744,24 @@ function buildHelp() {
 <p>차트 없이 <b>표 하나</b>에 모든 단계를 담아 한 화면에 봅니다. 맨 위 줄은 4단계의 종목 수(누르면 그 단계로 이동, 0종목 단계는 흐리게). 표는 단계 순서로 놓고(단계가 바뀌는 곳에 굵은 선), 한 종목 한 줄입니다. 단계 칸에 마우스를 올리면 그 단계 설명이 보입니다. 줄을 누르면 주봉·일봉 차트가 크게 뜨고, 마우스를 올리면 종목명과 단계 판정 근거가 보입니다. 칸 순서: 티커 · 산업 · RS(4주) · 26주 주봉 · 단계 · 피벗 대비 · 다음 할 일 · 꼬리표.</p>
 <table>
 <tr><td>26주 주봉</td><td>최근 26주 주봉 종가 선(붉은색: 10주선 위, 파란색: 아래), 초록 10주선, 주황 점선 피벗(베이스 상단, 없으면 마지막 돌파 피벗). 베이스 모양과 피벗과의 위치를 한눈에 봅니다.</td></tr>
-<tr><td>피벗 대비 · 다음 할 일</td><td>5층 관심 점검과 같은 계산입니다. 시장 신호등에 맞춰 할 일이 바뀝니다. 돌파면 돌파일 거래량(50일 평균 대비)을 함께 보여 주고, ${BREAKOUT_VOL}배에 못 미치면 붉게 표시합니다.</td></tr>
+<tr><td>단계 · 피벗 대비</td><td>단계와 위치를 한 칸에: <b>[단계] ±n% · 보조 정보</b>. 앞 숫자는 언제나 <b>피벗 대비</b>입니다(− 피벗 아래, + 피벗 위). 피벗은 베이스 상단이고, 베이스가 아직 완성 전이면 최근 고점(완성되면 그대로 피벗이 됨), 상승 단계는 마지막으로 돌파한 피벗입니다. 숫자에 마우스를 올리면 피벗 가격이 보입니다.<br>
+뒤 보조 정보는 단계마다 하나: 돌파 → 돌파일 거래량(50일 평균 대비, ${BREAKOUT_VOL}배 미만이면 붉게) · 베이스 → 베이스 주수(완성 전이면 흐리게) · 상승 → 10주선 대비와 돌파한 때 · 훼손 이탈 → 10주선 대비 · 훼손 붕괴 → 베이스 하단 대비 또는 베이스 깊이.</td></tr>
+<tr><td>다음 할 일</td><td>5층 관심 점검과 같은 계산입니다. 시장 신호등에 맞춰 할 일이 바뀝니다.</td></tr>
 </table>
 
-<h3 id="h-states">단계 4가지 <small>베이스 → 돌파 → 상승 → 베이스, 깨지면 이탈</small></h3>
-<p>베이스는 주봉 기준으로 최근 ${BASE_LOOKBACK}주 안의 최고점부터 지금까지 ${BASE_MIN_WEEKS}주 이상 옆으로 움직인 구간입니다. 베이스 상단이 돌파 기준(피벗)입니다.</p>
+<h3 id="h-states">단계 4가지 <small>베이스 → 돌파 → 상승 → 베이스, 깨지면 훼손</small></h3>
+<p>베이스는 주봉 기준으로 최근 ${BASE_LOOKBACK}주 안의 최고점부터 지금까지 옆으로 움직인 구간입니다. 베이스 상단이 돌파 기준(피벗)입니다. <b>베이스로 인정하는 최소 기간은 깊이에 따라 다릅니다(오닐 기준)</b>: 고점 대비 ${P(FLAT_MAX_DEPTH)} 이내로 얕으면 ${BASE_MIN_WEEKS}주(플랫 베이스), 그보다 깊으면 ${CUP_MIN_WEEKS}주(컵 위드 핸들·더블 바텀). 깊이가 ${P(BASE_MAX_DEPTH)}를 넘으면 실패하기 쉬운 베이스로 봅니다. 미너비니의 VCP는 3-65주로 폭이 넓지만, 매수 후보 표시는 엄격한 편이 낫다고 보고 오닐 기준을 씁니다.</p>
 <table>
 <tr><td>베이스</td><td>고점 아래에서 쉬는 중. <b>할 일: 기다림, 피벗이 가까우면 표시.</b> 단계 칸 옆 표시로 가까운 정도를 나눕니다.<br>
 <span class="stg2 rdy">준비</span> 피벗까지 ${P(NEAR_TOP)} 이내이고, 최근 3주 변동폭이 ${P(TIGHT_3W)} 이하로 조여지고 최근 2주 거래량이 그 전 10주 평균의 ${P(DRY_VOL)} 이하로 마름. 돌파 지점을 미리 표시할 때.<br>
-<span class="stg2 nr">임박</span> 완성된 베이스(${BASE_MIN_WEEKS}주 이상)의 피벗까지 ${P(NEAR_TOP)} 이내.<br>
-표시가 없으면 아직 멂: 피벗까지 ${P(NEAR_TOP)} 넘게 남았거나, 고점 뒤 ${BASE_MIN_WEEKS}주가 안 돼 피벗이 아직 없음("신고가 부근 n주째", "고점 뒤 n주째"). 상장한 지 6주가 안 된 종목도 여기에 둡니다. 4층에서는 준비 → 임박 → 신고가 부근 → 나머지 순서로 놓습니다.</td></tr>
+<span class="stg2 nr">임박</span> 완성된 베이스(얕으면 ${BASE_MIN_WEEKS}주, 깊으면 ${CUP_MIN_WEEKS}주 이상)의 피벗까지 ${P(NEAR_TOP)} 이내.<br>
+표시가 없으면 아직 멂: 피벗까지 ${P(NEAR_TOP)} 넘게 남았거나, 베이스가 아직 완성 전(주수가 흐리게 표시). 상장한 지 6주가 안 된 종목도 여기에 둡니다. 할 일은 모두 "베이스 다지기 기다림"입니다. 4층에서는 준비 → 임박 → 신고가 부근 → 나머지 순서로 놓습니다.</td></tr>
 <tr><td>돌파</td><td>피벗을 넘었고 아직 피벗 위 ${P(BUY_RANGE)} 이내(매수 범위). 돌파 직전 주에 장중 고가가 상단을 살짝 넘어 지금 베이스가 안 잡혀도, 최근 2주 안에 그 베이스를 주봉 종가로 넘었으면 돌파로 봅니다. <b>할 일: 매수 검토.</b> 돌파일 거래량이 50일 평균의 ${BREAKOUT_VOL}배에 못 미치면 붉게 표시합니다. 거래량 없는 돌파는 큰 자본의 흔적이 아닙니다.</td></tr>
 <tr><td>상승</td><td>피벗 위 ${P(BUY_RANGE)} 넘게 올랐거나, 베이스 없이 10주선보다 10% 넘게 위. <b>할 일: 추격하지 않고 다음 베이스를 기다림.</b> "돌파 +n% (몇 주 전) · 10주선 +n%"로 보여 줍니다. 돌파 피벗은 최근 ${PIVOT_MEMORY_WEEKS}주 안에서 마지막으로 넘은 베이스 상단이며, 돌파한 베이스 없이 오른 종목은 "베이스 없이 상승"입니다. 10주선 위 ${P(PULLBACK_NEAR)} 이내로 눌리면 "10주선 근접" 꼬리표가 붙고 맨 앞에 놓입니다(돌파 후 첫 10주선 눌림 반등은 오닐의 추가 매수 자리).</td></tr>
-<tr><td>이탈</td><td>어느 단계에서든 깨짐. <b>할 일: 제외.</b> 이유는 피벗 대비 칸과 보유 경고에 그대로 적습니다.<br>
-· 추세 이탈: 주가가 10주선 아래("10주선 −n%")<br>
-· 베이스 이탈: 주가가 베이스 하단(베이스 안 최저가) 아래("베이스 하단 −n%")<br>
-· 베이스 붕괴: 베이스 저점이 고점보다 ${P(BASE_MAX_DEPTH)} 넘게 깊음("베이스 깊이 −n%"). 고점 근처 매물이 많아 실패하기 쉬운 베이스(오닐·미너비니: 3분의 1 넘게 빠진 베이스는 위험).<br>
-여러 문제가 겹치면 더 심각한 이유(베이스 붕괴 &gt; 베이스 이탈 &gt; 추세 이탈)를 적습니다.</td></tr>
+<tr><td>훼손</td><td>어느 단계에서든 깨짐. <b>할 일: 제외.</b> 단계 옆에 정도를 표시하고, 훼손 안에서는 이탈 → 붕괴 순서로 놓습니다(같은 표시끼리는 RS 순).<br>
+<span class="stg2 brk">이탈</span> 주가가 10주선 아래. 추세가 꺾였지만 베이스는 살아 있어 10주선을 회복하면 돌아올 수 있음. 보조 정보: "10주선 −n%".<br>
+<span class="stg2 brk hard">붕괴</span> 더 심함. 주가가 베이스 하단(베이스 안 최저가) 아래("하단 −n%"), 또는 베이스 저점이 고점보다 ${P(BASE_MAX_DEPTH)} 넘게 깊음("깊이 n%"). 베이스 자체가 망가져 새로 만들어야 함(오닐·미너비니: 3분의 1 넘게 빠진 베이스는 위험).<br>
+여러 문제가 겹치면 더 심각한 쪽(붕괴)으로 표시합니다.</td></tr>
 </table>
 
 <h3 id="h-all">6층 · 전체 종목 <small>나스닥100 RS 순위</small></h3>
@@ -1745,21 +1774,21 @@ function buildHelp() {
 <tr><td><span class="dot on10"></span><span class="dot on40"></span></td><td>왼쪽 점은 10주선, 오른쪽 점은 40주선. 채워져 있으면 그 선 위, 빈 원이면 아래.</td></tr>
 <tr><td>${b("pre", "예비 주도주")}</td><td>다음 네 가지를 모두 갖춘 종목: ① RS ${PRE_RS_MIN}-${RS_LEADER - 1} ② 4주 사이 RS +${PRE_RS_GAIN} 이상 ③ 10주선 위 ④ <b>건전한 베이스</b>(베이스 저점이 고점보다 ${P(BASE_MAX_DEPTH)} 이내로 얕고, 주가가 베이스 하단 위. 아직 베이스가 생기기 전이면 통과). 크게 떨어졌다가 바닥에서 반등만 하는 종목은 RS가 빨리 올라도 ④에서 걸러집니다. 3층에 들어오기 전 미리 볼 후보입니다. 줄 배경이 옅은 초록입니다.</td></tr>
 </table>
-<p>칸 제목을 누르면 그 칸으로 정렬하고, 한 번 더 누르면 반대 순서입니다. 위의 버튼으로 예비 주도주, 10주선 위, 고점 10% 이내, 이탈 제외만 볼 수 있고, 오른쪽 칸에서 티커나 이름으로 찾습니다. 2층 산업 표나 3층 요약에서 산업을 고르면 6층도 그 산업만 보여 줍니다.</p>
+<p>칸 제목을 누르면 그 칸으로 정렬하고, 한 번 더 누르면 반대 순서입니다. 위의 버튼으로 예비 주도주, 10주선 위, 고점 10% 이내, 훼손 제외만 볼 수 있고, 오른쪽 칸에서 티커나 이름으로 찾습니다. 2층 산업 표나 3층 요약에서 산업을 고르면 6층도 그 산업만 보여 줍니다.</p>
 
 <h3 id="h-my">5층 · 내 종목 <small>★★ 보유 · ★ 관심</small></h3>
 <p>모든 표와 카드 맨 앞의 별을 누를 때마다 <b>☆ → ★ 관심 → ★★ 보유 → ☆</b> 순서로 바뀝니다. 보유는 관심을 포함하므로 둘은 겹치지 않습니다. 잘못 눌렀으면 아래에 잠깐 뜨는 '되돌리기'를 누르세요. 별을 누를 때는 차트가 열리지 않습니다.</p>
 <p><b>★★ 보유 점검 · 언제 파나</b></p>
 <table>
 <tr><td>단계 · RS</td><td>지금 단계와 RS, 4주 사이 RS 변화.</td></tr>
-<tr><td>10주선 대비</td><td>주가가 10주선보다 몇 % 위(붉은색)·아래(파란색)인지. 아래로 내려가면 추세 이탈입니다.</td></tr>
+<tr><td>10주선 대비</td><td>주가가 10주선보다 몇 % 위(붉은색)·아래(파란색)인지. 아래로 내려가면 훼손(이탈)입니다.</td></tr>
 <tr><td>매도선(베이스 하단) 대비</td><td>주가가 감지된 베이스의 하단보다 몇 % 위인지. 베이스마다 매도선을 올리는 원칙의 기준선입니다. 마우스를 올리면 매도선 가격이 보입니다. 베이스가 아직 ${BASE_MIN_WEEKS}주가 안 됐으면 최근 고점 뒤 저점("형성 중 저점")을 대신 씁니다. 규칙으로 찾은 근사치이니 실제 매도선은 차트로 정하세요.</td></tr>
-<tr><td>돌파 피벗 대비</td><td>마지막으로 돌파한 베이스 상단(돌파 피벗)보다 몇 % 위인지와 몇 주 전 돌파였는지. 최근 ${PIVOT_MEMORY_WEEKS}주 안에서, 그 시점에 ${BASE_MIN_WEEKS}주 이상·깊이 ${P(BASE_MAX_DEPTH)} 이내 베이스의 상단을 주봉 종가로 넘은 가장 최근 주를 찾습니다. 돌파 뒤 신고가가 이어져 지금 베이스가 잡히지 않아도 돌파 지점은 기억합니다. 마우스를 올리면 피벗 가격과 돌파 주가 보입니다.</td></tr>
-<tr><td>경고</td><td><span class="wtag">추세 이탈</span><span class="wtag">베이스 이탈</span><span class="wtag">베이스 붕괴</span> 단계 · <span class="wtag">RS ${RS_LEADER} 아래</span> · <span class="wtag">돌파 피벗 아래</span> 주가가 마지막 돌파 피벗 아래로 되돌아옴(돌파 실패 신호) · <span class="wtag">실적 D-n</span> ${EARN_WARN_DAYS}일 안 실적 발표. 하나라도 있으면 줄 왼쪽에 붉은 띠가 생기고, 고정 바의 "★★ 보유" 옆에 경고 수가 붉게 나옵니다.</td></tr>
+<tr><td>돌파 피벗 대비</td><td>마지막으로 돌파한 베이스 상단(돌파 피벗)보다 몇 % 위인지와 몇 주 전 돌파였는지. 최근 ${PIVOT_MEMORY_WEEKS}주 안에서, 그 시점에 완성된 베이스(얕으면 ${BASE_MIN_WEEKS}주, 깊으면 ${CUP_MIN_WEEKS}주 이상)·깊이 ${P(BASE_MAX_DEPTH)} 이내 베이스의 상단을 주봉 종가로 넘은 가장 최근 주를 찾습니다. 돌파 뒤 신고가가 이어져 지금 베이스가 잡히지 않아도 돌파 지점은 기억합니다. 마우스를 올리면 피벗 가격과 돌파 주가 보입니다.</td></tr>
+<tr><td>경고</td><td><span class="wtag">훼손 · 이탈</span><span class="wtag">훼손 · 붕괴</span> 단계 · <span class="wtag">RS ${RS_LEADER} 아래</span> · <span class="wtag">돌파 피벗 아래</span> 주가가 마지막 돌파 피벗 아래로 되돌아옴(돌파 실패 신호) · <span class="wtag">실적 D-n</span> ${EARN_WARN_DAYS}일 안 실적 발표. 하나라도 있으면 줄 왼쪽에 붉은 띠가 생기고, 고정 바의 "★★ 보유" 옆에 경고 수가 붉게 나옵니다.</td></tr>
 </table>
-<p><b>★ 관심 점검 · 언제 사나</b> <span class="muted">지금 할 수 있는 일 순서: 돌파(매수 범위) → 베이스 중 준비 → 임박(가까운 순) → 나머지 베이스 → 상승(10주선 근접 먼저) → 이탈</span></p>
+<p><b>★ 관심 점검 · 언제 사나</b> <span class="muted">지금 할 수 있는 일 순서: 돌파(매수 범위) → 베이스 중 준비 → 임박(가까운 순) → 나머지 베이스 → 상승(10주선 근접 먼저) → 훼손(이탈 → 붕괴)</span></p>
 <table>
-<tr><td>피벗 대비</td><td>피벗(베이스 상단) 아래면 "n% 남음". 넘었고 피벗 위 ${P(BUY_RANGE)} 이내면 "돌파 +n% · 매수 범위". 그보다 위인 상승 종목은 4층·보유 점검과 같은 기준으로 "돌파 +n% (몇 주 전) · 10주선 +n%"(마지막 돌파 피벗 대비와 10주선 대비)를 보여 주고, 돌파한 베이스가 없이 오른 종목은 "베이스 없이 상승 · 10주선 +n%"입니다. 10주선 위 ${P(PULLBACK_NEAR)} 이내면 "10주선 근접"이 붙습니다.</td></tr>
+<tr><td>단계 · 피벗 대비</td><td>4층과 같은 표기입니다: [단계] 피벗 대비 ±n% · 보조 정보. 아래 4층 도움말의 "단계 · 피벗 대비" 참고.</td></tr>
 <tr><td>다음 할 일</td><td>단계와 <b>맨 위 시장 신호등</b>을 함께 보고 정합니다. 시장이 <b>공격 가능</b>일 때만 "매수 검토", "돌파 + 거래량 시 매수"가 나옵니다. <b>신규 매수 중지</b>면 피벗 표시와 관찰까지만, <b>방어</b>면 관찰만입니다. 실적이 ${EARN_WARN_DAYS}일 안이면 "실적 지난 뒤"를 덧붙입니다. 매수 범위를 지난 종목은 추격하지 않고 다음 베이스나 10주선 눌림을 기다립니다. '준비'는 단계 칸에 표시됩니다.</td></tr>
 <tr><td>실적</td><td>${EARN_WARN_DAYS}일 안이면 붉게. 실적 직전 돌파 매수는 갭 위험이 있습니다.</td></tr>
 </table>
@@ -1772,7 +1801,7 @@ function buildHelp() {
 <table>
 <tr><td>${b("new", "NEW")}</td><td>1주 전 이후 RS ${RS_LEADER} 이상으로 새로 들어온 종목. 비교 날짜는 3층 자금 이동의 종목별 제목에 나오고, 꼬리표에 마우스를 올려도 보입니다.</td></tr>
 <tr><td>${b("new", "베이스→돌파")}</td><td>1주 전 이후 단계가 바뀐 종목. 화살표 앞이 예전, 뒤가 지금.</td></tr>
-<tr><td>${b("p10", "10주선 근접")}</td><td>상승 종목, 또는 신고가 부근에서 쉬는 베이스 종목이 10주선 위 ${P(PULLBACK_NEAR)} 이내까지 눌림. 돌파 후 첫 10주선 눌림에서 반등하면 추가 매수 자리. 10주선 아래로 내려가면 이탈로 바뀝니다.</td></tr>
+<tr><td>${b("p10", "10주선 근접")}</td><td>상승 종목, 또는 신고가 부근에서 쉬는 베이스 종목이 10주선 위 ${P(PULLBACK_NEAR)} 이내까지 눌림. 돌파 후 첫 10주선 눌림에서 반등하면 추가 매수 자리. 10주선 아래로 내려가면 훼손(이탈)으로 바뀝니다.</td></tr>
 <tr><td>${b("rsh", "RS선 신고가")}</td><td>종목 ÷ QQQ 선이 52주 신고가. 주가보다 상대강도가 먼저 신고가를 내면 큰 자본이 사 모으는 흔적일 수 있습니다.</td></tr>
 <tr><td>${b("earn", "실적 11/05 D-5")}</td><td>${EARN_WARN_DAYS}일 안에 실적 발표. 실적 직후 갭 하락은 계획보다 큰 손실을 만들 수 있어 붉게 표시합니다.</td></tr>
 <tr><td>${b("earn far", "실적 12/01 D-31")}</td><td>${EARN_WARN_DAYS + 1}-45일 뒤 실적 발표(회색).</td></tr>
