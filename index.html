@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 22:30</title>
+<title>추세 대시보드 v2026-11-01 23:10</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -320,7 +320,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 22:30</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 23:10</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1667,7 +1667,7 @@ function buildHelp() {
   document.getElementById("helpPanel").innerHTML = `
 <div class="phead"><b>이 대시보드 보는 법</b><button class="close" id="helpClose" title="닫기 (Esc)">✕</button></div>
 <div class="toc"><a href="#h-start">처음 오셨다면</a><a href="#h-signal">신호등</a><a href="#h-sticky">고정 바</a>
-<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 자금 지도</a><a href="#h-changes">3층 자금 이동</a><a href="#h-leaders">4층 주도주</a><a href="#h-states">단계 4가지</a><a href="#h-my">5층 내 종목 ★</a><a href="#h-all">6층 전체 종목</a>
+<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 자금 지도</a><a href="#h-changes">3층 자금 이동</a><a href="#h-leaders">4층 주도주</a><a href="#h-rs">RS 계산법</a><a href="#h-states">단계 4가지</a><a href="#h-my">5층 내 종목 ★</a><a href="#h-all">6층 전체 종목</a>
 <a href="#h-tags">꼬리표</a><a href="#h-charts">차트 읽는 법</a><a href="#h-data">데이터·갱신</a><a href="#h-limits">한계</a></div>
 
 <h3 id="h-start">처음 오셨다면</h3>
@@ -1741,7 +1741,22 @@ function buildHelp() {
 
 <h3 id="h-leaders">4층 · 주도주</h3>
 <p>나스닥100에서 <b>RS ${RS_LEADER} 이상</b>인 종목만 골라, 원칙상 <b>지금 무엇을 할 단계인지</b>로 나눕니다.</p>
-<div class="q2"><b>RS(상대강도)</b>: 최근 12개월 수익률을 오닐식으로 가중(최근 3개월 2배)해서, 나스닥100 100종목 안에서 1-99로 순위를 매긴 값입니다. RS ${RS_LEADER} = 상위 20%. IBD의 RS 등급은 전체 상장 종목 대비라 숫자가 다를 수 있습니다.</div>
+<div class="q2"><b>RS(상대강도)</b>: 최근 12개월 수익률을 오닐식으로 가중(최근 3개월 2배)해서, 나스닥100 100종목 안에서 1-99로 순위를 매긴 값입니다. RS ${RS_LEADER} = 상위 20%. 자세한 계산법은 아래 "RS 계산법" 참고.</div>
+
+<h3 id="h-rs">RS 계산법 <small>IBD RS 등급의 공개 근사식</small></h3>
+<p><b>1단계 · 점수</b>: 최근 3·6·9·12개월(63·126·189·252거래일) 수익을 가중 평균합니다.</p>
+<div class="q2">점수 = 0.4 × (오늘 ÷ 3개월 전) + 0.2 × (오늘 ÷ 6개월 전) + 0.2 × (오늘 ÷ 9개월 전) + 0.2 × (오늘 ÷ 12개월 전)</div>
+<p>최근 3개월은 네 구간 모두에 들어가므로 실제 비중이 가장 큽니다(대략 최근 분기 45% · 그 전 27% · 18% · 가장 오래된 분기 9%). 상장 1년이 안 된 종목은 있는 구간만으로 비중을 다시 맞추고, 최소 3개월은 있어야 계산합니다.</p>
+<p><b>2단계 · 순위</b>: 나스닥100 안에서 점수 순으로 줄 세워 1(맨 아래)-99(맨 위)로 고르게 매깁니다. <b>RS 4주 변화</b>는 20거래일 전 시점으로 같은 계산을 해서 뺀 값입니다.</p>
+<p><b>왜 이 방법인가</b>: IBD는 RS 등급을 "최근 12개월 주가 성과의 순위, 최근 3개월에 더 큰 비중"이라고만 밝히고 정확한 식은 공개하지 않습니다. 위 식은 그 정의를 옮긴 가장 널리 쓰이는 공개 근사식(트레이딩뷰·ThinkorSwim의 IBD식 RS 지표)입니다. 오닐·미너비니의 기준(RS ${RS_LEADER} 이상, 미너비니 트렌드 템플릿은 70 이상, 가급적 80-90대)을 그대로 쓸 수 있고, 최근 가속을 반영해 주도주 교체를 빨리 잡습니다. 단순 12개월 수익률은 오래전 급등이 남아 교체를 늦게 반영하고, 학술 모멘텀(최근 1개월 제외)은 돌파 매매에서 핵심인 최근 강세를 빼 버립니다.</p>
+<table>
+<tr><td>장점</td><td>책의 RS 등급과 같은 개념 · 식이 단순해 검증하기 쉬움 · 1년치 종가만 있으면 됨 · 최근 가중이라 새 주도주를 빨리 잡음</td></tr>
+<tr><td>주의</td><td>① 비교 범위가 나스닥100뿐이라 IBD(미국 전체 약 6,000종목) 숫자와 다름. 여기서 RS ${RS_LEADER}은 "대형 기술주 100개 중 상위 20%"이고, 순위 1칸이 약 1점이라 거침.<br>
+② 상대 순위라 시장 전체가 떨어져도 상위 20%는 늘 ${RS_LEADER} 이상. 1층 신호등과 10주선 같은 추세 조건을 함께 봐야 함.<br>
+③ 크게 빠졌다가 V자로 튄 종목은 RS가 빨리 오름. 예비 주도주의 '건전한 베이스' 조건과 훼손 판정으로 거름.<br>
+④ 주가만 봄(실적·거래량 미반영). 실적 발표 같은 하루짜리 큰 갭 하나가 점수를 크게 움직일 수 있음.</td></tr>
+<tr><td>RS선과의 차이</td><td>RS 등급은 "지금 몇 등인가", RS선(종목 ÷ QQQ)은 "상대강도가 어느 방향으로 가는가". RS선이 52주 신고가면 꼬리표로 따로 알려 줍니다.</td></tr>
+</table>
 <p>차트 없이 <b>표 하나</b>에 모든 단계를 담아 한 화면에 봅니다. 맨 위 줄은 4단계의 종목 수(누르면 그 단계로 이동, 0종목 단계는 흐리게). 표는 가격 위치 순서인 <b>상승 → 돌파 → 베이스 → 훼손</b>으로 놓아, 피벗 대비 숫자가 위에서 아래로 줄어드는 사다리처럼 읽힙니다(단계가 바뀌는 곳에 굵은 선), 한 종목 한 줄입니다. 단계 칸에 마우스를 올리면 그 단계 설명이 보입니다. 줄을 누르면 주봉·일봉 차트가 크게 뜨고, 마우스를 올리면 종목명과 단계 판정 근거가 보입니다. 칸 순서: 티커 · 산업 · RS(4주) · 26주 주봉 · 단계 · 피벗 대비 · 다음 할 일 · 꼬리표.</p>
 <table>
 <tr><td>26주 주봉</td><td>최근 26주 주봉 종가 선(붉은색: 10주선 위, 파란색: 아래), 초록 10주선, 주황 점선 피벗(베이스 상단, 없으면 마지막 돌파 피벗). 베이스 모양과 피벗과의 위치를 한눈에 봅니다.</td></tr>
