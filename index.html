@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 16:15</title>
+<title>추세 대시보드 v2026-11-01 18:35</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -110,8 +110,19 @@
   #changes .cbox { margin-top: 8px; overflow-x: auto; border-top: 1px solid var(--line); }
   table.ctable .kd { width: 84px; } table.ctable .grp { width: 180px; } table.ctable .rsc { width: 110px; } table.ctable .chg { width: 230px; } table.ctable .rs { width: 460px; }
   table.ctable .kind { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 4px; }
-  .kind.mv { background: var(--accent); color: #fff; } .kind.ad { background: #16a34a; color: #fff; }
-  .kind.dr { background: transparent; color: var(--sub); border: 1px solid var(--line); }
+  .kind.in { background: #16a34a; color: #fff; } .kind.up { color: #16a34a; border: 1px solid #16a34a; }
+  .kind.out { background: var(--down); color: #fff; } .kind.dn { color: var(--down); border: 1px solid var(--down); }
+  .kind.nt { color: var(--sub); border: 1px solid var(--line); }
+  .movesum { border-radius: 10px; padding: 10px 14px; border: 1px solid var(--line); background: var(--card); font-size: 13px; line-height: 1.9; margin-bottom: 10px; }
+  .movesum:empty { display: none; }
+  .movesum .lbl { display: inline-block; min-width: 68px; font-weight: 800; }
+  .movesum .lbl.in { color: #16a34a; } .movesum .lbl.out { color: var(--down); }
+  .movesum .g { display: inline-block; margin-right: 12px; white-space: nowrap; cursor: pointer; }
+  .movesum .g b { text-decoration: underline dotted; text-underline-offset: 3px; }
+  .movesum .g.sel b { color: var(--accent); }
+  .movesum .n.in { color: #16a34a; font-weight: 800; } .movesum .n.out { color: var(--down); font-weight: 800; }
+  #sec-move, #changes { scroll-margin-top: 60px; }
+  @media (max-width: 700px) { .movesum .g { white-space: normal; display: block; margin-right: 0; } .movesum .lbl { display: block; } }
   .tk { font-weight: 700; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
 
   h2 { font-size: 16px; margin: 28px 0 4px; scroll-margin-top: 60px; }
@@ -294,7 +305,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 16:15</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 18:35</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -326,8 +337,8 @@
   </div>
 
   <!-- 2층 -->
-  <h2 id="sec-flow">2. 자금 흐름 — 나스닥100 안에서 돈이 어디로 가나 <button class="q" data-help="h-flow" title="이 층 보는 법">?</button></h2>
-  <p class="lead">위 두 비율선은 시장 체질, 아래 표는 산업별 순위입니다. 표의 행을 누르면 3층에서 그 산업만 봅니다.</p>
+  <h2 id="sec-flow">2. 자금 지도 — 지금 돈이 어디에 머물러 있나 <button class="q" data-help="h-flow" title="이 층 보는 법">?</button></h2>
+  <p class="lead">위 두 비율선은 시장 체질, 아래 표는 4주 기준 산업별 순위입니다. 표의 행을 누르면 4층·6층에서 그 산업만 봅니다.</p>
   <div class="grid2">
     <div class="card"><div class="card-head"><div class="name">QQQE / QQQ<span class="ticker">동일가중 ÷ 시총가중</span></div><div class="reason" id="r1txt">-</div></div><div class="ratioChart" id="r1"></div></div>
     <div class="card"><div class="card-head"><div class="name">XLY / XLP<span class="ticker">경기소비재 ÷ 필수소비재</span></div><div class="reason" id="r2txt">-</div></div><div class="ratioChart" id="r2"></div></div>
@@ -340,24 +351,29 @@
   </div>
 
   <!-- 3층 -->
-  <h2 id="sec-leaders">3. 주도주 — 나스닥100 RS 80 이상, 지금 어느 단계인가 <button class="q" data-help="h-leaders" title="이 층 보는 법">?</button></h2>
+  <h2 id="sec-move">3. 자금 이동 — 이번 주 어디서 빠져 어디로 들어왔나 <button class="q" data-help="h-changes" title="이 층 보는 법">?</button></h2>
+  <p class="lead">1주 전과 비교해 RS 80 진입·탈락과 단계 변화를 산업별로 묶었습니다. 산업 이름을 누르면 4층·6층에서 그 산업만 봅니다.</p>
+  <div id="moveSum" class="movesum"></div>
+  <div id="changes"><span class="muted">나스닥100 데이터를 모두 받으면 변화가 표시됩니다.</span></div>
+
+  <!-- 4층 -->
+  <h2 id="sec-leaders">4. 주도주 — 나스닥100 RS 80 이상, 지금 어느 단계인가 <button class="q" data-help="h-leaders" title="이 층 보는 법">?</button></h2>
   <p class="lead">RS는 오닐식 가중 12개월 상대강도(최근 3개월 2배 가중)를 나스닥100 안에서 1-99로 매긴 값입니다. 카드를 누르면 주봉·일봉을 크게 봅니다.</p>
   <div class="legend" style="padding:0 0 8px"><i style="color:#16a34a">━</i> 10주선 &nbsp; <i style="color:#7c3aed">━</i> 40주선 &nbsp;
     <i style="color:#f59e0b">━</i> 베이스 상단·하단 &nbsp; <i style="color:#b91c1c">┄</i> 52주 고점 &nbsp;
     <span class="badge rsh">RS선 신고가</span> 종목÷QQQ 선이 52주 신고가 &nbsp; <span class="badge earn">실적 D-7</span> 14일 안 실적 발표 &nbsp; <i style="background:rgba(250,204,21,0.38);color:transparent;padding:0 5px">■</i> 실적 발표일(주)</div>
-    <div id="changes"><span class="muted">나스닥100 데이터를 모두 받으면 변화가 표시됩니다.</span></div>
-  <div id="filterChip"><button id="clearFilter"></button></div>
+    <div id="filterChip"><button id="clearFilter"></button></div>
   <div id="leaders"><div class="muted" style="font-size:13px">나스닥100 데이터를 모두 받으면 표시됩니다.</div></div>
 
-  <!-- 4층 -->
-  <h2 id="sec-my">4. 내 종목 — ★★ 보유는 언제 파나, ★ 관심은 언제 사나 <button class="q" data-help="h-my" title="이 층 보는 법">?</button></h2>
+  <!-- 5층 -->
+  <h2 id="sec-my">5. 내 종목 — ★★ 보유는 언제 파나, ★ 관심은 언제 사나 <button class="q" data-help="h-my" title="이 층 보는 법">?</button></h2>
   <p class="lead">종목 맨 앞의 별을 누를 때마다 ☆ → ★ 관심 → ★★ 보유 → ☆ 로 바뀝니다. 이 브라우저에만 저장되고, 다른 기기로는 ⚙ 설정의 '설정 링크 복사'로 옮깁니다.</p>
   <div id="mine" class="mycard"></div>
   <div id="watch" class="mycard"></div>
 
-  <!-- 5층 -->
-  <h2 id="sec-all">5. 전체 종목 — 나스닥100 RS 순위 <button class="q" data-help="h-all" title="이 층 보는 법">?</button></h2>
-  <p class="lead">3층 아래에서 무엇이 올라오고 있는지 보는 전체 명단입니다. 칸 제목을 누르면 정렬이 바뀌고, 줄을 누르면 차트를 크게 봅니다.</p>
+  <!-- 6층 -->
+  <h2 id="sec-all">6. 전체 종목 — 나스닥100 RS 순위 <button class="q" data-help="h-all" title="이 층 보는 법">?</button></h2>
+  <p class="lead">4층 주도주 아래에서 무엇이 올라오고 있는지 보는 전체 명단입니다. 칸 제목을 누르면 정렬이 바뀌고, 줄을 누르면 차트를 크게 봅니다.</p>
   <div id="allBox" class="allbox">
     <div id="allSum" class="allsum">나스닥100 데이터를 모두 받으면 표시됩니다.</div>
     <div class="alltools" id="allTools"></div>
@@ -494,7 +510,7 @@ function toast(html, undo) {
   if (undo) document.getElementById("toastUndo").onclick = () => { undo(); el.classList.remove("on"); };
   clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("on"), 4000);
 }
-// 내 종목이 바뀌면 다시 그릴 곳 (3층 카드 차트는 다시 그리지 않고 별만 바꿈)
+// 내 종목이 바뀌면 다시 그릴 곳 (4층 카드 차트는 다시 그리지 않고 별만 바꿈)
 function myRefresh() {
   document.querySelectorAll("[data-star]").forEach((el) => {
     const lv = myLevel(el.dataset.star);
@@ -718,7 +734,7 @@ function computeView(k) {
     const d = D[t], w = toWeekly(d), ma10 = smaArr(w.map((x) => x.c), 10);
     const x = info[t] = { t, d, w, rs: rn[t], rsThen: rt[t], above10: ma10[w.length - 1] != null && d[d.length - 1].c > ma10[w.length - 1] };
     if (x.rs >= RS_LEADER) { x.cls = classify(d, w); x.rsHigh = q ? rsLineHigh(d, q) : false; }
-    if (!k) {                                   // 4·5층용: 지금 시점만 계산
+    if (!k) {                                   // 5·6층용: 지금 시점만 계산
       if (!x.cls) { x.cls = classify(d, w); x.rsHigh = q ? rsLineHigh(d, q) : false; }
       const ma40 = smaArr(w.map((y) => y.c), 40)[w.length - 1], c = d[d.length - 1].c, y1 = d.slice(-252);
       x.above40 = ma40 != null ? c > ma40 : null;
@@ -909,7 +925,7 @@ function badgesFor(t, x) {
   return s + earnBadge(t);
 }
 
-// ═════ 4층 내 종목: ★★ 보유 점검(언제 파나) · ★ 관심 점검(언제 사나) ═════
+// ═════ 5층 내 종목: ★★ 보유 점검(언제 파나) · ★ 관심 점검(언제 사나) ═════
 function earnDays(t) {
   const e = EARN[t]; if (!e) return null;
   const today = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
@@ -1063,7 +1079,7 @@ function renderSticky() {
   let html = MARKET_STATE ? '<a class="pill ' + MARKET_STATE.cls + '" href="#sec-market">QQQ · ' + MARKET_STATE.verdict + "</a>"
                           : '<span class="pill">시장 판정 대기 중</span>';
   if (VIEW) {
-    // 중요한 것부터: 보유 경고 → 이번 주 변화 → 예비 주도주 → 3층 단계별 수 (휴대폰에서는 한 줄, 옆으로 밀어 봄)
+    // 중요한 것부터: 보유 경고 → 자금 이동 → 예비 주도주 → 4층 단계별 수 (휴대폰에서는 한 줄, 옆으로 밀어 봄)
     if (MY.hold.length || MY.watch.length) {
       const nW = MY.hold.filter((t) => holdWarns(t).length).length;
       html += '<span class="sep">|</span><a class="chip' + (nW ? " hot" : "") + '" href="#sec-my"><span style="color:var(--gold);letter-spacing:-2px">★★</span> 보유 <b>' + MY.hold.length + "</b>" +
@@ -1071,7 +1087,7 @@ function renderSticky() {
     }
     if (DIFF) {
       const nC = DIFF.added.length + DIFF.moved.length + DIFF.dropped.length;
-      html += '<span class="sep">|</span><a class="chip' + (nC ? " hot" : "") + '" href="#changes">이번 주 변화 <b>' + nC + "</b></a>";
+      html += '<span class="sep">|</span><a class="chip' + (nC ? " hot" : "") + '" href="#sec-move">자금 이동 <b>' + nC + "</b></a>";
     }
     const nPre = Object.values(VIEW.info).filter((x) => x.pre && (!selectedGroup || TICKERS[x.t].group === selectedGroup)).length;
     html += '<span class="sep">|</span><a class="chip' + (nPre ? " hot" : "") + '" href="#sec-all" id="preChip">예비 주도주 <b>' + nPre + "</b></a>";
@@ -1087,7 +1103,7 @@ function renderSticky() {
 
 const md = (t) => (t ? t.slice(5).replace("-", "/") : "");
 const cmpWord = () => "1주 전";
-// 비교 기준 전환 버튼 (바뀐 것 상자와 3층 위에 같이 놓임)
+// 비교 기준 전환 버튼 (지금은 쓰지 않음)
 function cmpSeg() {
   return "";   // 전일 대비는 잡음이 많아 없앰. 늘 1주 전 대비
 }
@@ -1095,31 +1111,61 @@ function bindSeg(el) {
   el.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => { CMP_K = +b.dataset.k; refreshDiff(); }));
 }
 function renderCmpNote() {}
+// 단계의 좋고 나쁨 (자금 이동 방향 판정용): 높을수록 돈이 들어온 쪽
+const STAGE_SCORE = { breakout: 5, ready: 5, extended: 5, forming: 5, base: 4, inbox: 2, trendbreak: 1, basebreak: 0, basefail: 0 };
+function moveItems() {
+  // 종목마다 방향: +1 들어옴(RS 80 진입, 단계 좋아짐) · -1 빠짐(탈락, 단계 나빠짐) · 0 중립(같은 수준 안에서 바뀜)
+  const items = [];
+  DIFF.added.forEach((t) => { const x = VIEW.info[t];
+    items.push({ t, dir: 1, kind: "진입", kc: "in", rs: (x.rsPrev ?? "-") + " → <b>" + x.rs + "</b>", what: "RS 80 진입 · 지금 <b>" + LABEL[stateKey(x.cls)] + "</b>", why: x.cls.reason, short: "진입" }); });
+  DIFF.moved.forEach(([t, a, b]) => { const x = VIEW.info[t], d = Math.sign(STAGE_SCORE[b] - STAGE_SCORE[a]);
+    items.push({ t, dir: d, kind: d > 0 ? "단계 ↑" : d < 0 ? "단계 ↓" : "단계 변화", kc: d > 0 ? "up" : d < 0 ? "dn" : "nt",
+                 rs: "<b>" + x.rs + "</b>", what: LABEL[a] + " → <b>" + LABEL[b] + "</b>", why: x.cls.reason, short: LABEL[b] }); });
+  DIFF.dropped.forEach(([t, rs, rsPrev]) =>
+    items.push({ t, dir: -1, kind: "탈락", kc: "out", rs: (rsPrev ?? "-") + " → <b>" + (rs ?? "-") + "</b>", what: "RS 80 아래로", why: "", short: "탈락" }));
+  return items;
+}
 function renderChanges() {
   const el = document.getElementById("changes");
   if (!VIEW || !DIFF) return;
-  const seg = cmpSeg();
-  // 한 종목 = 한 줄: 구분 · 티커 · 이름 · 산업·RS · 예전 → 지금 · 지금 판정 근거
   const nm = (t) => (TICKERS[t] ? TICKERS[t].name : t), grp = (t) => (TICKERS[t] ? TICKERS[t].group : "");
-  const row = (kind, kcls, t, rsTxt, change, reason) =>
-    '<tr data-t="' + t + '"><td class="stc">' + starHtml(t) + '</td><td class="tkc"><span class="tk">' + t + "</span></td>" +
-    '<td class="nm" title="' + nm(t) + '">' + nm(t) + '</td><td class="kd"><span class="kind ' + kcls + '">' + kind + '</span></td><td class="muted grp" title="' + grp(t) + '">' + grp(t) + '</td><td class="rsc">' + rsTxt + '</td><td class="chg">' + change + '</td><td class="rs muted">' + (reason || "") + "</td></tr>";
-  let rows = [];
-  DIFF.moved.forEach(([t, a, b]) => { const x = VIEW.info[t];
-    rows.push(row("단계 변화", "mv", t, "<b>" + x.rs + "</b>", LABEL[a] + " → <b>" + LABEL[b] + "</b>", x.cls.reason)); });
-  DIFF.added.forEach((t) => { const x = VIEW.info[t];
-    rows.push(row("새 주도주", "ad", t, (x.rsPrev ?? "-") + " → <b>" + x.rs + "</b>", "RS 80 진입 · 지금 <b>" + LABEL[stateKey(x.cls)] + "</b>", x.cls.reason)); });
-  DIFF.dropped.forEach(([t, rs, rsPrev]) =>
-    rows.push(row("탈락", "dr", t, (rsPrev ?? "-") + " → <b>" + (rs ?? "-") + "</b>", "RS 80 아래로", "")));
-  // 내 종목을 맨 위로: ★★ 보유 → ★ 관심 → 나머지 (같은 묶음 안에서는 원래 순서)
-  rows = rows.map((r, i) => [r, i]).sort((a, b) => myLevel(b[0].match(/data-t="([^"]+)"/)[1]) - myLevel(a[0].match(/data-t="([^"]+)"/)[1]) || a[1] - b[1]).map((z) => z[0]);
-  const parts = rows.length ? ['<div class="cbox"><table class="ntable ctable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="nm">종목명</th><th class="kd">구분</th>' +
-    '<th class="grp">산업</th><th class="rsc">RS</th><th class="chg">무엇이 바뀌었나</th><th class="rs">지금 판정 근거</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>"] : [];
-  el.innerHTML = "<b>이번 주 변화</b> <span class=\"muted\">1주 전(" + md(PREV_ASOF) + " 마감) → 지금(" + md(VIEW.asOf) + " 마감) · " + rows.length + "종목</span>" +
-    (parts.length ? parts.join("") : '<div class="muted">이번 주에 바뀐 것이 없습니다.</div>');
-  bindSeg(el);
-  renderCmpNote();
+  const items = moveItems();
+  renderMoveSum(items);
+  // 정렬: ★★ 보유 → ★ 관심 → 나머지, 그 안에서 들어옴 → 빠짐 → 중립
+  const dOrd = (d) => (d > 0 ? 0 : d < 0 ? 1 : 2);
+  const list = items.map((x, i) => ({ ...x, i })).sort((a, b) => myLevel(b.t) - myLevel(a.t) || dOrd(a.dir) - dOrd(b.dir) || a.i - b.i);
+  const rows = list.map((x) =>
+    '<tr data-t="' + x.t + '"><td class="stc">' + starHtml(x.t) + '</td><td class="tkc"><span class="tk">' + x.t + "</span></td>" +
+    '<td class="nm" title="' + nm(x.t) + '">' + nm(x.t) + '</td><td class="kd"><span class="kind ' + x.kc + '">' + x.kind + '</span></td><td class="muted grp" title="' + grp(x.t) + '">' + grp(x.t) +
+    '</td><td class="rsc">' + x.rs + '</td><td class="chg">' + x.what + '</td><td class="rs muted">' + (x.why || "") + "</td></tr>");
+  const nIn = items.filter((x) => x.dir > 0).length, nOut = items.filter((x) => x.dir < 0).length;
+  el.innerHTML = "<b>종목별</b> <span class=\"muted\">1주 전(" + md(PREV_ASOF) + " 마감) → 지금(" + md(VIEW.asOf) + " 마감) · " + items.length + "종목 · 들어옴 " + nIn + " · 빠짐 " + nOut + "</span>" +
+    (rows.length ? '<div class="cbox"><table class="ntable ctable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="nm">종목명</th><th class="kd">구분</th>' +
+      '<th class="grp">산업</th><th class="rsc">RS</th><th class="chg">무엇이 바뀌었나</th><th class="rs">지금 판정 근거</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>"
+      : '<div class="muted">이번 주에 바뀐 것이 없습니다.</div>');
   el.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => { if (VIEW.info[tr.dataset.t]) openModal(tr.dataset.t); }));
+}
+// 산업별 요약: 들어온 쪽 / 빠진 쪽
+function renderMoveSum(items) {
+  const el = document.getElementById("moveSum");
+  if (!el) return;
+  const side = (dir) => {
+    const by = {};
+    items.filter((x) => x.dir === dir).forEach((x) => { const g = TICKERS[x.t].group; (by[g] = by[g] || []).push(x); });
+    return Object.entries(by).sort((a, b) => b[1].length - a[1].length);
+  };
+  const line = (dir, lbl, cls) => {
+    const gs = side(dir);
+    return '<div><span class="lbl ' + cls + '">' + lbl + "</span>" + (gs.length ? gs.map(([g, xs]) =>
+      '<span class="g' + (selectedGroup === g ? " sel" : "") + '" data-g="' + g + '"><b>' + g + '</b> <span class="n ' + cls + '">' + (dir > 0 ? "+" : "−") + xs.length + '</span> <span class="muted">(' +
+      xs.map((x) => x.t + " " + x.short).join(", ") + ")</span></span>").join("") : '<span class="muted">없음</span>') + "</div>";
+  };
+  el.innerHTML = line(1, "들어온 쪽", "in") + line(-1, "빠진 쪽", "out");
+  el.querySelectorAll(".g[data-g]").forEach((sp) => sp.addEventListener("click", () => {
+    selectedGroup = selectedGroup === sp.dataset.g ? null : sp.dataset.g;
+    renderFlow(); renderChanges(); renderLeaders(); renderSticky();
+    if (selectedGroup) document.getElementById("sec-leaders").scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
 }
 
 function renderFlow() {
@@ -1136,7 +1182,7 @@ function renderFlow() {
   }).join("");
   body.querySelectorAll("tr.row").forEach((tr) => tr.addEventListener("click", () => {
     selectedGroup = selectedGroup === tr.dataset.g ? null : tr.dataset.g;
-    renderFlow(); renderLeaders(); renderSticky();
+    renderFlow(); renderChanges(); renderLeaders(); renderSticky();
     if (selectedGroup) document.getElementById("sec-leaders").scrollIntoView({ behavior: "smooth", block: "start" });
   }));
 }
@@ -1202,11 +1248,11 @@ function renderLeaders() {
     box.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t)));
     wrap.appendChild(box);
   });
-  renderUniverse();                               // 5층도 같은 산업 선택·비교 기준을 따름
+  renderUniverse();                               // 6층도 같은 산업 선택을 따름
 }
-document.getElementById("clearFilter").addEventListener("click", () => { selectedGroup = null; renderFlow(); renderLeaders(); renderSticky(); });
+document.getElementById("clearFilter").addEventListener("click", () => { selectedGroup = null; renderFlow(); renderChanges(); renderLeaders(); renderSticky(); });
 
-// ═════════════ 5층: 전체 종목 ═════════════
+// ═════════════ 6층: 전체 종목 ═════════════
 let ALL_SORT = { key: "rs", dir: -1 }, ALL_FILTER = "all", ALL_Q = "";
 const STAGE_ORDER = { breakout: 0, ready: 1, base: 2, extended: 3, forming: 4, inbox: 5, trendbreak: 6, basebreak: 7, basefail: 8 };
 const ALL_COLS = [   // [키, 제목, 너비, 정렬값]
@@ -1269,7 +1315,7 @@ function renderUniverse() {
   list.forEach((x) => {
     if (showCut && !cutDone && prevRs != null && ((ALL_SORT.dir < 0 && x.rs < RS_LEADER && prevRs >= RS_LEADER) || (ALL_SORT.dir > 0 && x.rs >= RS_LEADER && prevRs < RS_LEADER))) {
       cutDone = true;
-      rows += '<tr class="cut"><td colspan="' + ALL_COLS.length + '"><span class="cutl">' + (ALL_SORT.dir < 0 ? "▲ 여기 위가 3층 주도주 (RS " + RS_LEADER + " 이상)" : "▼ 여기 아래가 3층 주도주 (RS " + RS_LEADER + " 이상)") + "</span></td></tr>";
+      rows += '<tr class="cut"><td colspan="' + ALL_COLS.length + '"><span class="cutl">' + (ALL_SORT.dir < 0 ? "▲ 여기 위가 4층 주도주 (RS " + RS_LEADER + " 이상)" : "▼ 여기 아래가 4층 주도주 (RS " + RS_LEADER + " 이상)") + "</span></td></tr>";
     }
     const sk = stateKey(x.cls), chg = x.rsChg;
     const tags = (x.pre ? '<span class="badge pre">예비 주도주</span>' : "") + badgesFor(x.t, x);
@@ -1302,7 +1348,7 @@ function renderUniverse() {
   });
   tb.querySelectorAll("tbody tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t)));
 }
-// 고정 바의 "예비 주도주"를 누르면 5층에서 예비 주도주만 보여 줌
+// 고정 바의 "예비 주도주"를 누르면 6층에서 예비 주도주만 보여 줌
 document.getElementById("stickyInner").addEventListener("click", (e) => {
   if (!e.target.closest("#preChip")) return;
   ALL_FILTER = "pre";
@@ -1485,20 +1531,21 @@ function buildHelp() {
   const pill = (cls, t) => '<span class="pill ' + cls + '" style="font-size:12px">' + t + "</span>";
   document.getElementById("helpPanel").innerHTML = `
 <div class="phead"><b>이 대시보드 보는 법</b><button class="close" id="helpClose" title="닫기 (Esc)">✕</button></div>
-<div class="toc"><a href="#h-start">처음 오셨다면</a><a href="#h-signal">신호등</a><a href="#h-sticky">고정 바</a><a href="#h-changes">이번 주 변화</a>
-<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 자금 흐름</a><a href="#h-leaders">3층 주도주</a><a href="#h-states">단계 9가지</a><a href="#h-my">4층 내 종목 ★</a><a href="#h-all">5층 전체 종목</a>
+<div class="toc"><a href="#h-start">처음 오셨다면</a><a href="#h-signal">신호등</a><a href="#h-sticky">고정 바</a>
+<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 자금 지도</a><a href="#h-changes">3층 자금 이동</a><a href="#h-leaders">4층 주도주</a><a href="#h-states">단계 9가지</a><a href="#h-my">5층 내 종목 ★</a><a href="#h-all">6층 전체 종목</a>
 <a href="#h-tags">꼬리표</a><a href="#h-charts">차트 읽는 법</a><a href="#h-data">데이터·갱신</a><a href="#h-limits">한계</a></div>
 
 <h3 id="h-start">처음 오셨다면</h3>
 <p>이 화면은 <b>위에서 아래로 좁혀 들어가는 깔때기</b>입니다. 각 층이 질문 하나에만 답합니다.</p>
 <div class="q2">
 <b>① 지금 시장이 내 편인가?</b> → 맨 위 신호등과 1층<br>
-<b>② 돈이 어느 쪽으로 몰리나?</b> → 2층 자금 흐름<br>
-<b>③ 그 안에서 지금 살 만한 자리에 있는 주도주는?</b> → 3층 주도주<br>
-<b>④ 내가 가진 종목은 괜찮은가, 관심 종목은 살 자리에 왔나?</b> → 4층 내 종목<br>
-<b>⑤ 아직 주도주는 아니지만 올라오는 종목은?</b> → 5층 전체 종목</div>
-<p>신호등이 <b>신규 매수 중지</b>나 <b>방어</b>면 3층에 좋은 차트가 있어도 새로 사지 않는다는 뜻입니다. 시장이 내 편일 때만 싸웁니다.</p>
-<p>매일 아침 할 일: ① 신호등과 고정 바의 <b>★★ 보유 경고 수</b> 확인 → ② 3층 맨 앞 "이번 주 변화"에서 달라진 종목 확인 → ③ 3층 <b>돌파 중</b>, <b>준비</b> 종목과 4층 ★ 관심 종목의 차트 확인.</p>
+<b>② 지금 돈이 어디에 머물러 있나?</b> → 2층 자금 지도<br>
+<b>③ 이번 주 돈이 어디서 빠져 어디로 들어왔나?</b> → 3층 자금 이동<br>
+<b>④ 그 안에서 지금 살 만한 자리에 있는 주도주는?</b> → 4층 주도주<br>
+<b>⑤ 내가 가진 종목은 괜찮은가, 관심 종목은 살 자리에 왔나?</b> → 5층 내 종목<br>
+<b>⑥ 아직 주도주는 아니지만 올라오는 종목은?</b> → 6층 전체 종목</div>
+<p>신호등이 <b>신규 매수 중지</b>나 <b>방어</b>면 4층에 좋은 차트가 있어도 새로 사지 않는다는 뜻입니다. 시장이 내 편일 때만 싸웁니다.</p>
+<p>매일 아침 할 일: ① 신호등과 고정 바의 <b>★★ 보유 경고 수</b> 확인 → ② 3층 자금 이동에서 이번 주 돈이 옮겨 간 산업과 종목 확인 → ③ 4층 <b>돌파 중</b>, <b>준비</b> 종목과 5층 ★ 관심 종목의 차트 확인.</p>
 <p>제목 옆 <b>?</b> 버튼을 누르면 그 층의 설명으로 바로 옵니다. 카드나 종목 줄을 누르면 주봉·일봉 차트를 크게 봅니다.</p>
 
 <h3 id="h-signal">신호등 <small>맨 위 큰 상자 · QQQ 일봉 기준</small></h3>
@@ -1516,16 +1563,7 @@ function buildHelp() {
 </table>
 
 <h3 id="h-sticky">고정 바 <small>스크롤해도 위에 붙어 있는 줄</small></h3>
-<p>중요한 순서대로 보여 줍니다: 시장 판정 → ★★ 보유·★ 관심 수(보유 경고 수) → 이번 주 변화 수 → 예비 주도주 수 → 3층 단계별 종목 수. 항목을 누르면 그 위치로 이동합니다. 주황색 숫자는 지금 눈여겨볼 만한 항목입니다. 휴대폰에서는 한 줄로 줄어들고, 옆으로 밀면 나머지 항목이 보입니다.</p>
-
-<h3 id="h-changes">이번 주 변화 <small>3층 맨 앞 상자</small></h3>
-<p>늘 <b>5거래일(1주) 전 마감</b>과 지금을 비교합니다. 같은 데이터를 그 시점까지 잘라서 다시 계산한 뒤 지금과 비교합니다. 제목 옆 회색 글씨가 실제 비교하는 두 날짜입니다(예: 10/23 마감 → 10/30 마감). 하루 단위 변화는 주봉·10주선으로 매매하는 원칙에 비해 잡음이 커서 보여 주지 않습니다. ★★ 보유, ★ 관심 종목이 맨 위로 올라옵니다.</p>
-<table>
-<tr><td>단계 변화</td><td>3층 단계가 바뀐 종목. 예: 돌파 대기→돌파 중. 가장 먼저 볼 줄입니다.</td></tr>
-<tr><td>새 주도주</td><td>RS가 ${RS_LEADER} 이상으로 새로 올라온 종목. 괄호 안은 지금 단계.</td></tr>
-<tr><td>주도주 탈락</td><td>RS가 ${RS_LEADER} 아래로 내려간 종목. 괄호 안은 지금 RS.</td></tr>
-</table>
-<p>한 종목이 한 줄입니다: 구분 · 티커 · 종목명 · 산업과 RS(예전 → 지금) · 무엇이 바뀌었나 · 지금 판정 근거. 줄을 누르면 차트를 크게 봅니다.</p>
+<p>중요한 순서대로 보여 줍니다: 시장 판정 → ★★ 보유·★ 관심 수(보유 경고 수) → 자금 이동 수 → 예비 주도주 수 → 4층 단계별 종목 수. 항목을 누르면 그 위치로 이동합니다. 주황색 숫자는 지금 눈여겨볼 만한 항목입니다. 휴대폰에서는 한 줄로 줄어들고, 옆으로 밀면 나머지 항목이 보입니다.</p>
 
 <h3 id="h-market">1층 · 시장 <small>QQQ 일봉 6개월</small></h3>
 <p>신호등이 왜 그렇게 나왔는지 눈으로 확인하는 차트입니다.</p>
@@ -1539,14 +1577,14 @@ function buildHelp() {
 <h3 id="h-ddftd">분산일과 팔로스루 데이 <small>개념과 판별 기준</small></h3>
 <div class="ddftd" style="grid-template-columns:1fr">${ddftdHtml()}</div>
 
-<h3 id="h-flow">2층 · 자금 흐름</h3>
+<h3 id="h-flow">2층 · 자금 지도 <small>지금 돈이 어디에 머물러 있나</small></h3>
 <p><b>위 두 비율선</b>은 시장 체질을 봅니다. 숫자는 보지 말고 선의 방향만 보세요. 회색 점선은 50일 평균입니다.</p>
 <table>
 <tr><td>QQQE / QQQ</td><td>동일가중 ÷ 시총가중. <b>▲ 상승이 넓게 퍼지는 중</b>: 많은 종목이 함께 오름(건강). <b>▼ 소수 대형주에 몰리는 중</b>: 몇몇 초대형주만 끌고 감(취약).</td></tr>
 <tr><td>XLY / XLP</td><td>경기소비재 ÷ 필수소비재. <b>▲ 공격 쪽</b>: 큰돈이 위험을 감수. <b>▼ 방어 쪽</b>: 큰돈이 숨는 중.</td></tr>
 <tr><td>방향 없음</td><td>비율이 50일 평균 근처에서 오르내림. 판단 보류.</td></tr>
 </table>
-<p><b>아래 산업 순위표</b>는 나스닥100 종목을 산업별로 묶어 자금이 어디로 가는지 봅니다. 행을 누르면 3층이 그 산업만 보여 주고, 다시 누르면 풀립니다.</p>
+<p><b>아래 산업 순위표</b>는 나스닥100 종목을 산업별로 묶어 자금이 어디로 가는지 봅니다. 행을 누르면 4층·6층이 그 산업만 보여 주고, 다시 누르면 풀립니다.</p>
 <table>
 <tr><td>평균 RS</td><td>그 산업 종목들의 RS(아래 설명) 평균. 높을수록 지수보다 강한 산업.</td></tr>
 <tr><td>4주 전 → 지금</td><td>산업 순위의 변화. <span class="chg-up">▲</span> 올라옴, <span class="chg-down">▼</span> 내려감. <b>이미 1등인 산업보다 빠르게 올라오는 산업</b>이 "기대가 새로 커지는 곳"입니다.</td></tr>
@@ -1554,12 +1592,24 @@ function buildHelp() {
 <tr><td>주도주</td><td>그 산업에서 RS ${RS_LEADER} 이상인 종목.</td></tr>
 </table>
 
-<h3 id="h-leaders">3층 · 주도주</h3>
+<h3 id="h-changes">3층 · 자금 이동 <small>이번 주 어디서 빠져 어디로 들어왔나</small></h3>
+<p>늘 <b>5거래일(1주) 전 마감</b>과 지금을 비교합니다. 같은 데이터를 그 시점까지 잘라서 다시 계산한 뒤 지금과 비교합니다. 하루 단위 변화는 주봉·10주선으로 매매하는 원칙에 비해 잡음이 커서 보여 주지 않습니다. 2층이 "지금 돈이 머물러 있는 곳"(4주)이라면, 3층은 "이번 주 돈이 옮겨 간 방향"(1주)입니다.</p>
+<p><b>맨 위 요약</b>: 산업별로 들어온 종목 수(+)와 빠진 종목 수(−)를 묶어 보여 줍니다. 한 산업이 양쪽에 다 나올 수도 있습니다. 산업 이름을 누르면 4층·6층이 그 산업만 보여 주고, 다시 누르면 풀립니다.</p>
+<table>
+<tr><td><span class="kind in">진입</span></td><td>들어옴. RS가 ${RS_LEADER} 이상으로 새로 올라옴. "무엇이 바뀌었나" 칸에 지금 단계.</td></tr>
+<tr><td><span class="kind up">단계 ↑</span></td><td>들어옴. 단계가 좋아짐. 예: 베이스 안 → 돌파 대기, 돌파 대기 → 돌파 중, 추세 이탈 → 베이스 형성 중.</td></tr>
+<tr><td><span class="kind dn">단계 ↓</span></td><td>빠짐. 단계가 나빠짐. 예: 돌파 대기 → 베이스 안, → 추세 이탈·베이스 이탈·베이스 붕괴.</td></tr>
+<tr><td><span class="kind out">탈락</span></td><td>빠짐. RS가 ${RS_LEADER} 아래로 내려감.</td></tr>
+<tr><td><span class="kind nt">단계 변화</span></td><td>중립. 같은 수준 안에서 바뀜. 예: 상승 중 → 베이스 형성 중(오른 뒤 쉬는 중). 요약에는 넣지 않습니다.</td></tr>
+</table>
+<p>단계의 좋고 나쁨 순서: 돌파 중 · 준비 · 상승 중 · 베이스 형성 중 &gt; 돌파 대기 &gt; 베이스 안 &gt; 추세 이탈 &gt; 베이스 이탈 · 베이스 붕괴. 종목 표는 ★★ 보유, ★ 관심이 맨 위, 그다음 들어옴 → 빠짐 → 중립 순서입니다. 줄을 누르면 차트를 크게 봅니다.</p>
+
+<h3 id="h-leaders">4층 · 주도주</h3>
 <p>나스닥100에서 <b>RS ${RS_LEADER} 이상</b>인 종목만 골라, 원칙상 <b>지금 무엇을 할 단계인지</b>로 나눕니다.</p>
 <div class="q2"><b>RS(상대강도)</b>: 최근 12개월 수익률을 오닐식으로 가중(최근 3개월 2배)해서, 나스닥100 100종목 안에서 1-99로 순위를 매긴 값입니다. RS ${RS_LEADER} = 상위 20%. IBD의 RS 등급은 전체 상장 종목 대비라 숫자가 다를 수 있습니다.</div>
 <p>카드 윗줄: 종목명 · 티커 · 꼬리표 / 오른쪽: 산업 · RS. 아랫줄: 단계 판정의 근거. 차트가 있는 단계는 카드 3열, 차트를 생략한 단계는 한 종목 한 줄 목록입니다.</p>
 
-<h3 id="h-states">단계 9가지 <small>3층 묶음과 고정 바 항목</small></h3>
+<h3 id="h-states">단계 9가지 <small>4층 묶음과 고정 바 항목</small></h3>
 <p>베이스는 주봉 기준으로 최근 ${BASE_LOOKBACK}주 안의 최고점부터 지금까지 ${BASE_MIN_WEEKS}주 이상 옆으로 움직인 구간입니다. 베이스 상단이 돌파 기준(피벗)입니다.</p>
 <table>
 <tr><td>돌파 중</td><td>베이스 상단을 넘었고, 아직 상단에서 ${P(BUY_RANGE)} 이내(매수 범위). <b>할 일: 매수 검토.</b> 돌파일 거래량이 50일 평균의 ${BREAKOUT_VOL}배에 못 미치면 "거래량 부족"이 붉게 표시됩니다. 거래량 없는 돌파는 큰 자본의 흔적이 아닙니다.</td></tr>
@@ -1573,20 +1623,20 @@ function buildHelp() {
 <tr><td>베이스 붕괴</td><td>베이스 저점이 베이스 고점보다 ${P(BASE_MAX_DEPTH)} 넘게 깊음. 고점 근처에서 산 사람들의 매물이 많아 실패하기 쉬운 베이스(오닐·미너비니: 3분의 1 넘게 빠진 베이스는 위험). 차트 생략.<br>여러 문제가 겹치면 더 심각한 쪽(베이스 붕괴 &gt; 베이스 이탈 &gt; 추세 이탈)으로 분류하고, 10주선 아래이면 판정 근거에 함께 적습니다.</td></tr>
 </table>
 
-<h3 id="h-all">5층 · 전체 종목 <small>나스닥100 RS 순위</small></h3>
-<p>3층에 아직 못 들어온 종목까지 나스닥100 전체를 한 종목 한 줄로 보여 줍니다. 맨 위 줄에 요약(종목 수, RS ${RS_LEADER}+, 예비 주도주, 10주선 위)이 나옵니다. ★ 칸을 눌러 바로 보유·관심으로 지정할 수 있고, ★★ 보유·★ 관심 거르기 버튼도 있습니다.</p>
+<h3 id="h-all">6층 · 전체 종목 <small>나스닥100 RS 순위</small></h3>
+<p>4층에 아직 못 들어온 종목까지 나스닥100 전체를 한 종목 한 줄로 보여 줍니다. 맨 위 줄에 요약(종목 수, RS ${RS_LEADER}+, 예비 주도주, 10주선 위)이 나옵니다. ★ 칸을 눌러 바로 보유·관심으로 지정할 수 있고, ★★ 보유·★ 관심 거르기 버튼도 있습니다.</p>
 <table>
-<tr><td>순위 · RS</td><td>RS 높은 순 순위와 RS 값. 기본 정렬은 RS 높은 순이고, 주황 구분선 위가 3층 주도주입니다.</td></tr>
+<tr><td>순위 · RS</td><td>RS 높은 순 순위와 RS 값. 기본 정렬은 RS 높은 순이고, 주황 구분선 위가 4층 주도주입니다.</td></tr>
 <tr><td>4주</td><td>4주 전 대비 RS 변화. <span class="chg-up">▲</span> 상대강도가 좋아지는 중.</td></tr>
 <tr><td>6개월</td><td>6개월 종가 선(붉은색: 50일선 위, 파란색: 50일선 아래)과 초록 50일선.</td></tr>
-<tr><td>단계</td><td>3층과 같은 7단계 판정을 모든 종목에 적용. 마우스를 올리면 판정 근거가 보입니다.</td></tr>
+<tr><td>단계</td><td>4층과 같은 단계 판정을 모든 종목에 적용. 마우스를 올리면 판정 근거가 보입니다.</td></tr>
 <tr><td>고점 대비 / 저점 대비</td><td>최근 52주 최고가에서 몇 % 아래인지, 52주 최저가에서 몇 % 위인지. 고점 근처이면서 저점에서 멀리 올라온 종목이 강한 종목입니다(미너비니 기준: 고점 25% 이내, 저점 30% 이상 위).</td></tr>
 <tr><td><span class="dot on10"></span><span class="dot on40"></span></td><td>왼쪽 점은 10주선, 오른쪽 점은 40주선. 채워져 있으면 그 선 위, 빈 원이면 아래.</td></tr>
 <tr><td>${b("pre", "예비 주도주")}</td><td>다음 네 가지를 모두 갖춘 종목: ① RS ${PRE_RS_MIN}-${RS_LEADER - 1} ② 4주 사이 RS +${PRE_RS_GAIN} 이상 ③ 10주선 위 ④ <b>건전한 베이스</b>(베이스 저점이 고점보다 ${P(BASE_MAX_DEPTH)} 이내로 얕고, 주가가 베이스 하단 위. 아직 베이스가 생기기 전이면 통과). 크게 떨어졌다가 바닥에서 반등만 하는 종목은 RS가 빨리 올라도 ④에서 걸러집니다. 3층에 들어오기 전 미리 볼 후보입니다. 줄 배경이 옅은 초록입니다.</td></tr>
 </table>
-<p>칸 제목을 누르면 그 칸으로 정렬하고, 한 번 더 누르면 반대 순서입니다. 위의 버튼으로 예비 주도주, 10주선 위, 고점 10% 이내, 이탈·붕괴 제외(추세 이탈·베이스 이탈·베이스 붕괴를 뺌)만 볼 수 있고, 오른쪽 칸에서 티커나 이름으로 찾습니다. 2층 산업 표에서 산업을 고르면 5층도 그 산업만 보여 줍니다.</p>
+<p>칸 제목을 누르면 그 칸으로 정렬하고, 한 번 더 누르면 반대 순서입니다. 위의 버튼으로 예비 주도주, 10주선 위, 고점 10% 이내, 이탈·붕괴 제외(추세 이탈·베이스 이탈·베이스 붕괴를 뺌)만 볼 수 있고, 오른쪽 칸에서 티커나 이름으로 찾습니다. 2층 산업 표나 3층 요약에서 산업을 고르면 6층도 그 산업만 보여 줍니다.</p>
 
-<h3 id="h-my">4층 · 내 종목 <small>★★ 보유 · ★ 관심</small></h3>
+<h3 id="h-my">5층 · 내 종목 <small>★★ 보유 · ★ 관심</small></h3>
 <p>모든 표와 카드 맨 앞의 별을 누를 때마다 <b>☆ → ★ 관심 → ★★ 보유 → ☆</b> 순서로 바뀝니다. 보유는 관심을 포함하므로 둘은 겹치지 않습니다. 잘못 눌렀으면 아래에 잠깐 뜨는 '되돌리기'를 누르세요. 별을 누를 때는 차트가 열리지 않습니다.</p>
 <p><b>★★ 보유 점검 · 언제 파나</b></p>
 <table>
@@ -1608,7 +1658,7 @@ function buildHelp() {
 
 <h3 id="h-tags">꼬리표</h3>
 <table>
-<tr><td>${b("new", "NEW")}</td><td>1주 전 이후 RS ${RS_LEADER} 이상으로 새로 들어온 종목. 비교 날짜는 3층 '이번 주 변화' 제목에 나오고, 꼬리표에 마우스를 올려도 보입니다.</td></tr>
+<tr><td>${b("new", "NEW")}</td><td>1주 전 이후 RS ${RS_LEADER} 이상으로 새로 들어온 종목. 비교 날짜는 3층 자금 이동의 종목별 제목에 나오고, 꼬리표에 마우스를 올려도 보입니다.</td></tr>
 <tr><td>${b("new", "대기→돌파 중")}</td><td>1주 전 이후 단계가 바뀐 종목. 화살표 앞이 예전, 뒤가 지금.</td></tr>
 <tr><td>${b("rsh", "RS선 신고가")}</td><td>종목 ÷ QQQ 선이 52주 신고가. 주가보다 상대강도가 먼저 신고가를 내면 큰 자본이 사 모으는 흔적일 수 있습니다.</td></tr>
 <tr><td>${b("earn", "실적 11/05 D-5")}</td><td>${EARN_WARN_DAYS}일 안에 실적 발표. 실적 직후 갭 하락은 계획보다 큰 손실을 만들 수 있어 붉게 표시합니다.</td></tr>
