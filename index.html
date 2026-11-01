@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 09:10</title>
+<title>추세 대시보드 v2026-11-01 09:25</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -167,6 +167,11 @@
   table.ntable { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; table-layout: fixed; }
   table.ntable td { overflow: hidden; text-overflow: ellipsis; }
   table.ntable td { padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: middle; }
+  /* 칸 제목 줄 */
+  table.ntable th { padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; text-align: left; font-size: 11px; font-weight: 700;
+                    color: var(--sub); background: var(--card); overflow: hidden; text-overflow: ellipsis; }
+  table.ntable thead tr { cursor: default; } table.ntable thead tr:hover th { background: var(--card); }
+  table.ntable th.bd { text-align: right; }
   table.ntable tr:last-child td { border-bottom: 0; }
   table.ntable tr { cursor: zoom-in; }
   table.ntable tr:hover td { background: linear-gradient(rgba(127,127,127,0.07), rgba(127,127,127,0.07)), var(--card); }
@@ -284,7 +289,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 09:10</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-01 09:25</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -919,14 +924,15 @@ function renderMine() {
     return '<tr data-t="' + t + '" class="' + (w.length ? "mwarn" : "") + '"><td class="stc">' + starHtml(t) + '</td><td class="tkc"><span class="tk">' + t + "</span></td>" +
       '<td class="nm" title="' + TICKERS[t].name + '">' + TICKERS[t].name + "</td>" +
       '<td class="mst"><span class="stg ' + sk + '">' + LABEL[sk] + "</span></td>" +
-      '<td class="mrs">RS <b>' + x.rs + "</b> " + (chg == null ? "" : chg > 0 ? '<span class="chg-up">▲' + chg + "</span>" : chg < 0 ? '<span class="chg-down">▼' + -chg + "</span>" : "") + "</td>" +
-      '<td class="m10">10주선 ' + (x.dist10 == null ? "-" : '<b class="' + (x.dist10 >= 0 ? "chg-up" : "chg-down") + '">' + pctf(x.dist10) + "</b>") + "</td>" +
-      '<td class="mhi muted">고점 ' + pctf(x.fromHi) + "</td>" +
+      '<td class="mrs"><b>' + x.rs + "</b> " + (chg == null ? "" : chg > 0 ? '<span class="chg-up">▲' + chg + "</span>" : chg < 0 ? '<span class="chg-down">▼' + -chg + "</span>" : "") + "</td>" +
+      '<td class="m10">' + (x.dist10 == null ? "-" : '<b class="' + (x.dist10 >= 0 ? "chg-up" : "chg-down") + '">' + pctf(x.dist10) + "</b>") + "</td>" +
+      '<td class="mhi muted">' + pctf(x.fromHi) + "</td>" +
       '<td class="mw">' + (w.length ? w.map((z) => '<span class="wtag">' + z + "</span>").join("") : '<span class="oktag">이상 없음</span>') + "</td></tr>";
   });
   el.innerHTML = '<div class="mh"><b><span class="star lv2" style="cursor:default">★★</span> 보유 종목 점검</b><span class="muted">' + MY.hold.length + "종목 · " +
     (nWarn ? '<b style="color:var(--stop)">경고 ' + nWarn + "</b>" : "경고 없음") + " · " + md(VIEW.asOf) + " 마감 기준</span></div>" +
-    '<div class="mbox"><table class="ntable mtable"><tbody>' + rows.join("") + "</tbody></table></div>";
+    '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="nm">종목명</th><th class="mst">단계</th>' +
+    '<th class="mrs">RS (4주 변화)</th><th class="m10">10주선 대비</th><th class="mhi">52주 고점 대비</th><th class="mw">경고</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
   el.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t)));
 }
 
@@ -1045,14 +1051,15 @@ function renderChanges() {
     '<td class="nm" title="' + nm(t) + '">' + nm(t) + '</td><td class="kd"><span class="kind ' + kcls + '">' + kind + '</span></td><td class="muted grp" title="' + grp(t) + '">' + grp(t) + '</td><td class="rsc">' + rsTxt + '</td><td class="chg">' + change + '</td><td class="rs muted">' + (reason || "") + "</td></tr>";
   let rows = [];
   DIFF.moved.forEach(([t, a, b]) => { const x = VIEW.info[t];
-    rows.push(row("단계 변화", "mv", t, "RS <b>" + x.rs + "</b>", LABEL[a] + " → <b>" + LABEL[b] + "</b>", x.cls.reason)); });
+    rows.push(row("단계 변화", "mv", t, "<b>" + x.rs + "</b>", LABEL[a] + " → <b>" + LABEL[b] + "</b>", x.cls.reason)); });
   DIFF.added.forEach((t) => { const x = VIEW.info[t];
-    rows.push(row("새 주도주", "ad", t, "RS " + (x.rsPrev ?? "-") + " → <b>" + x.rs + "</b>", "RS 80 진입 · 지금 <b>" + LABEL[stateKey(x.cls)] + "</b>", x.cls.reason)); });
+    rows.push(row("새 주도주", "ad", t, (x.rsPrev ?? "-") + " → <b>" + x.rs + "</b>", "RS 80 진입 · 지금 <b>" + LABEL[stateKey(x.cls)] + "</b>", x.cls.reason)); });
   DIFF.dropped.forEach(([t, rs, rsPrev]) =>
-    rows.push(row("탈락", "dr", t, "RS " + (rsPrev ?? "-") + " → <b>" + (rs ?? "-") + "</b>", "RS 80 아래로", "")));
+    rows.push(row("탈락", "dr", t, (rsPrev ?? "-") + " → <b>" + (rs ?? "-") + "</b>", "RS 80 아래로", "")));
   // 내 종목을 맨 위로: ★★ 보유 → ★ 관심 → 나머지 (같은 묶음 안에서는 원래 순서)
   rows = rows.map((r, i) => [r, i]).sort((a, b) => myLevel(b[0].match(/data-t="([^"]+)"/)[1]) - myLevel(a[0].match(/data-t="([^"]+)"/)[1]) || a[1] - b[1]).map((z) => z[0]);
-  const parts = rows.length ? ['<div class="cbox"><table class="ntable ctable"><tbody>' + rows.join("") + "</tbody></table></div>"] : [];
+  const parts = rows.length ? ['<div class="cbox"><table class="ntable ctable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="nm">종목명</th><th class="kd">구분</th>' +
+    '<th class="grp">산업</th><th class="rsc">RS</th><th class="chg">무엇이 바뀌었나</th><th class="rs">지금 판정 근거</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>"] : [];
   el.innerHTML = seg + "<b>" + cmpWord() + " 대비 바뀐 것</b> <span class=\"muted\">" + md(PREV_ASOF) + " 마감 → " + md(VIEW.asOf) + " 마감 · " + rows.length + "종목</span>" +
     (parts.length ? parts.join("") : '<div class="muted">바뀐 것이 없습니다.</div>');
   bindSeg(el);
@@ -1130,13 +1137,14 @@ function renderLeaders() {
     // 한 종목 = 한 줄: 티커 · 이름 · 산업·RS · 판정 근거 · 꼬리표
     const box = document.createElement("div");
     box.className = "nbox";
-    box.innerHTML = '<table class="ntable"><tbody>' + items.map((x) =>
+    box.innerHTML = '<table class="ntable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="nm">종목명</th><th class="grp">산업 · RS</th>' +
+      '<th class="rs">판정 근거</th><th class="bd">꼬리표</th></tr></thead><tbody>' + items.map((x) =>
       '<tr data-t="' + x.t + '"><td class="stc">' + starHtml(x.t) + '</td><td class="tkc"><span class="tk">' + x.t + "</span></td>" +
       '<td class="nm" title="' + TICKERS[x.t].name + '">' + TICKERS[x.t].name + "</td>" +
       '<td class="muted grp">' + TICKERS[x.t].group + " · RS <b>" + x.rs + "</b></td>" +
       '<td class="rs">' + x.cls.reason + "</td>" +
       '<td class="bd">' + badgesFor(x.t, x) + "</td></tr>").join("") + "</tbody></table>";
-    box.querySelectorAll("tr").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t)));
+    box.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t)));
     wrap.appendChild(box);
   });
   renderUniverse();                               // 4층도 같은 산업 선택·비교 기준을 따름
