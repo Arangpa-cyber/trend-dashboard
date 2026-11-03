@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-01 23:10</title>
+<title>추세 대시보드 v2026-11-03 14:30</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -320,7 +320,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-01 23:10</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-03 14:30</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -469,7 +469,9 @@ const TIGHT_3W = 0.10;              // 최근 3주 변동폭 10% 이하면 '조�
 const DRY_VOL = 0.8;                // 최근 2주 거래량이 그 전 10주 평균의 80% 이하면 '거래량 마름'
 const PRE_RS_MIN = 60, PRE_RS_GAIN = 10;  // 예비 주도주: RS 60-79, 4주 사이 RS +10 이상, 10주선 위, 건전한 베이스
 const EARN_WARN_DAYS = 14;          // 실적 발표가 이 기간 안이면 빨갛게 표시
-const REFRESH_NY_HOUR = 16, REFRESH_NY_MIN = 1;   // 미국장 마감 1분 뒤 갱신
+const REFRESH_NY_HOUR = 20, REFRESH_NY_MIN = 30;  // 키 모드 자동 갱신: 미국 시간외 거래(20:00)가 끝난 뒤 = 거래량 확정 뒤
+const SERVER_UTC_HOUR = 1, SERVER_UTC_MIN = 30;   // 서버 갱신: 01:30 UTC = 한국시간 10:30 (미국 동부 겨울 20:30, 여름 21:30)
+const PARTIAL_VOL = 0.25;           // 마지막 날 거래량이 최근 20일 평균의 25% 미만이면 '잠정'(아직 집계 중)으로 봄
 const MIN_GAP_MS = 8000;            // 무료 키: 분당 8회
 
 const C = {
@@ -597,6 +599,16 @@ async function fetchDaily(symbol, key, size) {
                               +(+v.close).toFixed(4), Math.round(+(v.volume || 0))]).reverse();
 }
 const unpack = (a) => a.map(([t, h, l, c, v]) => ({ t, h, l, c, v }));
+// 거래량 잠정 표시: 서버가 '잠정'이라고 알려 준 날, 또는 마지막 날 거래량이 최근 20일 평균의 25% 미만이면 pv=true
+// (잠정인 날은 분산일·팔로스루 판정을 보류하고, 차트 거래량 막대를 회색으로 그림)
+let PARTIAL = {};
+function markPartial(sym, rows) {
+  if (!rows || rows.length < 22) return;
+  rows.forEach((r) => delete r.pv);
+  const last = rows[rows.length - 1];
+  const avg = rows.slice(-21, -1).reduce((a, r) => a + r.v, 0) / 20;
+  if (PARTIAL[sym] === last.t || (avg > 0 && last.v < avg * PARTIAL_VOL)) last.pv = true;
+}
 
 // ═════════════ 5. 계산 ═════════════
 function smaArr(vals, n) {
@@ -623,6 +635,7 @@ function analyzeMarket(d) {
   const dd = [];
   for (let i = 1; i < n; i++) {
     const pct = cl[i] / cl[i - 1] - 1;
+    if (d[i].pv || d[i - 1].pv) continue;          // 거래량 잠정: 판정 보류
     if (pct <= DD_DROP && d[i].v > d[i - 1].v) {
       let expired = false;                       // 그 뒤 종가가 5% 이상 오르면 소멸
       for (let k = i + 1; k < n; k++) if (cl[k] >= cl[i] * 1.05) { expired = true; break; }
@@ -642,7 +655,7 @@ function analyzeMarket(d) {
     } else {
       if (d[i].l < low) { low = d[i].l; rally = 0; }
       else if (rally === 0) { if (cl[i] > cl[i - 1]) rally = 1; }
-      else { rally++; if (rally >= 4 && pct >= FTD_GAIN && d[i].v > d[i - 1].v) { state = "up"; ftds.push(i); peak = cl[i]; } }
+      else { rally++; if (rally >= 4 && pct >= FTD_GAIN && !d[i].pv && !d[i - 1].pv && d[i].v > d[i - 1].v) { state = "up"; ftds.push(i); peak = cl[i]; } }
     }
   }
   const last = n - 1, c = cl[last];
@@ -659,6 +672,7 @@ function analyzeMarket(d) {
                                  (rally > 0 ? "랠리 " + rally + "일차, 팔로스루 데이 대기" : "랠리 시도 전"));
   else if (ftds.length) why.push("팔로스루 데이 " + d[ftds[ftds.length - 1]].t.slice(5).replace("-", "/"));
   else why.push("최근 1년여 " + Math.round(CORRECTION_PCT * 100) + "% 이상 조정 없음");
+  if (d[last].pv) why.push('<b class="warn">' + d[last].t.slice(5).replace("-", "/") + " 거래량 잠정(아직 집계 중) · 이날 분산일·팔로스루 판정 보류</b>");
   return { verdict, cls, why: why.join(" · "), ma50, ma200, dd, dd25, ftds };
 }
 
@@ -906,7 +920,7 @@ function addLine(chart, rows, vals, from, color, width, style) {
 function addVolume(chart, rows, from) {
   const v = chart.addHistogramSeries({ priceScaleId: "vol", priceFormat: { type: "volume" }, priceLineVisible: false, lastValueVisible: false });
   chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.8, bottom: 0 }, visible: false });
-  v.setData(rows.map((r, i) => ({ time: r.t, value: r.v, color: i > 0 && r.c < rows[i - 1].c ? C.volDown : C.volUp })).filter((p, i) => i >= from));
+  v.setData(rows.map((r, i) => ({ time: r.t, value: r.v, color: r.pv ? "rgba(128,128,128,0.45)" : i > 0 && r.c < rows[i - 1].c ? C.volDown : C.volUp })).filter((p, i) => i >= from));
 }
 // 특정 날(주)의 세로 칸 전체를 배경색으로 칠함. 바보다 먼저 추가해야 바 뒤에 깔림
 function addBg(chart, rows, from, colorOf) {
@@ -1197,6 +1211,7 @@ function renderMyBox() {
 
 function renderMarket() {
   if (!DATA.QQQ || DATA.QQQ.length < 210) return;
+  ["QQQ", "QQQE"].forEach((s) => markPartial(s, DATA[s]));
   const m = analyzeMarket(DATA.QQQ);
   MARKET_STATE = m;
   const sig = document.getElementById("signal");
@@ -1527,7 +1542,7 @@ function renderAll() {
   }
 }
 
-// ═════════════ 8. 갱신 시각 (미국장 마감 1분 뒤, 서머타임 자동 반영) ═════════════
+// ═════════════ 8. 갱신 시각 (키 모드: 미국 시간외 거래 끝난 뒤, 서머타임 자동 반영 · 서버: 01:30 UTC) ═════════════
 function nyOffsetMin(ts) {
   const f = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hourCycle: "h23",
     year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -1553,24 +1568,34 @@ function closeBoundary(now, dir) {
 function fmtKST(ts) {
   return new Date(ts).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 }
-const SERVER_LAG_MS = 40 * 60000;    // 서버(GitHub)는 마감 뒤 실행 대기 + 약 14분 수집
+const SERVER_LAG_MS = 30 * 60000;    // 서버(GitHub)는 예약 시각 뒤 실행 대기 + 약 15분 수집
+// 서버 예약 실행 시각: 화-토 01:30 UTC (미국 월-금 장의 다음 날)
+function serverRun(now, dir) {
+  const d0 = new Date(now);
+  for (let k = 0; k <= 8; k++) {
+    const day = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth(), d0.getUTCDate() + dir * k, SERVER_UTC_HOUR, SERVER_UTC_MIN)), wd = day.getUTCDay();
+    if (wd === 0 || wd === 1) continue;
+    if (dir < 0 ? day.getTime() <= now : day.getTime() > now) return day.getTime();
+  }
+  return null;
+}
 async function showRefreshInfo() {
   const next = closeBoundary(Date.now(), +1);
   const asOf = DATA.QQQ ? DATA.QQQ[DATA.QQQ.length - 1].t : null;
   const base = asOf ? "데이터 기준: <b>" + asOf.slice(5).replace("-", "/") + " 미국장 마감</b> · " : "";
   if (SERVER) {
     document.getElementById("refreshInfo").innerHTML = base + "서버 갱신: <b>" + fmtKST(Date.parse(SERVER.generated)) +
-      "</b> · 다음 서버 갱신: <b>" + (next ? fmtKST(next + SERVER_LAG_MS) : "-") + " 무렵</b> (한국시간)";
+      "</b> · 다음 서버 갱신: <b>" + fmtKST(serverRun(Date.now(), +1) + SERVER_LAG_MS) + " 무렵</b> (한국시간)";
   } else {
     const meta = (await dbGet("meta")) || {};
     document.getElementById("refreshInfo").innerHTML = base + "마지막 갱신: <b>" + (meta.lastFull ? fmtKST(meta.lastFull) : "아직 없음") +
-      "</b> · 다음 자동 갱신: <b>" + (next ? fmtKST(next) : "-") + "</b> (미국장 마감 1분 뒤, 한국시간)";
+      "</b> · 다음 자동 갱신: <b>" + (next ? fmtKST(next) : "-") + "</b> (미국 시간외 거래가 끝나 거래량이 확정된 뒤, 한국시간)";
   }
 }
 let timer = null;
 function scheduleAutoRefresh() {
   clearTimeout(timer);
-  const next = closeBoundary(Date.now(), +1);
+  const next = SERVER ? serverRun(Date.now(), +1) : closeBoundary(Date.now(), +1);
   if (!next) return;
   const at = next + (SERVER ? SERVER_LAG_MS : 0) + 5000;
   timer = setTimeout(async () => { if (SERVER) await loadServer(); else await loadAll(true); scheduleAutoRefresh(); }, Math.max(1000, at - Date.now()));
@@ -1585,6 +1610,7 @@ async function loadServer() {
     if (!r.ok) return false;
     const j = await r.json();
     if (!j.series || !j.series.QQQ) return false;
+    PARTIAL = j.partial || {};
     for (const [s, rows] of Object.entries(j.series)) DATA[s] = unpack(rows);
     EARN = j.earnings || {};
     EARN_HIST = j.earnHist || {};
@@ -1839,7 +1865,9 @@ function buildHelp() {
 
 <h3 id="h-data">데이터와 갱신</h3>
 <p>시세는 Twelve Data, 실적 일정은 Nasdaq 실적 캘린더에서 받습니다. 대상은 나스닥100 구성종목(GOOG처럼 중복된 주식 종류는 하나만)과 QQQ, QQQE, XLY, XLP입니다.</p>
-<p>GitHub가 미국 평일 장 마감 뒤(한국시간 화-토 오전 6시 10분 무렵) 자동으로 새로 받습니다. 화면 위 줄에 <b>데이터 기준일</b>(어느 날 장 마감까지 반영됐는지)과 <b>다음 갱신 예정 시각</b>이 나옵니다. 페이지를 열어 둔 채로 갱신 시각이 지나면 알아서 다시 읽습니다.</p>
+<p>GitHub가 미국 평일 장의 <b>시간외 거래까지 끝난 뒤</b>(한국시간 화-토 오전 10시 30분 무렵, 미국 동부 겨울 20:30 · 여름 21:30) 자동으로 새로 받습니다. 장 마감 직후에는 거래량이 아직 집계 중이라, 확정된 뒤에 받도록 했습니다.</p>
+<p><b>거래량 잠정</b>: 그래도 QQQ 등 시장 지표의 마지막 날 거래량이 확정되지 않았을 수 있어 두 겹으로 확인합니다. ① 서버가 수집 맨 처음과 맨 끝(약 15분 간격)에 두 번 받아 값이 다르면 '잠정' ② 화면에서 마지막 날 거래량이 최근 20일 평균의 ${P(PARTIAL_VOL)} 미만이면 '잠정'. 잠정인 날은 1층 차트의 거래량 막대가 회색이 되고, 신호등에 "거래량 잠정 · 판정 보류"가 붙으며, 그날의 분산일·팔로스루 판정을 하지 않습니다. 틀린 판정보다 보류가 낫기 때문입니다. 다음 갱신에서 확정값으로 바뀝니다.</p>
+<p>화면 위 줄에 <b>데이터 기준일</b>(어느 날 장 마감까지 반영됐는지)과 <b>다음 갱신 예정 시각</b>이 나옵니다. 페이지를 열어 둔 채로 갱신 시각이 지나면 알아서 다시 읽습니다.</p>
 <p>⚙ 설정의 "새로 받기"는 서버에 올라온 최신 파일을 다시 읽는 버튼입니다.</p>
 
 <h3 id="h-limits">한계</h3>
@@ -1883,14 +1911,15 @@ document.addEventListener("visibilitychange", async () => {
   if (document.visibilityState !== "visible" || running) return;
   scheduleAutoRefresh(); showRefreshInfo();
   const b = closeBoundary(Date.now(), -1);
-  if (SERVER) { if (b && Date.parse(SERVER.generated) < b && Date.now() > b + SERVER_LAG_MS) loadServer(); return; }
+  const sb = serverRun(Date.now(), -1);
+  if (SERVER) { if (sb && Date.parse(SERVER.generated) < sb && Date.now() > sb + SERVER_LAG_MS) loadServer(); return; }
   const meta = (await dbGet("meta")) || {};
   if (getKey() && (!meta.lastFull || (b && meta.lastFull < b))) loadAll(false);
 });
 (async () => {
   if (typeof LightweightCharts === "undefined") { statusEl.textContent = "차트 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요."; return; }
   if (await loadServer()) {
-    document.getElementById("settingsNote").textContent = "서버 모드: GitHub가 매일 미국장 마감 뒤 데이터를 갱신합니다. 이 화면에서는 키가 필요 없습니다. '새로 받기'는 서버의 최신 파일을 다시 읽습니다.";
+    document.getElementById("settingsNote").textContent = "서버 모드: GitHub가 매일 미국 시간외 거래가 끝난 뒤(한국시간 오전 10시 30분 무렵) 데이터를 갱신합니다. 이 화면에서는 키가 필요 없습니다. '새로 받기'는 서버의 최신 파일을 다시 읽습니다.";
     document.getElementById("key").style.display = "none"; document.getElementById("saveKey").style.display = "none";
   } else {
     if (!getKey()) document.getElementById("settings").hidden = false;
