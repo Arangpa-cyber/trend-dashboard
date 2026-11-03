@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-03 21:30</title>
+<title>추세 대시보드 v2026-11-03 21:35</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -324,7 +324,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-03 21:30</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-03 21:35</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -350,12 +350,10 @@
     <div id="marketChart"><div class="placeholder">QQQ 데이터를 기다리는 중</div></div>
     <div class="legend"><i style="color:#16a34a">━</i> 50일선 &nbsp; <i style="color:#7c3aed">━</i> 200일선 &nbsp;
       <i style="background:rgba(220,38,38,0.16);color:transparent;padding:0 5px">■</i> 분산일 &nbsp; <i style="background:rgba(22,163,74,0.30);color:transparent;padding:0 5px">■</i> 팔로스루 데이</div>
-    <details class="explain"><summary>분산일·팔로스루 데이란? 개념과 판별 기준 보기</summary><div class="ddftd" id="ddftdBody"></div></details>
   </div>
 
   <!-- 2층 -->
   <h2 id="sec-flow">2. 자금 지도 — 지금 돈이 어디에 있고, 4주 동안 어디로 흐르나 <button class="q" data-help="h-flow" title="이 층 보는 법">?</button></h2>
-  <p class="lead">위 두 비율선은 시장 체질, 아래 표는 산업 단위의 자리와 4주 흐름입니다(3층은 종목 단위의 1주 이동). 칸 제목을 누르면 정렬, 행을 누르면 4층·6층에서 그 산업만 봅니다.</p>
   <div id="phase" hidden></div>
   <div class="grid2">
     <div class="card"><div class="card-head"><div class="name">QQQE / QQQ<span class="ticker">동일가중 ÷ 시총가중</span></div><div class="reason" id="r1txt">-</div></div><div class="ratioChart" id="r1"></div></div>
@@ -370,7 +368,6 @@
 
   <!-- 3층 -->
   <h2 id="sec-move">3. 자금 이동 — 이번 주 어디서 빠져 어디로 들어왔나 <button class="q" data-help="h-changes" title="이 층 보는 법">?</button></h2>
-  <p class="lead">1주 전과 비교해 RS 80 진입·탈락과 단계 변화를 산업별로 묶었습니다. 산업 이름을 누르면 4층·6층에서 그 산업만 봅니다.</p>
   <div id="moveSum" class="movesum"></div>
   <div id="changes"><span class="muted">나스닥100 데이터를 모두 받으면 변화가 표시됩니다.</span></div>
 
@@ -1762,7 +1759,6 @@ function ddftdHtml() {
 <li>팔로스루 데이가 나오면 조정이 끝난 것으로 보고, 그 뒤로는 50일선과 분산일로 공격 여부를 판단합니다.</li></ol></div>`;
 }
 function buildHelp() {
-  document.getElementById("ddftdBody").innerHTML = ddftdHtml();
   const P = (x) => Math.round(x * 100) + "%";
   const b = (cls, t) => '<span class="badge ' + cls + '">' + t + "</span>";
   const pill = (cls, t) => '<span class="pill ' + cls + '" style="font-size:12px">' + t + "</span>";
