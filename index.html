@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-03 20:05</title>
+<title>추세 대시보드 v2026-11-03 21:15</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -156,6 +156,8 @@
   table.flow { width: 100%; border-collapse: collapse; font-size: 13px; }
   table.flow th { text-align: left; font-weight: 600; color: var(--sub); font-size: 11px; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   table.flow td { padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  #phase { display: block; margin: 10px 0 0; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); text-decoration: none; font-size: 14px; line-height: 1.5; }
+  #phase .lbl { font-size: 11px; font-weight: 800; color: var(--sub); margin-right: 8px; }
   table.flow tr.row { cursor: pointer; }
   table.flow th[data-k] { cursor: pointer; } table.flow th.on { color: var(--accent); }
   table.flow .kind { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 4px; }
@@ -322,7 +324,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-03 20:05</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-03 21:15</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -342,6 +344,7 @@
 
 <main class="wrapw">
   <div id="signal"><div class="verdict">시장 판정 대기 중</div><div class="why">QQQ 데이터를 받으면 표시됩니다.</div></div>
+  <a id="phase" href="#sec-flow" hidden></a>
 
   <!-- 1층 -->
   <h2 id="sec-market">1. 시장 — QQQ 일봉 6개월 <button class="q" data-help="h-market" title="이 층 보는 법">?</button></h2>
@@ -418,33 +421,27 @@
 <script>
 // ═════════════ 1. 종목 목록: 나스닥100 (2026-10-30 기준), 산업별 ═════════════
 // GOOG·FOX 같은 중복 주식 종류는 하나만 넣음. 서버 스크립트(build_data.py)도 이 목록을 그대로 읽음
-const UNIVERSE = [
-  ["반도체", [["NVDA","Nvidia"],["AMD","AMD"],["AVGO","Broadcom"],["INTC","Intel"],["TXN","Texas Instruments"],
-             ["MRVL","Marvell"],["ADI","Analog Devices"],["QCOM","Qualcomm"],["ARM","Arm"],["NXPI","NXP"],
-             ["MPWR","Monolithic Power"],["MCHP","Microchip"],["ALAB","Astera Labs"]]],
-  ["반도체 장비", [["AMAT","Applied Materials"],["LRCX","Lam Research"],["KLAC","KLA"],["ASML","ASML"],["TER","Teradyne"]]],
+const UNIVERSE = [   // 21개 산업: 같은 이유(매출원·수요)로 함께 움직이는 종목끼리. 근거는 도움말 "산업 분류"
+  ["AI 반도체", [["NVDA","Nvidia"],["AMD","AMD"],["AVGO","Broadcom"],["MRVL","Marvell"],["ARM","Arm"],["ALAB","Astera Labs"],["MPWR","Monolithic Power"]]],
+  ["범용 반도체", [["TXN","Texas Instruments"],["ADI","Analog Devices"],["NXPI","NXP"],["MCHP","Microchip"],["QCOM","Qualcomm"]]],
+  ["반도체 장비·제조", [["AMAT","Applied Materials"],["LRCX","Lam Research"],["KLAC","KLA"],["ASML","ASML"],["TER","Teradyne"],["INTC","Intel"]]],
   ["메모리·스토리지", [["MU","Micron"],["SNDK","Sandisk"],["STX","Seagate"],["WDC","Western Digital"]]],
-  ["네트워크·광통신", [["CSCO","Cisco"],["LITE","Lumentum"]]],
-  ["AI 클라우드", [["CRWV","CoreWeave"],["NBIS","Nebius"]]],
-  ["소프트웨어", [["MSFT","Microsoft"],["PLTR","Palantir"],["ADBE","Adobe"],["INTU","Intuit"],["CDNS","Cadence"],
-                ["SNPS","Synopsys"],["ADSK","Autodesk"],["WDAY","Workday"],["ROP","Roper"],["DDOG","Datadog"],
-                ["TRI","Thomson Reuters"]]],
-  ["사이버보안", [["PANW","Palo Alto"],["CRWD","CrowdStrike"],["FTNT","Fortinet"]]],
-  ["인터넷·미디어·통신", [["GOOGL","Alphabet"],["META","Meta"],["NFLX","Netflix"],["APP","AppLovin"],
-                       ["TTWO","Take-Two"],["CMCSA","Comcast"],["TMUS","T-Mobile"]]],
-  ["전자상거래·온라인 서비스", [["AMZN","Amazon"],["SHOP","Shopify"],["MELI","MercadoLibre"],["PDD","PDD"],
-                           ["BKNG","Booking"],["ABNB","Airbnb"],["DASH","DoorDash"],["PYPL","PayPal"]]],
-  ["하드웨어·자동차", [["AAPL","Apple"],["TSLA","Tesla"]]],
-  ["우주·방산", [["SPCX","SpaceX"],["RKLB","Rocket Lab"],["HONA","Honeywell Aerospace"],["AXON","Axon"]]],
+  ["AI 네트워크·클라우드", [["CSCO","Cisco"],["LITE","Lumentum"],["CRWV","CoreWeave"],["NBIS","Nebius"]]],
+  ["하이퍼스케일러", [["MSFT","Microsoft"],["AMZN","Amazon"],["GOOGL","Alphabet"],["META","Meta"]]],
+  ["응용 소프트웨어", [["PLTR","Palantir"],["ADBE","Adobe"],["INTU","Intuit"],["ADSK","Autodesk"],["WDAY","Workday"],["ROP","Roper"],["TRI","Thomson Reuters"],["AXON","Axon"]]],
+  ["반도체 설계 소프트웨어", [["CDNS","Cadence"],["SNPS","Synopsys"]]],
+  ["보안·관측", [["PANW","Palo Alto"],["CRWD","CrowdStrike"],["FTNT","Fortinet"],["DDOG","Datadog"]]],
+  ["디지털 플랫폼", [["AAPL","Apple"],["APP","AppLovin"],["NFLX","Netflix"],["TTWO","Take-Two"]]],
+  ["전자상거래·소비자 서비스", [["SHOP","Shopify"],["MELI","MercadoLibre"],["PDD","PDD"],["BKNG","Booking"],["ABNB","Airbnb"],["DASH","DoorDash"],["PYPL","PayPal"]]],
+  ["경기소비재", [["TSLA","Tesla"],["SBUX","Starbucks"],["MAR","Marriott"],["ORLY","O'Reilly"],["ROST","Ross Stores"]]],
+  ["필수소비재·통신", [["WMT","Walmart"],["COST","Costco"],["PEP","PepsiCo"],["MNST","Monster"],["MDLZ","Mondelez"],["KDP","Keurig Dr Pepper"],["CCEP","Coca-Cola EP"],["CMCSA","Comcast"],["TMUS","T-Mobile"]]],
   ["바이오", [["AMGN","Amgen"],["GILD","Gilead"],["VRTX","Vertex"],["REGN","Regeneron"],["MRNA","Moderna"],["ALNY","Alnylam"]]],
   ["의료기기", [["ISRG","Intuitive Surgical"],["IDXX","IDEXX"],["GEHC","GE HealthCare"],["DXCM","Dexcom"]]],
-  ["필수소비재", [["WMT","Walmart"],["COST","Costco"],["PEP","PepsiCo"],["MNST","Monster"],["MDLZ","Mondelez"],
-                ["KDP","Keurig Dr Pepper"],["CCEP","Coca-Cola EP"]]],
-  ["경기소비재", [["SBUX","Starbucks"],["MAR","Marriott"],["ORLY","O'Reilly"],["ROST","Ross Stores"]]],
-  ["산업재·운송", [["ADP","ADP"],["CSX","CSX"],["CTAS","Cintas"],["HON","Honeywell"],["FAST","Fastenal"],
-                 ["PCAR","Paccar"],["PAYX","Paychex"],["ODFL","Old Dominion"],["CPRT","Copart"],["FER","Ferrovial"]]],
-  ["에너지·전력·소재", [["CEG","Constellation"],["AEP","AEP"],["XEL","Xcel"],["EXC","Exelon"],
-                     ["FANG","Diamondback"],["BKR","Baker Hughes"],["LIN","Linde"]]],
+  ["산업재·운송", [["HON","Honeywell"],["PCAR","Paccar"],["FAST","Fastenal"],["CSX","CSX"],["ODFL","Old Dominion"],["FER","Ferrovial"],["LIN","Linde"]]],
+  ["비즈니스 서비스", [["ADP","ADP"],["PAYX","Paychex"],["CTAS","Cintas"],["CPRT","Copart"]]],
+  ["우주·방산", [["SPCX","SpaceX"],["RKLB","Rocket Lab"],["HONA","Honeywell Aerospace"]]],
+  ["유틸리티", [["CEG","Constellation"],["AEP","AEP"],["XEL","Xcel"],["EXC","Exelon"]]],
+  ["에너지", [["FANG","Diamondback"],["BKR","Baker Hughes"]]],
   ["비트코인", [["MSTR","Strategy"]]],
 ];
 const MARKET = ["QQQ", "QQQE", "XLY", "XLP"];
@@ -966,6 +963,7 @@ function drawMarket(d, m) {
   addVolume(chart, d, from);
   chart.timeScale().fitContent();
 }
+let RATIO_DIR = {};                 // r1: QQQE/QQQ(폭), r2: XLY/XLP(리스크 선호 ▲ / 회피 ▼)
 function drawRatio(elId, txtId, a, b, upWord, downWord) {
   const mb = new Map(b.map((r) => [r.t, r.c]));
   const rows = a.filter((r) => mb.has(r.t)).map((r) => ({ t: r.t, c: r.c / mb.get(r.t) }));
@@ -980,6 +978,7 @@ function drawRatio(elId, txtId, a, b, upWord, downWord) {
   chart.timeScale().fitContent();
   const up = rows[n - 1].c > ma[n - 1] && ma[n - 1] > ma[n - 11];
   const down = rows[n - 1].c < ma[n - 1] && ma[n - 1] < ma[n - 11];
+  RATIO_DIR[elId] = up ? 1 : down ? -1 : 0;
   document.getElementById(txtId).innerHTML = up ? '<b class="chg-up">▲ ' + upWord + "</b>"
     : down ? '<b class="chg-down">▼ ' + downWord + "</b>" : '<span class="muted">방향 없음 (50일 평균 근처)</span>';
 }
@@ -1367,6 +1366,27 @@ function flowSpark(h) {
   return '<svg class="spark" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '"><polyline points="' + pts + '" fill="none" stroke="' + (up ? "var(--up)" : "var(--down)") + '" stroke-width="1.5"/></svg>';
 }
 const chgSpan = (c, zero) => (c > 0 ? '<span class="chg-up">▲' + c + "</span>" : c < 0 ? '<span class="chg-down">▼' + -c + "</span>" : '<span class="muted">' + zero + "</span>");
+// 국면 한 줄: 2층 흐름 꼬리표(유출 본격 → 유입 본격)와 XLY/XLP 방향으로 규칙에 따라 만듦
+const josaRo = (w) => { const c = w.charCodeAt(w.length - 1) - 0xac00; return c >= 0 && c <= 11171 && c % 28 !== 0 && c % 28 !== 8 ? "으로" : "로"; };
+function renderPhase() {
+  const el = document.getElementById("phase");
+  if (!VIEW) return;
+  const gs = VIEW.groups.map((x) => ({ x, f: flowOf(x), rc: x.rs - x.rsThen }));
+  const outs = gs.filter((y) => y.f === "out").sort((a, b) => a.rc - b.rc), ins = gs.filter((y) => y.f === "in").sort((a, b) => b.rc - a.rc);
+  // 이름은 2종목 이상 산업에서 고름(1종목 산업이 한 줄을 차지하지 않게). 산업 이름 안에 '·'가 있어 쉼표로 이음
+  const names = (arr) => { const a = arr.filter((y) => y.x.n >= 2); return (a.length ? a : arr).slice(0, 3).map((y) => y.x.g).join(", "); };
+  const risk = RATIO_DIR.r2 === 1 ? "리스크 선호" : RATIO_DIR.r2 === -1 ? "리스크 회피" : "";
+  let dest = "", txt;
+  if (ins.length) { dest = names(ins) + (ins.length > 3 ? " 등 " + ins.length + "개 산업" : ""); }
+  const verb = ins.length >= 5 ? "넓게 퍼지는 중" : ins.length >= 2 ? "옮겨 가는 중" : "몰리는 중";
+  if (outs.length && ins.length) txt = names(outs) + "에서 빠진 돈이 " + dest + josaRo(dest) + " " + verb;
+  else if (outs.length) txt = names(outs) + "에서 돈이 빠지는 중 · 뚜렷하게 들어오는 산업 없음";
+  else if (ins.length) txt = dest + josaRo(dest) + " 돈이 들어오는 중";
+  else txt = "뚜렷한 자금 이동 없음";
+  el.innerHTML = '<span class="lbl">국면</span>' + txt + (risk ? " · <b>" + risk + "</b>" : "");
+  el.title = "2층 흐름 꼬리표(유출 본격 산업 → 유입 본격 산업, 4주 기준)와 XLY/XLP 방향으로 자동으로 만든 요약 · 누르면 2층으로";
+  el.hidden = false;
+}
 function renderFlow() {
   const body = document.getElementById("flowBody");
   const key = { rs: (x) => x.rs, rc: (x) => x.rs - x.rsThen, br: (x) => x.above / x.n, bc: (x) => x.above - x.aboveThen,
@@ -1390,6 +1410,7 @@ function renderFlow() {
       "<td>" + (f ? '<span class="' + FLOW_TAGS[f][1] + '" title="' + FLOW_TAGS[f][2] + '">' + FLOW_TAGS[f][0] + "</span>" : '<span class="muted">-</span>') + "</td>" +
       "<td>" + (x.leaders.length ? x.leaders.join(", ") : '<span class="muted">-</span>') + "</td></tr>";
   }).join("");
+  renderPhase();
   body.querySelectorAll("tr.row").forEach((tr) => tr.addEventListener("click", () => {
     selectedGroup = selectedGroup === tr.dataset.g ? null : tr.dataset.g;
     renderFlow(); renderChanges(); renderLeaders(); renderSticky();
@@ -1750,7 +1771,7 @@ function buildHelp() {
   document.getElementById("helpPanel").innerHTML = `
 <div class="phead"><b>이 대시보드 보는 법</b><button class="close" id="helpClose" title="닫기 (Esc)">✕</button></div>
 <div class="toc"><a href="#h-start">처음 오셨다면</a><a href="#h-signal">신호등</a><a href="#h-sticky">고정 바</a>
-<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 자금 지도</a><a href="#h-changes">3층 자금 이동</a><a href="#h-leaders">4층 주도주</a><a href="#h-rs">RS 계산법</a><a href="#h-states">단계 4가지</a><a href="#h-my">5층 내 종목 ★</a><a href="#h-all">6층 전체 종목</a>
+<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 자금 지도</a><a href="#h-phase">국면 한 줄</a><a href="#h-groups">산업 분류</a><a href="#h-changes">3층 자금 이동</a><a href="#h-leaders">4층 주도주</a><a href="#h-rs">RS 계산법</a><a href="#h-states">단계 4가지</a><a href="#h-my">5층 내 종목 ★</a><a href="#h-all">6층 전체 종목</a>
 <a href="#h-tags">꼬리표</a><a href="#h-charts">차트 읽는 법</a><a href="#h-data">데이터·갱신</a><a href="#h-limits">한계</a></div>
 
 <h3 id="h-start">처음 오셨다면</h3>
@@ -1815,6 +1836,23 @@ function buildHelp() {
 <span class="kind out">유출 본격</span> 10주선 위 종목 ▼ + 평균 RS ▼ · 돈이 빠지는 것이 확인됨<br>
 10주선 위 종목 수에 변화가 없으면 평균 RS만으로 봅니다(▲${FLOW_RS} 넘고 절반 이상 10주선 위면 유입 본격, ▼${FLOW_RS} 넘고 절반 미만이면 유출 본격, 그 밖은 "-"). 규칙으로 정한 근사치라 써 보면서 조정할 수 있습니다.</td></tr>
 <tr><td>주도주</td><td>그 산업에서 RS ${RS_LEADER} 이상인 종목.</td></tr>
+</table>
+
+<h3 id="h-phase">국면 한 줄 <small>맨 위 신호등 아래</small></h3>
+<p>2층 흐름 꼬리표로 자동으로 만든 한 줄 요약입니다. <b>유출 본격</b> 산업 중 평균 RS가 가장 많이 떨어진 3개(종목이 1개뿐인 산업은 빼고 고름)에서 <b>유입 본격</b> 산업 중 가장 많이 오른 3개로 돈이 옮겨 간다고 씁니다. 유입 본격 산업이 5개 이상이면 "넓게 퍼지는 중", 2-4개면 "옮겨 가는 중", 1개면 "몰리는 중". 끝에 XLY/XLP 방향으로 <b>리스크 선호</b>(경기소비재가 필수소비재보다 강함) 또는 <b>리스크 회피</b>(반대)를 붙이고, 방향이 없으면 생략합니다. 산업 이름은 데이터에서 그대로 오고 해석은 넣지 않습니다. 누르면 2층으로 갑니다.</p>
+
+<h3 id="h-groups">산업 분류 <small>21개 · 같은 이유로 함께 움직이는 종목끼리</small></h3>
+<p>표준 분류(GICS)는 나스닥100에 맞지 않아 직접 나눴습니다. 섹터 단위는 정보기술 한 섹터에 43종목이 몰려 반도체·소프트웨어·보안의 엇갈린 흐름이 묻히고, 산업 단위는 31개 중 절반이 1-2종목이라 평균이 한 종목에 좌우됩니다.</p>
+<p><b>원칙</b> ① 같은 수요에서 매출이 나와 함께 움직이는 종목끼리(표준 이름보다 우선) ② 한 묶음 3-10종목(1-2종목은 평균이 흔들림) ③ 이름은 표준·산업 ETF에 가깝게. 최근 6개월 일별 등락의 상관관계(시장 공통 움직임을 뺀 값)로 확인했고, <b>사업 논리와 데이터가 같은 방향일 때만</b> 옮겼습니다.</p>
+<table>
+<tr><td>AI 공급망</td><td>AI 반도체(NVDA, AMD, AVGO, MRVL, ARM, ALAB, MPWR) · 범용 반도체(TXN, ADI, NXPI, MCHP, QCOM) · 반도체 장비·제조(AMAT, LRCX, KLAC, ASML, TER, INTC) · 메모리·스토리지(MU, SNDK, STX, WDC) · AI 네트워크·클라우드(CSCO, LITE, CRWV, NBIS)</td></tr>
+<tr><td>AI 구매자</td><td>하이퍼스케일러(MSFT, AMZN, GOOGL, META): AI 데이터센터에 가장 많은 돈을 쓰는 빅테크. 공급망과 나눠 봐야 "공급자에서 빠지고 구매자는 버티는지" 같은 흐름이 보입니다.</td></tr>
+<tr><td>소프트웨어</td><td>응용 소프트웨어(PLTR, ADBE, INTU, ADSK, WDAY, ROP, TRI, AXON) · 반도체 설계 소프트웨어(CDNS, SNPS: 둘끼리 강하게 함께 움직이고 다른 소프트웨어와는 따로) · 보안·관측(PANW, CRWD, FTNT, DDOG)</td></tr>
+<tr><td>소비자</td><td>디지털 플랫폼(AAPL, APP, NFLX, TTWO) · 전자상거래·소비자 서비스(SHOP, MELI, PDD, BKNG, ABNB, DASH, PYPL) · 경기소비재(TSLA, SBUX, MAR, ORLY, ROST) · 필수소비재·통신(WMT, COST, PEP, MNST, MDLZ, KDP, CCEP, CMCSA, TMUS)</td></tr>
+<tr><td>헬스케어</td><td>바이오(AMGN, GILD, VRTX, REGN, MRNA, ALNY) · 의료기기(ISRG, IDXX, GEHC, DXCM)</td></tr>
+<tr><td>실물 경제</td><td>산업재·운송(HON, PCAR, FAST, CSX, ODFL, FER, LIN) · 비즈니스 서비스(ADP, PAYX, CTAS, CPRT: 급여·구독형이라 경기에 덜 민감) · 우주·방산(SPCX, RKLB, HONA) · 유틸리티(CEG, AEP, XEL, EXC) · 에너지(FANG, BKR) · 비트코인(MSTR: 비트코인 가격만 따라가 1종목으로 따로)</td></tr>
+<tr><td>판단이 갈린 곳</td><td>DDOG → 보안·관측(보안 3종목과 0.63) · ROP·TRI·AXON → 응용 소프트웨어(0.5-0.7) · INTC → 반도체 장비·제조(칩 설계보다 공장 투자로 움직임) · LIN → 산업재 · CEG → 유틸리티(AI 반도체보다 유틸리티와 조금 더 가까움) · MPWR·AMD → 사업 기준으로 AI 반도체(데이터상으로는 각각 범용 반도체·반도체 장비와 더 가까움) · SPCX → 우주·방산(하이퍼스케일러와는 따로, RKLB·TSLA와 함께 움직임) · SBUX·ORLY → 경기소비재 유지(지금은 방어적으로 움직이지만 국면이 바뀌면 갈라지는 업종이라 6개월 데이터만 보고 옮기지 않음)</td></tr>
+<tr><td>한계</td><td>초대형주(NVDA, AAPL, MSFT, GOOGL, META)는 QQQ 비중이 커서 시장 움직임을 빼면 묶음과의 상관관계가 낮게 나옵니다. SPCX·HONA는 상장 100일 남짓이라 데이터가 짧습니다. 나스닥100 변경(매년 12월) 때 새 종목은 사업 논리로 먼저 정하고, 몇 달 뒤 데이터로 확인합니다.</td></tr>
 </table>
 
 <h3 id="h-changes">3층 · 자금 이동 <small>이번 주 어디서 빠져 어디로 들어왔나</small></h3>
