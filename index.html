@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-03 14:30</title>
+<title>추세 대시보드 v2026-11-03 19:15</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -320,7 +320,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-03 14:30</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-03 19:15</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -360,7 +360,7 @@
   </div>
   <div class="card" style="margin-top:12px;overflow-x:auto">
     <table class="flow">
-      <thead><tr><th>순위</th><th>산업</th><th>평균 RS</th><th>4주 전 → 지금</th><th>10주선 위</th><th>주도주(RS 80+)</th></tr></thead>
+      <thead><tr><th>순위</th><th>산업</th><th>평균 RS (4주)</th><th>순위 4주 전 → 지금</th><th>10주선 위</th><th>주도주(RS 80+)</th></tr></thead>
       <tbody id="flowBody"><tr><td colspan="6" class="muted">나스닥100 데이터를 모두 받으면 계산됩니다.</td></tr></tbody>
     </table>
   </div>
@@ -1331,9 +1331,11 @@ function renderFlow() {
   body.innerHTML = VIEW.groups.map((x) => {
     const chg = x.rankThen - x.rank;
     const chgTxt = chg > 0 ? '<span class="chg-up">▲' + chg + "</span>" : chg < 0 ? '<span class="chg-down">▼' + -chg + "</span>" : '<span class="muted">–</span>';
+    const rc = Math.round(x.rs - x.rsThen);       // 평균 RS 4주 변화: 산업 자체가 강해지는가 (순위는 남과의 비교)
+    const rsChgTxt = rc > 0 ? '<span class="chg-up">▲' + rc + "</span>" : rc < 0 ? '<span class="chg-down">▼' + -rc + "</span>" : '<span class="muted">0</span>';
     return '<tr class="row' + (selectedGroup === x.g ? " sel" : "") + '" data-g="' + x.g + '">' +
       "<td>" + x.rank + "</td><td><b>" + x.g + '</b> <span class="muted">' + x.n + "</span></td>" +
-      '<td><span class="bar" style="width:' + Math.round(x.rs * 0.9) + 'px"></span>' + x.rs.toFixed(0) + "</td>" +
+      "<td><b>" + Math.round(x.rs) + "</b> " + rsChgTxt + "</td>" +
       '<td><span class="muted">' + x.rankThen + "</span> → " + x.rank + " " + chgTxt + "</td>" +
       "<td>" + x.above + "/" + x.n + "</td>" +
       "<td>" + (x.leaders.length ? x.leaders.join(", ") : '<span class="muted">-</span>') + "</td></tr>";
@@ -1747,8 +1749,10 @@ function buildHelp() {
 </table>
 <p><b>아래 산업 순위표</b>는 나스닥100 종목을 산업별로 묶어 자금이 어디로 가는지 봅니다. 행을 누르면 4층·6층이 그 산업만 보여 주고, 다시 누르면 풀립니다.</p>
 <table>
-<tr><td>평균 RS</td><td>그 산업 종목들의 RS(아래 설명) 평균. 높을수록 지수보다 강한 산업.</td></tr>
-<tr><td>4주 전 → 지금</td><td>산업 순위의 변화. <span class="chg-up">▲</span> 올라옴, <span class="chg-down">▼</span> 내려감. <b>이미 1등인 산업보다 빠르게 올라오는 산업</b>이 "기대가 새로 커지는 곳"입니다.</td></tr>
+<tr><td>평균 RS (4주)</td><td>그 산업 종목들의 RS(아래 설명) 평균과 4주 전 대비 변화(예: 72 <span class="chg-up">▲6</span>). 높을수록 지수보다 강한 산업이고, ▲면 산업 자체가 강해지는 중입니다.</td></tr>
+<tr><td>순위 4주 전 → 지금</td><td>산업 순위의 변화. <span class="chg-up">▲</span> 올라옴, <span class="chg-down">▼</span> 내려감. <b>이미 1등인 산업보다 빠르게 올라오는 산업</b>이 "기대가 새로 커지는 곳"입니다.</td></tr>
+<tr><td>둘을 함께 읽기</td><td>순위는 다른 산업과의 비교, 평균 RS 변화는 그 산업 자체의 힘입니다.<br>
+순위 ▲ · RS ▲ = 진짜로 돈이 들어오는 산업(가장 주목) · 순위 ▲ · RS ▼ = 다른 산업이 더 약해져 상대적으로 올라온 것뿐(약세장의 방어 업종에서 흔함) · 순위 ▼ · RS ▲ = 강해지고는 있지만 더 강한 산업에 밀림 · 순위 ▼ · RS ▼ = 돈이 빠지는 산업.</td></tr>
 <tr><td>10주선 위</td><td>그 산업 종목 중 주가가 10주선 위에 있는 수. 순위는 높은데 이 숫자가 작으면 힘이 빠지는 중.</td></tr>
 <tr><td>주도주</td><td>그 산업에서 RS ${RS_LEADER} 이상인 종목.</td></tr>
 </table>
