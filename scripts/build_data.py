@@ -3,7 +3,10 @@
 
 - 종목 목록과 받을 일봉 개수는 index.html 안의 UNIVERSE, MARKET, DAYS_* 를 그대로 읽습니다.
   (종목을 바꿀 때는 index.html 한 곳만 고치면 됩니다.)
-- 시세: Twelve Data 무료 키 (분당 8회 제한에 맞춰 8초 간격, 약 14분)
+- 시세: Twelve Data 무료 키 (분당 8회 제한에 맞춰 8초 간격, 약 15분)
+- 거래량 확정 확인: 시장 지표(QQQ 등)는 맨 처음과 맨 끝에 두 번 받아 마지막 날 거래량이 같은지 봅니다.
+  다르거나 최근 20일 평균의 25%도 안 되면 아직 집계 중인 '잠정'으로 보고 data.json의 partial에 적습니다.
+  (화면은 그날 분산일·팔로스루 판정을 보류합니다. 2026-11-02 QQQ 거래량이 79만 주로 들어온 사고 이후 추가)
 - 실적 일정: Nasdaq 실적 캘린더 (공식 API가 아니라서 막히면 실적 표시만 빠지고 나머지는 정상)
   지난 400일 발표일은 처음 한 번만 다 받고(약 4분), 그 뒤로는 새 날짜만 이어 받습니다.
 - 결과: 저장소 맨 위의 data.json
@@ -112,6 +115,25 @@ def main():
     if "QQQ" not in series:
         sys.exit("QQQ를 받지 못해 data.json을 갱신하지 않습니다.")
 
+    # 거래량 확정 확인: 시장 지표를 한 번 더 받아 마지막 날 거래량 비교 (약 15분 간격)
+    partial = {}
+    for s in MARKET:
+        if s in failed or s not in series:
+            continue
+        again = fetch_series(s, DAYS_MARKET)
+        time.sleep(GAP)
+        first = series[s]
+        if again:
+            series[s] = again
+        rows = series[s]
+        last = rows[-1]
+        avg = sum(r[4] for r in rows[-21:-1]) / 20 if len(rows) > 21 else 0
+        changed = again and first[-1][0] == last[0] and abs(first[-1][4] - last[4]) > max(1, last[4]) * 0.01
+        tiny = avg > 0 and last[4] < avg * 0.25
+        if changed or tiny:
+            partial[s] = last[0]
+            print(f"  {s} {last[0]} 거래량 잠정: 처음 {first[-1][4]:,} → 다시 {last[4]:,} (20일 평균 {avg:,.0f})", flush=True)
+
     # 실적: 지난 발표일은 전에 받은 것을 이어 쓰고, 그 뒤 날짜와 앞으로 60일만 새로 받음
     today = dt.date.today()
     hist_from = today - dt.timedelta(days=HIST_DAYS)
@@ -141,6 +163,7 @@ def main():
         "generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "asOf": series["QQQ"][-1][0],
         "failed": failed,
+        "partial": partial,
         "earnings": earnings,
         "earnHist": hist,
         "earnHistUpTo": upto_new,
