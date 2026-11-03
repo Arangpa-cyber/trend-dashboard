@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-03 21:15</title>
+<title>추세 대시보드 v2026-11-03 21:25</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -81,7 +81,7 @@
   .sep { color: var(--line); }
 
   /* 0층: 신호등 상세 */
-  #signal { margin-top: 14px; border-radius: 10px; padding: 12px 14px; border: 1px solid var(--line); background: var(--card); }
+  #signal { margin-top: 10px; border-radius: 10px; padding: 12px 14px; border: 1px solid var(--line); background: var(--card); }
   #signal .verdict { font-size: 20px; font-weight: 800; }
   #signal .why { font-size: 13px; margin-top: 4px; line-height: 1.6; }
   #signal.go { background: var(--go-bg); border-color: var(--go); } #signal.go .verdict { color: var(--go); }
@@ -156,7 +156,7 @@
   table.flow { width: 100%; border-collapse: collapse; font-size: 13px; }
   table.flow th { text-align: left; font-weight: 600; color: var(--sub); font-size: 11px; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   table.flow td { padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  #phase { display: block; margin: 10px 0 0; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); text-decoration: none; font-size: 14px; line-height: 1.5; }
+  #phase { display: block; margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); text-decoration: none; font-size: 14px; line-height: 1.5; }
   #phase .lbl { font-size: 11px; font-weight: 800; color: var(--sub); margin-right: 8px; }
   table.flow tr.row { cursor: pointer; }
   table.flow th[data-k] { cursor: pointer; } table.flow th.on { color: var(--accent); }
@@ -324,7 +324,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-03 21:15</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-03 21:25</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -343,12 +343,10 @@
 <div id="stickybar"><div class="wrapw" id="stickyInner"><span class="pill">시장 판정 대기 중</span></div></div>
 
 <main class="wrapw">
-  <div id="signal"><div class="verdict">시장 판정 대기 중</div><div class="why">QQQ 데이터를 받으면 표시됩니다.</div></div>
-  <a id="phase" href="#sec-flow" hidden></a>
-
   <!-- 1층 -->
   <h2 id="sec-market">1. 시장 — QQQ 일봉 6개월 <button class="q" data-help="h-market" title="이 층 보는 법">?</button></h2>
-  <p class="lead">신호등 판정의 근거를 눈으로 확인하는 차트입니다.</p>
+  <div id="signal"><div class="verdict">시장 판정 대기 중</div><div class="why">QQQ 데이터를 받으면 표시됩니다.</div></div>
+  <p class="lead">아래 차트는 위 신호등 판정의 근거를 눈으로 확인하는 곳입니다.</p>
   <div class="card">
     <div id="marketChart"><div class="placeholder">QQQ 데이터를 기다리는 중</div></div>
     <div class="legend"><i style="color:#16a34a">━</i> 50일선 &nbsp; <i style="color:#7c3aed">━</i> 200일선 &nbsp;
@@ -359,6 +357,7 @@
   <!-- 2층 -->
   <h2 id="sec-flow">2. 자금 지도 — 지금 돈이 어디에 있고, 4주 동안 어디로 흐르나 <button class="q" data-help="h-flow" title="이 층 보는 법">?</button></h2>
   <p class="lead">위 두 비율선은 시장 체질, 아래 표는 산업 단위의 자리와 4주 흐름입니다(3층은 종목 단위의 1주 이동). 칸 제목을 누르면 정렬, 행을 누르면 4층·6층에서 그 산업만 봅니다.</p>
+  <div id="phase" hidden></div>
   <div class="grid2">
     <div class="card"><div class="card-head"><div class="name">QQQE / QQQ<span class="ticker">동일가중 ÷ 시총가중</span></div><div class="reason" id="r1txt">-</div></div><div class="ratioChart" id="r1"></div></div>
     <div class="card"><div class="card-head"><div class="name">XLY / XLP<span class="ticker">경기소비재 ÷ 필수소비재</span></div><div class="reason" id="r2txt">-</div></div><div class="ratioChart" id="r2"></div></div>
@@ -1384,7 +1383,7 @@ function renderPhase() {
   else if (ins.length) txt = dest + josaRo(dest) + " 돈이 들어오는 중";
   else txt = "뚜렷한 자금 이동 없음";
   el.innerHTML = '<span class="lbl">국면</span>' + txt + (risk ? " · <b>" + risk + "</b>" : "");
-  el.title = "2층 흐름 꼬리표(유출 본격 산업 → 유입 본격 산업, 4주 기준)와 XLY/XLP 방향으로 자동으로 만든 요약 · 누르면 2층으로";
+  el.title = "2층 흐름 꼬리표(유출 본격 산업 → 유입 본격 산업, 4주 기준)와 XLY/XLP 방향으로 자동으로 만든 요약";
   el.hidden = false;
 }
 function renderFlow() {
@@ -1777,7 +1776,7 @@ function buildHelp() {
 <h3 id="h-start">처음 오셨다면</h3>
 <p>이 화면은 <b>위에서 아래로 좁혀 들어가는 깔때기</b>입니다. 각 층이 질문 하나에만 답합니다.</p>
 <div class="q2">
-<b>① 지금 시장이 내 편인가?</b> → 맨 위 신호등과 1층<br>
+<b>① 지금 시장이 내 편인가?</b> → 1층 신호등과 QQQ 차트<br>
 <b>② 지금 돈이 어디에 있고, 4주 동안 어디로 흐르나?</b> → 2층 자금 지도<br>
 <b>③ 이번 주 돈이 어디서 빠져 어디로 들어왔나?</b> → 3층 자금 이동<br>
 <b>④ 그 안에서 지금 살 만한 자리에 있는 주도주는?</b> → 4층 주도주<br>
@@ -1787,7 +1786,7 @@ function buildHelp() {
 <p>매일 아침 할 일: ① 신호등과 고정 바의 <b>★★ 보유 경고 수</b> 확인 → ② 3층 자금 이동에서 이번 주 돈이 옮겨 간 산업과 종목 확인 → ③ 4층 <b>돌파</b>, 베이스 중 <b>준비·임박</b> 종목과 5층 ★ 관심 종목의 차트 확인.</p>
 <p>제목 옆 <b>?</b> 버튼을 누르면 그 층의 설명으로 바로 옵니다. 카드나 종목 줄을 누르면 주봉·일봉 차트를 크게 봅니다.</p>
 
-<h3 id="h-signal">신호등 <small>맨 위 큰 상자 · QQQ 일봉 기준</small></h3>
+<h3 id="h-signal">신호등 <small>1층 맨 위 큰 상자 · QQQ 일봉 기준</small></h3>
 <table>
 <tr><td>${pill("go", "공격 가능")}</td><td>QQQ가 50일선과 200일선 위에 있고, 조정 중이 아니며, 최근 25거래일 분산일이 ${DD_LIMIT - 1}회 이하. 새로 사도 되는 시장.</td></tr>
 <tr><td>${pill("wait", "신규 매수 중지")}</td><td>다음 중 하나라도 해당: 50일선 아래 · 분산일 ${DD_LIMIT}회 이상 · 조정 중(팔로스루 데이 전). 새로 사지 않고 보유 종목만 관리.</td></tr>
@@ -1838,8 +1837,8 @@ function buildHelp() {
 <tr><td>주도주</td><td>그 산업에서 RS ${RS_LEADER} 이상인 종목.</td></tr>
 </table>
 
-<h3 id="h-phase">국면 한 줄 <small>맨 위 신호등 아래</small></h3>
-<p>2층 흐름 꼬리표로 자동으로 만든 한 줄 요약입니다. <b>유출 본격</b> 산업 중 평균 RS가 가장 많이 떨어진 3개(종목이 1개뿐인 산업은 빼고 고름)에서 <b>유입 본격</b> 산업 중 가장 많이 오른 3개로 돈이 옮겨 간다고 씁니다. 유입 본격 산업이 5개 이상이면 "넓게 퍼지는 중", 2-4개면 "옮겨 가는 중", 1개면 "몰리는 중". 끝에 XLY/XLP 방향으로 <b>리스크 선호</b>(경기소비재가 필수소비재보다 강함) 또는 <b>리스크 회피</b>(반대)를 붙이고, 방향이 없으면 생략합니다. 산업 이름은 데이터에서 그대로 오고 해석은 넣지 않습니다. 누르면 2층으로 갑니다.</p>
+<h3 id="h-phase">국면 한 줄 <small>2층 맨 위, 비율선 위</small></h3>
+<p>2층 흐름 꼬리표로 자동으로 만든 한 줄 요약입니다. <b>유출 본격</b> 산업 중 평균 RS가 가장 많이 떨어진 3개(종목이 1개뿐인 산업은 빼고 고름)에서 <b>유입 본격</b> 산업 중 가장 많이 오른 3개로 돈이 옮겨 간다고 씁니다. 유입 본격 산업이 5개 이상이면 "넓게 퍼지는 중", 2-4개면 "옮겨 가는 중", 1개면 "몰리는 중". 끝에 XLY/XLP 방향으로 <b>리스크 선호</b>(경기소비재가 필수소비재보다 강함) 또는 <b>리스크 회피</b>(반대)를 붙이고, 방향이 없으면 생략합니다. 산업 이름은 데이터에서 그대로 오고 해석은 넣지 않습니다.</p>
 
 <h3 id="h-groups">산업 분류 <small>21개 · 같은 이유로 함께 움직이는 종목끼리</small></h3>
 <p>표준 분류(GICS)는 나스닥100에 맞지 않아 직접 나눴습니다. 섹터 단위는 정보기술 한 섹터에 43종목이 몰려 반도체·소프트웨어·보안의 엇갈린 흐름이 묻히고, 산업 단위는 31개 중 절반이 1-2종목이라 평균이 한 종목에 좌우됩니다.</p>
