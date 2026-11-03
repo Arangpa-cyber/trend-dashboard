@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-03 21:25</title>
+<title>추세 대시보드 v2026-11-03 21:30</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -81,7 +81,7 @@
   .sep { color: var(--line); }
 
   /* 0층: 신호등 상세 */
-  #signal { margin-top: 10px; border-radius: 10px; padding: 12px 14px; border: 1px solid var(--line); background: var(--card); }
+  #signal { margin: 10px 0 12px; border-radius: 10px; padding: 12px 14px; border: 1px solid var(--line); background: var(--card); }
   #signal .verdict { font-size: 20px; font-weight: 800; }
   #signal .why { font-size: 13px; margin-top: 4px; line-height: 1.6; }
   #signal.go { background: var(--go-bg); border-color: var(--go); } #signal.go .verdict { color: var(--go); }
@@ -324,7 +324,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-03 21:25</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-03 21:30</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -346,7 +346,6 @@
   <!-- 1층 -->
   <h2 id="sec-market">1. 시장 — QQQ 일봉 6개월 <button class="q" data-help="h-market" title="이 층 보는 법">?</button></h2>
   <div id="signal"><div class="verdict">시장 판정 대기 중</div><div class="why">QQQ 데이터를 받으면 표시됩니다.</div></div>
-  <p class="lead">아래 차트는 위 신호등 판정의 근거를 눈으로 확인하는 곳입니다.</p>
   <div class="card">
     <div id="marketChart"><div class="placeholder">QQQ 데이터를 기다리는 중</div></div>
     <div class="legend"><i style="color:#16a34a">━</i> 50일선 &nbsp; <i style="color:#7c3aed">━</i> 200일선 &nbsp;
