@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-03 21:35</title>
+<title>추세 대시보드 v2026-11-06 11:45</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -324,7 +324,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-03 21:35</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-06 11:45</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1643,6 +1643,14 @@ function fmtKST(ts) {
 }
 const SERVER_LAG_MS = 30 * 60000;    // 서버(GitHub)는 예약 시각 뒤 실행 대기 + 약 15분 수집
 // 서버 예약 실행 시각: 화-토 01:30 UTC (미국 월-금 장의 다음 날)
+// 오늘 예약 실행이 지났는데 새 data.json이 아직 없으면 지연(GitHub 대기열). 4시간이 지나도 없으면 빠진 것으로 봄
+const SERVER_POLL_MS = 10 * 60000, SERVER_GIVEUP_MS = 4 * 3600000;
+function serverLate(now) {
+  if (!SERVER) return null;
+  const last = serverRun(now, -1);
+  if (!last || Date.parse(SERVER.generated) >= last) return null;
+  return { last, missed: now - last > SERVER_GIVEUP_MS };
+}
 function serverRun(now, dir) {
   const d0 = new Date(now);
   for (let k = 0; k <= 8; k++) {
@@ -1657,8 +1665,12 @@ async function showRefreshInfo() {
   const asOf = DATA.QQQ ? DATA.QQQ[DATA.QQQ.length - 1].t : null;
   const base = asOf ? "데이터 기준: <b>" + asOf.slice(5).replace("-", "/") + " 미국장 마감</b> · " : "";
   if (SERVER) {
-    document.getElementById("refreshInfo").innerHTML = base + "서버 갱신: <b>" + fmtKST(Date.parse(SERVER.generated)) +
-      "</b> · 다음 서버 갱신: <b>" + fmtKST(serverRun(Date.now(), +1) + SERVER_LAG_MS) + " 무렵</b> (한국시간)";
+    const late = serverLate(Date.now());
+    const nextTxt = late && !late.missed
+      ? '<b style="color:var(--wait)">오늘 서버 갱신 지연 중</b> (예약 ' + fmtKST(late.last) + ", GitHub 실행 대기열이 밀림 · 10분마다 다시 확인해 들어오면 바로 반영)"
+      : (late ? '<b style="color:var(--stop)">오늘 서버 갱신이 오지 않음</b> (GitHub가 예약 실행을 빼먹었을 수 있음) · ' : "") +
+        "다음 서버 갱신: <b>" + fmtKST(serverRun(Date.now(), +1) + SERVER_LAG_MS) + " 무렵</b> (한국시간)";
+    document.getElementById("refreshInfo").innerHTML = base + "서버 갱신: <b>" + fmtKST(Date.parse(SERVER.generated)) + "</b> · " + nextTxt;
   } else {
     const meta = (await dbGet("meta")) || {};
     document.getElementById("refreshInfo").innerHTML = base + "마지막 갱신: <b>" + (meta.lastFull ? fmtKST(meta.lastFull) : "아직 없음") +
@@ -1668,10 +1680,12 @@ async function showRefreshInfo() {
 let timer = null;
 function scheduleAutoRefresh() {
   clearTimeout(timer);
+  const late = serverLate(Date.now());
   const next = SERVER ? serverRun(Date.now(), +1) : closeBoundary(Date.now(), +1);
   if (!next) return;
-  const at = next + (SERVER ? SERVER_LAG_MS : 0) + 5000;
-  timer = setTimeout(async () => { if (SERVER) await loadServer(); else await loadAll(true); scheduleAutoRefresh(); }, Math.max(1000, at - Date.now()));
+  let at = next + (SERVER ? SERVER_LAG_MS : 0) + 5000;
+  if (late && !late.missed) at = Math.min(at, Date.now() + SERVER_POLL_MS);   // 지연 중: 10분마다 다시 확인
+  timer = setTimeout(async () => { if (SERVER) { await loadServer(); await showRefreshInfo(); } else await loadAll(true); scheduleAutoRefresh(); }, Math.max(1000, at - Date.now()));
 }
 
 // ═════════════ 9. 불러오기 ═════════════
@@ -1964,6 +1978,7 @@ function buildHelp() {
 <p>GitHub가 미국 평일 장의 <b>시간외 거래까지 끝난 뒤</b>(한국시간 화-토 오전 10시 30분 무렵, 미국 동부 겨울 20:30 · 여름 21:30) 자동으로 새로 받습니다. 장 마감 직후에는 거래량이 아직 집계 중이라, 확정된 뒤에 받도록 했습니다.</p>
 <p><b>거래량 잠정</b>: 그래도 QQQ 등 시장 지표의 마지막 날 거래량이 확정되지 않았을 수 있어 두 겹으로 확인합니다. ① 서버가 수집 맨 처음과 맨 끝(약 15분 간격)에 두 번 받아 값이 다르면 '잠정' ② 화면에서 마지막 날 거래량이 최근 20일 평균의 ${P(PARTIAL_VOL)} 미만이면 '잠정'. 잠정인 날은 1층 차트의 거래량 막대가 회색이 되고, 신호등에 "거래량 잠정 · 판정 보류"가 붙으며, 그날의 분산일·팔로스루 판정을 하지 않습니다. 틀린 판정보다 보류가 낫기 때문입니다. 다음 갱신에서 확정값으로 바뀝니다.</p>
 <p>화면 위 줄에 <b>데이터 기준일</b>(어느 날 장 마감까지 반영됐는지)과 <b>다음 갱신 예정 시각</b>이 나옵니다. 페이지를 열어 둔 채로 갱신 시각이 지나면 알아서 다시 읽습니다.</p>
+<p><b>갱신 지연</b>: GitHub의 예약 실행은 정각에 바로 돌지 않고 대기열에 들어가, 붐비는 날은 30분에서 1시간 넘게 늦어집니다. 예약 시각이 지났는데 새 데이터가 아직 없으면 위 줄에 <b>"오늘 서버 갱신 지연 중"</b>이 뜨고, 들어올 때까지 10분마다 다시 확인해 바로 반영합니다. 4시간이 지나도 없으면 <b>"오늘 서버 갱신이 오지 않음"</b>으로 바뀝니다. GitHub가 그날 예약을 빼먹은 경우로, 다음 날 갱신에서 빠진 날까지 함께 채워집니다.</p>
 <p>⚙ 설정의 "새로 받기"는 서버에 올라온 최신 파일을 다시 읽는 버튼입니다.</p>
 
 <h3 id="h-limits">한계</h3>
