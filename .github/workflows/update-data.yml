@@ -2,10 +2,11 @@ name: 데이터 갱신
 
 on:
   schedule:
-    # 화-토 01:30 UTC = 한국시간 오전 10:30, 미국 동부 겨울 20:30 · 여름 21:30 (전날 장의 시간외 거래까지 끝난 뒤)
-    # 거래량이 확정된 뒤에 받기 위함. 예전 21:10 UTC는 서머타임이 끝나면 장 마감 10분 뒤라
-    # ETF 거래량이 집계 중인 값으로 들어온 적이 있음(2026-11-02 QQQ 79만 주)
-    - cron: "30 1 * * 2-6"
+    # 화-토 00:30 UTC = 한국시간 오전 9:30, 미국 동부 겨울 19:30 · 여름 20:30
+    # 스크립트가 동부 20:15(시간외 거래 마감 15분 뒤)까지 기다렸다 받음. GitHub 예약은 보통 1시간쯤 늦게 시작해
+    # 실제로는 한국시간 오전 10:30-11:00 무렵 반영. 거래량이 안 맞으면 15분 간격으로 다시 확인(최대 1시간)
+    # 예전 21:10 UTC는 서머타임이 끝나면 장 마감 10분 뒤라 집계 중인 거래량이 들어온 적이 있음(2026-11-02 QQQ 79만 주)
+    - cron: "30 0 * * 2-6"
   workflow_dispatch: {}   # Actions 탭에서 'Run workflow'로 바로 실행
 
 permissions:
@@ -18,7 +19,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
