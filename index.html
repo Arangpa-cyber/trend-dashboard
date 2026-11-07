@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-08 08:55</title>
+<title>추세 대시보드 v2026-11-08 09:05</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -128,10 +128,16 @@
   .mv2 tr[data-t] { cursor: pointer; } .mv2 tr[data-t]:hover td { background: var(--hover, rgba(127,127,127,.08)); }
   .mv2 td.tk { width: 62px; padding-left: 12px; font-weight: 800; } .mv2 td.rsx { width: 118px; font-variant-numeric: tabular-nums; }
   .mv2 td.wt { color: var(--sub); white-space: normal; }
+  .mv2 td.wk { width: 58px; text-align: right; font-variant-numeric: tabular-nums; }
+  .mv2 td.vm { width: 86px; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .mv2 td.vm.heavy { color: var(--text, inherit); font-weight: 800; }
   .mv2 .none { color: var(--sub); font-size: 13px; padding: 8px 0; }
   #changes .neutral { margin-top: 10px; font-size: 12px; color: var(--sub); }
   #changes .neutral span[data-t] { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
-  @media (max-width: 700px) { .mv2 { grid-template-columns: 1fr; } .mv2 .side.out { margin-top: 14px; } }
+  @media (max-width: 700px) { .mv2 { grid-template-columns: 1fr; } .mv2 .side.out { margin-top: 14px; }
+    .mv2 tr { display: grid; grid-template-columns: 56px 1fr 60px 44px; align-items: baseline; }
+    .mv2 td { width: auto !important; } .mv2 td.tk { padding-left: 6px; } .mv2 td.vm { text-align: right; } .mv2 .vl { display: none; }
+    .mv2 td.wt { grid-column: 2 / -1; padding-top: 0; font-size: 12px; } }
   .tk { font-weight: 700; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
 
   h2 { font-size: 16px; margin: 28px 0 4px; scroll-margin-top: 60px; }
@@ -333,7 +339,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-08 08:55</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-08 09:05</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1286,6 +1292,14 @@ function renderCmpNote() {}
 // 단계의 좋고 나쁨 (자금 이동 방향 판정용): 높을수록 돈이 들어온 쪽
 // 단계 이동 방향: 이탈로 가면 빠짐, 이탈에서 벗어나거나 돌파로 가면 들어옴, 나머지(돌파→상승→베이스)는 자연스러운 순환이라 중립
 const moveDir = (a, b) => (b === "broken" ? -1 : a === "broken" || b === "breakout" ? 1 : 0);
+// 1주 등락률(%)과 주 거래량 배수(이번 주 5거래일 거래량 ÷ 그 전 10주 평균 주간 거래량)
+const VOL_HEAVY = 1.5;   // 이 배수 이상이면 '거래량을 실은 움직임'으로 강조
+function weekStats(t) {
+  const d = DATA[t], m = d ? d.length : 0;
+  if (m < 56) return { wk: null, vm: null };
+  const wv = d.slice(m - 5).reduce((a, x) => a + x.v, 0), pv = d.slice(m - 55, m - 5).reduce((a, x) => a + x.v, 0) / 10;
+  return { wk: (d[m - 1].c / d[m - 6].c - 1) * 100, vm: pv > 0 ? wv / pv : null };
+}
 function moveItems() {
   // 종목마다 방향: +1 들어옴(RS 80 진입, 단계 좋아짐) · -1 빠짐(탈락, 단계 나빠짐) · 0 중립(같은 수준 안에서 바뀜)
   const items = [];
@@ -1296,6 +1310,7 @@ function moveItems() {
     items.push({ t, dir: moveDir(a, b), rs0: null, rs1: x.rs, rc: null, what: LABEL[a] + " → " + LABEL[b] }); });
   DIFF.dropped.forEach(([t, rs, rsPrev]) =>
     items.push({ t, dir: -1, rs0: rsPrev, rs1: rs, rc: rs != null && rsPrev != null ? rs - rsPrev : null, what: "탈락" }));
+  items.forEach((x) => Object.assign(x, weekStats(x.t)));
   return items;
 }
 // 3층: 들어온 쪽 | 빠진 쪽을 나란히, 산업별로 묶음. 산업은 종목 수 → RS 변화 크기 순, 종목은 RS 변화 크기 순(단계 변화는 그 뒤)
@@ -1318,7 +1333,10 @@ function renderChanges() {
     const body = gs.length ? gs.map(([g, xs]) =>
       '<div class="mg"><div class="mgh' + (selectedGroup === g ? " sel" : "") + '" data-g="' + g + '"><b>' + g + '</b><span class="n">' + (dir > 0 ? "+" : "−") + xs.length + '</span> <span class="muted">· ' + (GN[g] || "?") + "종목 중 " + xs.length + "종목</span></div><table>" +
       xs.slice().sort((a, b) => mag(b) - mag(a)).map((x) =>
-        '<tr data-t="' + x.t + '" title="' + nm(x.t) + '"><td class="tk">' + x.t + '</td><td class="rsx">' + rsTxt(x) + '</td><td class="wt">' + x.what + "</td></tr>").join("") +
+        '<tr data-t="' + x.t + '" title="' + nm(x.t) + '"><td class="tk">' + x.t + '</td><td class="rsx">' + rsTxt(x) + "</td>" +
+        '<td class="wk ' + (x.wk > 0 ? "chg-up" : x.wk < 0 ? "chg-down" : "") + '">' + (x.wk == null ? "" : (x.wk > 0 ? "+" : "") + x.wk.toFixed(1) + "%") + "</td>" +
+        '<td class="vm' + (x.vm >= VOL_HEAVY ? " heavy" : "") + '" title="이번 주 거래량 ÷ 그 전 10주 평균">' + (x.vm == null ? "" : '<span class="vl">거래량 </span>' + x.vm.toFixed(1) + "배") + "</td>" +
+        '<td class="wt">' + x.what + "</td></tr>").join("") +
       "</table></div>").join("") : '<div class="none">없음</div>';
     return '<div class="side ' + cls + '"><div class="sh ' + cls + '">' + lbl + " " + n + "</div>" + body + "</div>";
   };
@@ -1878,7 +1896,7 @@ function buildHelp() {
 <tr><td><b>탈락</b></td><td>빠짐. RS가 ${RS_LEADER} 아래로 내려감.</td></tr>
 <tr><td><b>중립</b></td><td>정상적인 순환이라 돈의 이동으로 보지 않음. 돌파 → 상승, 상승 → 베이스(오른 뒤 쉼), 베이스 → 상승. 맨 아래 한 줄로만 적습니다.</td></tr>
 </table>
-<p>RS 칸의 "67→85 ▲18"은 1주 전 → 지금 RS와 변화 폭입니다. 단계만 바뀐 종목은 지금 RS만 적습니다. 산업 이름을 누르면 4층·6층이 그 산업만 보여 주고 다시 누르면 풀립니다. 종목 줄을 누르면 차트를 크게 봅니다. 보유·관심 종목은 5층에서 따로 봅니다.</p>
+<p>RS 칸의 "67→85 ▲18"은 1주 전 → 지금 RS와 변화 폭입니다. 단계만 바뀐 종목은 지금 RS만 적습니다. 그 옆은 <b>1주 등락률</b>과 <b>주 거래량 배수</b>(이번 주 5거래일 거래량 ÷ 그 전 10주 평균 주간 거래량)입니다. ${VOL_HEAVY}배 이상은 굵게 표시합니다. 거래량을 실어 움직였다면 기관이 실제로 사고판 흔적(오닐), 거래량이 조용하면 아직 확인되지 않은 움직임으로 읽습니다. 산업 이름을 누르면 4층·6층이 그 산업만 보여 주고 다시 누르면 풀립니다. 종목 줄을 누르면 차트를 크게 봅니다. 보유·관심 종목은 5층에서 따로 봅니다.</p>
 
 <h3 id="h-leaders">4층 · 주도주</h3>
 <p>나스닥100에서 <b>RS ${RS_LEADER} 이상</b>인 종목만 골라, 원칙상 <b>지금 무엇을 할 단계인지</b>로 나눕니다.</p>
