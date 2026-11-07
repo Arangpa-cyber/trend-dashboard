@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-08 08:40</title>
+<title>추세 대시보드 v2026-11-08 08:50</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -129,6 +129,7 @@
   .mv2 td.tk { width: 62px; padding-left: 12px; font-weight: 800; } .mv2 td.rsx { width: 118px; font-variant-numeric: tabular-nums; }
   .mv2 td.wt { color: var(--sub); white-space: normal; }
   .mv2 .none { color: var(--sub); font-size: 13px; padding: 8px 0; }
+  #changes .mvhead { font-size: 14px; margin-bottom: 2px; }
   #changes .neutral { margin-top: 10px; font-size: 12px; color: var(--sub); }
   #changes .neutral span[data-t] { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
   @media (max-width: 700px) { .mv2 { grid-template-columns: 1fr; } .mv2 .side.out { margin-top: 14px; } }
@@ -333,7 +334,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-08 08:40</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-08 08:50</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1025,7 +1026,7 @@ const statusEl = document.getElementById("status");
 const DATA = {};                     // symbol → 일봉 배열
 let EARN = {};                       // symbol → {date, time} 다가오는 실적 (서버 모드에서만)
 let EARN_HIST = {};                  // symbol → [지난 실적 발표일] (서버 모드에서만)
-let PREV_ASOF = "";                  // 비교 시점(1주 전)의 기준일
+let PREV_ASOF = "", PREV_VIEW = null;   // 비교 시점(1주 전)의 기준일과 그 시점 계산 결과
 let SERVER = null;                   // 서버 data.json을 쓰는 중이면 {generated}
 let selectedGroup = null, VIEW = null, CMP_K = 5, DIFF = null, MARKET_STATE = null;   // CMP_K: 비교는 늘 5거래일(1주) 전
 
@@ -1321,8 +1322,11 @@ function renderChanges() {
       "</table></div>").join("") : '<div class="none">없음</div>';
     return '<div class="side ' + cls + '"><div class="sh ' + cls + '">' + lbl + " " + n + "</div>" + body + "</div>";
   };
-  const neu = items.filter((x) => x.dir === 0);
-  el.innerHTML = '<span class="muted">1주 전(' + md(PREV_ASOF) + " 마감) → 지금(" + md(VIEW.asOf) + " 마감) · 산업 이름을 누르면 4층·6층에서 그 산업만</span>" +
+  const neu = items.filter((x) => x.dir === 0), nAll = Object.keys(VIEW.info).length;
+  const nIn = items.filter((x) => x.dir > 0).length, nOut = items.filter((x) => x.dir < 0).length;
+  el.innerHTML = '<div class="mvhead"><b>' + nAll + "종목 중 " + items.length + "종목 변화</b> · " +
+    '<span class="chg-up">들어옴 ' + nIn + '</span> · <span class="chg-down">빠짐 ' + nOut + "</span>" + (neu.length ? ' · <span class="muted">중립 ' + neu.length + "</span>" : "") + "</div>" +
+    '<span class="muted">1주 전(' + md(PREV_ASOF) + " 마감) → 지금(" + md(VIEW.asOf) + " 마감) · 산업 이름을 누르면 4층·6층에서 그 산업만</span>" +
     '<div class="mv2">' + side(1, "들어온 쪽", "in") + side(-1, "빠진 쪽", "out") + "</div>" +
     (neu.length ? '<div class="neutral">중립(정상 순환): ' + neu.map((x) => '<span data-t="' + x.t + '" title="' + nm(x.t) + '">' + x.t + "</span> " + x.what).join(", ") + "</div>" : "");
   el.querySelectorAll("[data-t]").forEach((tr) => tr.addEventListener("click", () => { if (VIEW.info[tr.dataset.t]) openModal(tr.dataset.t); }));
@@ -1600,7 +1604,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal
 function refreshDiff() {
   if (!VIEW) return;
   const prev = computeView(CMP_K);
-  PREV_ASOF = prev.asOf;
+  PREV_ASOF = prev.asOf; PREV_VIEW = prev;
   DIFF = diffViews(VIEW, prev);
   renderChanges(); renderLeaders(); renderSticky();
 }
@@ -1609,7 +1613,7 @@ function renderAll() {
   if (STOCKS.filter((t) => DATA[t]).length >= STOCKS.length * 0.9) {
     VIEW = computeView(0);
     const prev = computeView(CMP_K);
-    PREV_ASOF = prev.asOf;
+    PREV_ASOF = prev.asOf; PREV_VIEW = prev;
     DIFF = diffViews(VIEW, prev);
     renderFlow(); renderMine(); renderChanges(); renderLeaders(); renderSticky();
   }
