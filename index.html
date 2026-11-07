@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-08 08:50</title>
+<title>추세 대시보드 v2026-11-08 08:55</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -129,7 +129,6 @@
   .mv2 td.tk { width: 62px; padding-left: 12px; font-weight: 800; } .mv2 td.rsx { width: 118px; font-variant-numeric: tabular-nums; }
   .mv2 td.wt { color: var(--sub); white-space: normal; }
   .mv2 .none { color: var(--sub); font-size: 13px; padding: 8px 0; }
-  #changes .mvhead { font-size: 14px; margin-bottom: 2px; }
   #changes .neutral { margin-top: 10px; font-size: 12px; color: var(--sub); }
   #changes .neutral span[data-t] { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
   @media (max-width: 700px) { .mv2 { grid-template-columns: 1fr; } .mv2 .side.out { margin-top: 14px; } }
@@ -334,7 +333,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-08 08:50</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-08 08:55</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1304,6 +1303,7 @@ function renderChanges() {
   const el = document.getElementById("changes");
   if (!VIEW || !DIFF) return;
   const items = moveItems();
+  const GN = {}; VIEW.groups.forEach((x) => (GN[x.g] = x.n));   // 산업별 종목 수
   const nm = (t) => (TICKERS[t] ? TICKERS[t].name : t);
   const mag = (x) => (x.rc == null ? -1 : Math.abs(x.rc));
   const rsTxt = (x) => x.rs0 != null && x.rs1 != null
@@ -1316,17 +1316,14 @@ function renderChanges() {
     const gs = Object.entries(by).sort((a, b) => b[1].length - a[1].length || sum(b[1]) - sum(a[1]));
     const n = gs.reduce((a, [, xs]) => a + xs.length, 0);
     const body = gs.length ? gs.map(([g, xs]) =>
-      '<div class="mg"><div class="mgh' + (selectedGroup === g ? " sel" : "") + '" data-g="' + g + '"><b>' + g + '</b><span class="n">' + (dir > 0 ? "+" : "−") + xs.length + "</span></div><table>" +
+      '<div class="mg"><div class="mgh' + (selectedGroup === g ? " sel" : "") + '" data-g="' + g + '"><b>' + g + '</b><span class="n">' + (dir > 0 ? "+" : "−") + xs.length + '</span> <span class="muted">· ' + (GN[g] || "?") + "종목 중 " + xs.length + "종목</span></div><table>" +
       xs.slice().sort((a, b) => mag(b) - mag(a)).map((x) =>
         '<tr data-t="' + x.t + '" title="' + nm(x.t) + '"><td class="tk">' + x.t + '</td><td class="rsx">' + rsTxt(x) + '</td><td class="wt">' + x.what + "</td></tr>").join("") +
       "</table></div>").join("") : '<div class="none">없음</div>';
     return '<div class="side ' + cls + '"><div class="sh ' + cls + '">' + lbl + " " + n + "</div>" + body + "</div>";
   };
-  const neu = items.filter((x) => x.dir === 0), nAll = Object.keys(VIEW.info).length;
-  const nIn = items.filter((x) => x.dir > 0).length, nOut = items.filter((x) => x.dir < 0).length;
-  el.innerHTML = '<div class="mvhead"><b>' + nAll + "종목 중 " + items.length + "종목 변화</b> · " +
-    '<span class="chg-up">들어옴 ' + nIn + '</span> · <span class="chg-down">빠짐 ' + nOut + "</span>" + (neu.length ? ' · <span class="muted">중립 ' + neu.length + "</span>" : "") + "</div>" +
-    '<span class="muted">1주 전(' + md(PREV_ASOF) + " 마감) → 지금(" + md(VIEW.asOf) + " 마감) · 산업 이름을 누르면 4층·6층에서 그 산업만</span>" +
+  const neu = items.filter((x) => x.dir === 0);
+  el.innerHTML = '<span class="muted">1주 전(' + md(PREV_ASOF) + " 마감) → 지금(" + md(VIEW.asOf) + " 마감) · 산업 이름을 누르면 4층·6층에서 그 산업만</span>" +
     '<div class="mv2">' + side(1, "들어온 쪽", "in") + side(-1, "빠진 쪽", "out") + "</div>" +
     (neu.length ? '<div class="neutral">중립(정상 순환): ' + neu.map((x) => '<span data-t="' + x.t + '" title="' + nm(x.t) + '">' + x.t + "</span> " + x.what).join(", ") + "</div>" : "");
   el.querySelectorAll("[data-t]").forEach((tr) => tr.addEventListener("click", () => { if (VIEW.info[tr.dataset.t]) openModal(tr.dataset.t); }));
@@ -1873,7 +1870,7 @@ function buildHelp() {
 
 <h3 id="h-changes">3층 · 자금 이동 <small>이번 주 어디서 빠져 어디로 들어왔나</small></h3>
 <p>늘 <b>5거래일(1주) 전 마감</b>과 지금을 비교합니다. 같은 데이터를 그 시점까지 잘라서 다시 계산한 뒤 지금과 비교합니다. 하루 단위 변화는 주봉·10주선으로 매매하는 원칙에 비해 잡음이 커서 보여 주지 않습니다. 2층이 "지금 돈이 머물러 있는 곳"(4주)이라면, 3층은 "이번 주 돈이 옮겨 간 방향"(1주)입니다.</p>
-<p><b>보는 법</b>: 왼쪽이 <b>들어온 쪽</b>, 오른쪽이 <b>빠진 쪽</b>입니다(휴대폰에서는 위아래). 종목을 산업별로 묶어, 종목 수가 많은 산업부터, 같으면 RS가 크게 움직인 산업부터 놓았습니다. 산업 안에서는 RS 변화가 큰 종목이 위입니다. 한 산업이 양쪽에 다 나올 수도 있습니다(한 산업 안에서 엇갈림).</p>
+<p><b>보는 법</b>: 왼쪽이 <b>들어온 쪽</b>, 오른쪽이 <b>빠진 쪽</b>입니다(휴대폰에서는 위아래). 종목을 산업별로 묶어(산업 이름 옆 "4종목 중 3종목"은 그 산업 전체 종목 수 중 이번 주 이쪽으로 바뀐 종목 수), 바뀐 종목이 많은 산업부터, 같으면 RS가 크게 움직인 산업부터 놓았습니다. 산업 안에서는 RS 변화가 큰 종목이 위입니다. 한 산업이 양쪽에 다 나올 수도 있습니다(한 산업 안에서 엇갈림).</p>
 <table>
 <tr><td><b>진입 · 단계</b></td><td>들어옴. RS가 ${RS_LEADER} 이상으로 새로 올라옴. 뒤의 단어는 지금 단계(돌파면 바로 볼 만한 후보).</td></tr>
 <tr><td><b>베이스 → 돌파</b> 등</td><td>들어옴. 베이스에서 돌파로 가거나, 훼손에서 벗어남(훼손 → 베이스·돌파·상승).</td></tr>
