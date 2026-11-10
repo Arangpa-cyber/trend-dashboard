@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-08 20:15</title>
+<title>추세 대시보드 v2026-11-10 22:00</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -241,7 +241,7 @@
   table.alltable { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; table-layout: fixed; }
   table.alltable col.c-rank { width: 44px; } table.alltable col.c-t { width: 70px; } table.alltable col.c-name { width: 160px; }
   table.alltable col.c-grp { width: 150px; } table.alltable col.c-rs { width: 90px; } table.alltable col.c-wk { width: 76px; }
-  table.alltable col.c-spark { width: 132px; } table.alltable col.c-stage { width: 108px; } table.alltable col.c-fromHi, table.alltable col.c-fromLo { width: 76px; }
+  table.alltable col.c-spark { width: 132px; } table.alltable col.c-stage { width: 150px; } table.alltable col.c-fromHi, table.alltable col.c-fromLo { width: 76px; }
   table.alltable col.c-trend { width: 74px; } table.alltable col.c-tags { width: 320px; }
   table.alltable th { position: sticky; top: 0; z-index: 2; background: var(--card); text-align: left; font-size: 11px; color: var(--sub); font-weight: 700;
                       padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; cursor: pointer; user-select: none; }
@@ -263,6 +263,7 @@
   .stg2 { font-size: 10px; font-weight: 700; padding: 0 5px; border-radius: 4px; border: 1px solid var(--accent); color: var(--accent); white-space: nowrap; }
   .stg2.rdy { background: var(--accent); color: #fff; }
   .stg2.brk { border-color: var(--down); color: var(--down); } .stg2.brk.hard { background: var(--down); color: #fff; }
+  .ttk { display: inline-block; font-size: 10px; font-weight: 700; color: #7c3aed; border: 1px solid #7c3aed; border-radius: 4px; padding: 0 4px; line-height: 15px; vertical-align: 1px; }
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #9ca3af; margin-right: 3px; vertical-align: -1px; }
   .dot.on10 { background: #16a34a; border-color: #16a34a; } .dot.on40 { background: #7c3aed; border-color: #7c3aed; }
   .badge.pre { background: #16a34a; color: #fff; }
@@ -339,7 +340,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-08 20:15</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-10 22:00</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -387,7 +388,7 @@
 
   <!-- 4층 -->
   <h2 id="sec-leaders">4. 주도주 — 나스닥100 RS 80 이상, 지금 어느 단계인가 <button class="q" data-help="h-leaders" title="이 층 보는 법">?</button></h2>
-  <p class="lead">RS는 오닐식 가중 12개월 상대강도(최근 3개월 2배 가중)를 나스닥100 안에서 1-99로 매긴 값입니다. 줄을 누르면 주봉·일봉 차트를 크게 봅니다. 26주 주봉 그림: 주봉 종가(붉은색 10주선 위, 파란색 아래) · <span style="color:#16a34a">━</span> 10주선 · <span style="color:#f59e0b">┄</span> 피벗</p>
+  <p class="lead">RS는 오닐식 가중 12개월 상대강도(최근 3개월 2배 가중)를 나스닥100 안에서 1-99로 매긴 값입니다. 줄을 누르면 주봉·일봉 차트를 크게 봅니다. 26주 주봉 그림: 주봉 종가(붉은색 10주선 위, 파란색 아래) · <span style="color:#16a34a">━</span> 10주선 · <span style="color:#7c3aed">━</span> 40주선(멀면 바닥에 ┄와 거리 %) · <span style="color:#f59e0b">┄</span> 피벗 · <span class="ttk">정렬</span> 추세 정렬(주가 &gt; 10주선 &gt; 40주선, 40주선 상승)</p>
   <div class="legend" style="padding:0 0 8px"><span class="badge rsh">RS선 신고가</span> 종목÷QQQ 선이 52주 신고가 &nbsp; <span class="badge earn">실적 D-7</span> 14일 안 실적 발표 &nbsp; <span class="badge p10">10주선 근접</span> 상승 후 10주선 +5% 이내 눌림</div>
     <div id="filterChip"><button id="clearFilter"></button></div>
   <div id="leaders"><div class="muted" style="font-size:13px">나스닥100 데이터를 모두 받으면 표시됩니다.</div></div>
@@ -806,7 +807,9 @@ const SUB = { trendbreak: "이탈", basebreak: "붕괴", basefail: "붕괴" };
 const subRank = (c) => (SUB[c.state] === "붕괴" ? 1 : 0);
 const pivotNear = (c) => c.state === "base";            // 완성된 베이스의 피벗까지 10% 이내
 // 단계 칸: 단계 + 베이스면 '준비'·'임박' 표시
+const TT_TIP = "추세 정렬: 주가 > 10주선 > 40주선이고 40주선이 4주 전보다 높음(미너비니 추세 조건) · 2단계 상승 추세";
 const stageHtml = (c) => '<span class="stg ' + stateKey(c) + '">' + LABEL[stateKey(c)] + "</span>" +
+  (c.tt ? ' <span class="ttk" title="' + TT_TIP + '">정렬</span>' : "") +
   (c.ready ? ' <span class="stg2 rdy" title="피벗까지 10% 이내 · 변동폭이 조여지고 거래량이 마름">준비</span>' : pivotNear(c) ? ' <span class="stg2 nr" title="완성된 베이스의 피벗까지 10% 이내">임박</span>' : "") +
   (SUB[c.state] ? ' <span class="stg2 brk' + (SUB[c.state] === "붕괴" ? " hard" : "") + '" title="' + (SUB[c.state] === "붕괴" ? "베이스 하단 아래이거나 베이스가 35% 넘게 깊음 · 베이스를 새로 만들어야 함" : "주가가 10주선 아래 · 10주선을 회복하면 돌아올 수 있음") + '">' + SUB[c.state] + "</span>" : "");
 // 단계 · 피벗 대비 한 칸: 단계 + 피벗(최근 고점) 대비 ±% + 단계마다 보조 정보 하나
@@ -851,8 +854,11 @@ function computeView(k) {
     if (x.rs >= RS_LEADER) { x.cls = classify(d, w); x.rsHigh = q ? rsLineHigh(d, q) : false; }
     if (!k) {                                   // 5·6층용: 지금 시점만 계산
       if (!x.cls) { x.cls = classify(d, w); x.rsHigh = q ? rsLineHigh(d, q) : false; }
-      const ma40 = smaArr(w.map((y) => y.c), 40)[w.length - 1], c = d[d.length - 1].c, y1 = d.slice(-252);
+      const m40a = smaArr(w.map((y) => y.c), 40), ma40 = m40a[w.length - 1], c = d[d.length - 1].c, y1 = d.slice(-252);
       x.above40 = ma40 != null ? c > ma40 : null;
+      // 추세 정렬(미너비니 추세 조건): 주가 > 10주선 > 40주선, 40주선이 4주 전보다 높음(한 달 넘게 상승)
+      const m10n = ma10[w.length - 1], m40p = m40a[w.length - 5];
+      x.cls.tt = ma40 != null && m40p != null && m10n != null ? c > m10n && m10n > ma40 && ma40 > m40p : null;
       const m10 = ma10[w.length - 1]; x.dist10 = m10 ? c / m10 - 1 : null;
       x.lp = lastPivot(w);                      // 마지막 돌파 피벗(4층 상승 중 · 5층 관심·보유 공통)
       // 매도선 후보: 베이스가 있으면 베이스 하단, 아직 5주가 안 됐으면 최근 고점 뒤 저점(형성 중 베이스의 저점)
@@ -1442,18 +1448,41 @@ const STAGES = [   // [키(stateKey), 제목, 설명] · 가격 위치 순서: �
   ["base", "베이스", "피벗(최근 고점) 아래에서 쉬는 중 · 준비 → 임박(완성된 베이스의 피벗 10% 이내) → 나머지 순"],
   ["broken", "훼손", "이탈(10주선 아래) → 붕괴(베이스 하단 아래이거나 35% 넘게 깊음) 순"],
 ];
-// 26주 주봉 종가 선 + 10주선(초록) + 피벗(주황 점선)
+// 작은 그림의 40주선(200일선): 눈금은 25%까지만 넓혀 담음. 그보다 먼 구간은 선을 끊고,
+// 지금 값이 그 밖이면 위·아래 가장자리에 점선과 "40주 −32%"(40주선이 지금 주가보다 32% 아래)를 적음
+function longLine(lo, hi, ml, cLast, lbl) {
+  const sp = hi - lo || 1, A = lo - sp * 0.25, B = hi + sp * 0.25;
+  const inR = (z) => z != null && z >= A && z <= B;
+  const vin = ml.filter(inR), last = ml[ml.length - 1];
+  const lo2 = vin.length ? Math.min(lo, ...vin) : lo, hi2 = vin.length ? Math.max(hi, ...vin) : hi;
+  return { lo: lo2, hi: hi2, svg: (yy, pt, line, W, H) => {
+    let out = "", seg = [];
+    const flush = () => { if (seg.length > 1) out += '<polyline points="' + seg.join(" ") + '" fill="none" stroke="#7c3aed" stroke-width="1" opacity="0.7"/>'; seg = []; };
+    ml.forEach((z, i) => { if (inR(z)) seg.push(pt(z, i)); else flush(); });
+    flush();
+    if (last != null && !inR(last)) {
+      const below = last < A, y = below ? H - 0.8 : 0.8, gap = cLast / last - 1;
+      out += '<line x1="1" x2="' + (W - 1) + '" y1="' + y + '" y2="' + y + '" stroke="#7c3aed" stroke-width="1" stroke-dasharray="1 2" opacity="0.8"/>' +
+        '<text x="' + (W - 2) + '" y="' + (below ? H - 3 : 8) + '" text-anchor="end" font-size="8" fill="#7c3aed">' + lbl + " " + (gap >= 0 ? "−" : "+") + Math.abs(gap * 100).toFixed(0) + "%</text>";
+    }
+    return out;
+  } };
+}
+// 26주 주봉 종가 선 + 10주선(초록) + 40주선(보라) + 피벗(주황 점선)
 function weekSpark(x) {
-  const W = 120, H = 28, w = x.w, n = Math.min(26, w.length), cl = w.map((y) => y.c), ma = smaArr(cl, 10);
-  const c = cl.slice(-n), m = ma.slice(-n);
+  const W = 120, H = 34, w = x.w, n = Math.min(26, w.length), cl = w.map((y) => y.c), ma = smaArr(cl, 10);
+  const c = cl.slice(-n), m = ma.slice(-n), m4 = smaArr(cl, 40).slice(-n);
   const piv = x.cls.box ? x.cls.box.top : x.lp ? x.lp.top : null;
-  const all = c.concat(m.filter((v) => v != null)).concat(piv ? [piv] : []), lo = Math.min(...all), hi = Math.max(...all), sp = hi - lo || 1;
+  const all0 = c.concat(m.filter((v) => v != null)).concat(piv ? [piv] : []);
+  const L = longLine(Math.min(...all0), Math.max(...all0), m4, c[n - 1], "40주");
+  const lo = L.lo, hi = L.hi, sp = hi - lo || 1;
   const yy = (v) => (H - 2 - ((v - lo) / sp) * (H - 4)).toFixed(1);
   const pt = (v, i) => (i * (W - 2) / (n - 1) + 1).toFixed(1) + "," + yy(v);
   const line = (arr) => arr.map((v, i) => (v == null ? null : pt(v, i))).filter(Boolean).join(" ");
   const up = c[n - 1] >= (m[n - 1] ?? c[0]);
   return '<svg class="spark" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '">' +
     (piv ? '<line x1="1" x2="' + (W - 1) + '" y1="' + yy(piv) + '" y2="' + yy(piv) + '" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3 2"/>' : "") +
+    L.svg(yy, pt, line, W, H) +
     '<polyline points="' + line(m) + '" fill="none" stroke="#16a34a" stroke-width="1" opacity="0.8"/>' +
     '<polyline points="' + line(c) + '" fill="none" stroke="' + (up ? "var(--up)" : "var(--down)") + '" stroke-width="1.4"/></svg>';
 }
@@ -1504,21 +1533,24 @@ const STAGE_ORDER = { extended: 0, breakout: 1, base: 2, broken: 3 };   // 가�
 const ALL_COLS = [   // [키, 제목, 너비, 정렬값]
   ["my", "★", 40, (x) => myLevel(x.t)], ["rank", "순위", 44, (x) => x.rs], ["t", "티커", 70, (x) => x.t], ["name", "종목명", 160, (x) => TICKERS[x.t].name],
   ["grp", "산업", 150, (x) => TICKERS[x.t].group], ["rs", "RS (4주)", 90, (x) => x.rs], ["wk", "1주 등락", 76, (x) => weekStats(x.t).wk ?? -999],
-  ["spark", "6개월", 132, null], ["stage", "단계", 108, (x) => STAGE_ORDER[stateKey(x.cls)] + (x.cls.ready ? 0 : pivotNear(x.cls) ? 0.1 : 0.2) + subRank(x.cls) * 0.5],
+  ["spark", "6개월", 132, null], ["stage", "단계", 150, (x) => STAGE_ORDER[stateKey(x.cls)] + (x.cls.ready ? 0 : pivotNear(x.cls) ? 0.1 : 0.2) + subRank(x.cls) * 0.5],
   ["fromHi", "고점 대비", 76, (x) => x.fromHi], ["fromLo", "저점 대비", 76, (x) => x.fromLo],
   ["trend", "10주·40주", 74, (x) => (x.above10 ? 2 : 0) + (x.above40 ? 1 : 0)], ["tags", "꼬리표", 0, null],
 ];
 const ALL_FILTERS = [["all", "전체"], ["pre", "예비 주도주"], ["above10", "10주선 위"], ["nearHi", "고점 10% 이내"], ["noBroken", "훼손 제외"], ["hold", "★★ 보유"], ["watch", "★ 관심"]];
 
-// 6개월 종가 선 + 50일선 (작은 SVG)
+// 6개월 종가 선 + 50일선(초록) + 200일선(보라, 40주선과 같은 뜻) (작은 SVG)
 function sparkSvg(d) {
-  const W = 120, H = 28, n = Math.min(SHOW_DAYS, d.length), cl = d.map((r) => r.c), ma = smaArr(cl, 50);
-  const c = cl.slice(-n), m = ma.slice(-n);
-  const all = c.concat(m.filter((v) => v != null)), lo = Math.min(...all), hi = Math.max(...all), sp = hi - lo || 1;
-  const pt = (v, i) => (i * (W - 2) / (n - 1) + 1).toFixed(1) + "," + (H - 2 - ((v - lo) / sp) * (H - 4)).toFixed(1);
+  const W = 120, H = 34, n = Math.min(SHOW_DAYS, d.length), cl = d.map((r) => r.c), ma = smaArr(cl, 50);
+  const c = cl.slice(-n), m = ma.slice(-n), m2 = smaArr(cl, 200).slice(-n);
+  const all0 = c.concat(m.filter((v) => v != null));
+  const L = longLine(Math.min(...all0), Math.max(...all0), m2, c[n - 1], "200일");
+  const lo = L.lo, hi = L.hi, sp = hi - lo || 1;
+  const yy = (v) => (H - 2 - ((v - lo) / sp) * (H - 4)).toFixed(1);
+  const pt = (v, i) => (i * (W - 2) / (n - 1) + 1).toFixed(1) + "," + yy(v);
   const line = (arr) => arr.map((v, i) => (v == null ? null : pt(v, i))).filter(Boolean).join(" ");
   const up = c[n - 1] >= (m[n - 1] ?? c[0]);
-  return '<svg class="spark" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '">' +
+  return '<svg class="spark" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '">' + L.svg(yy, pt, line, W, H) +
     '<polyline points="' + line(m) + '" fill="none" stroke="#16a34a" stroke-width="1" opacity="0.8"/>' +
     '<polyline points="' + line(c) + '" fill="none" stroke="' + (up ? "var(--up)" : "var(--down)") + '" stroke-width="1.4"/></svg>';
 }
@@ -1922,7 +1954,8 @@ function buildHelp() {
 </table>
 <p>차트 없이 <b>표 하나</b>에 모든 단계를 담아 한 화면에 봅니다. 맨 위 줄은 4단계의 종목 수(누르면 그 단계로 이동, 0종목 단계는 흐리게). 표는 가격 위치 순서인 <b>상승 → 돌파 → 베이스 → 훼손</b>으로 놓아, 피벗 대비 숫자가 위에서 아래로 줄어드는 사다리처럼 읽힙니다(단계가 바뀌는 곳에 굵은 선), 한 종목 한 줄입니다. 단계 칸에 마우스를 올리면 그 단계 설명이 보입니다. 줄을 누르면 주봉·일봉 차트가 크게 뜨고, 마우스를 올리면 종목명과 단계 판정 근거가 보입니다. 칸 순서: 티커 · 산업 · RS(4주) · 26주 주봉 · 단계 · 피벗 대비 · 다음 할 일 · 꼬리표.</p>
 <table>
-<tr><td>26주 주봉</td><td>최근 26주 주봉 종가 선(붉은색: 10주선 위, 파란색: 아래), 초록 10주선, 주황 점선 피벗(베이스 상단, 없으면 마지막 돌파 피벗). 베이스 모양과 피벗과의 위치를 한눈에 봅니다.</td></tr>
+<tr><td>26주 주봉</td><td>최근 26주 주봉 종가 선(붉은색: 10주선 위, 파란색: 아래), 초록 10주선, 보라 40주선, 주황 점선 피벗(베이스 상단, 없으면 마지막 돌파 피벗). 베이스 모양과 피벗과의 위치를 한눈에 봅니다. 40주선이 주가에서 너무 멀면(그림을 25% 넘게 넓혀야 하면) 베이스 모양이 눌리지 않도록 선 대신 바닥에 보라 점선과 "40주 −32%"(40주선이 지금 주가보다 32% 아래)만 적습니다. 상장한 지 얼마 안 돼 40주 데이터가 없으면 그리지 않습니다.</td></tr>
+<tr><td><span class="ttk">정렬</span></td><td>단계 옆 표시. <b>추세 정렬</b>(미너비니 추세 조건): 주가 &gt; 10주선 &gt; 40주선이고, 40주선이 4주 전보다 높음(한 달 넘게 상승 중). 2단계 상승 추세에 있다는 뜻으로, 돌파 매수는 이 조건을 갖춘 종목에서 고릅니다. 5층·6층의 단계 칸에도 같은 표시가 붙습니다.</td></tr>
 <tr><td>단계 · 피벗 대비</td><td>단계와 위치를 한 칸에: <b>[단계] ±n% · 보조 정보</b>. 앞 숫자는 언제나 <b>피벗 대비</b>입니다(− 피벗 아래, + 피벗 위). 피벗은 베이스 상단이고, 베이스가 아직 완성 전이면 최근 고점(완성되면 그대로 피벗이 됨), 상승 단계는 마지막으로 돌파한 피벗입니다. 숫자에 마우스를 올리면 피벗 가격이 보입니다.<br>
 뒤 보조 정보는 단계마다 하나: 돌파 → 돌파일 거래량(50일 평균 대비, ${BREAKOUT_VOL}배 미만이면 붉게) · 베이스 → 베이스 주수(완성 전이면 흐리게) · 상승 → 10주선 대비와 돌파한 때 · 훼손 이탈 → 10주선 대비 · 훼손 붕괴 → 베이스 하단 대비 또는 베이스 깊이.</td></tr>
 <tr><td>다음 할 일</td><td>5층 관심 점검과 같은 계산입니다. 시장 신호등에 맞춰 할 일이 바뀝니다.</td></tr>
@@ -1948,7 +1981,7 @@ function buildHelp() {
 <table>
 <tr><td>순위 · RS (4주)</td><td>RS 높은 순 순위, RS 값과 4주 전 대비 RS 변화(<span class="chg-up">▲</span> 상대강도가 좋아지는 중). 다른 층과 같은 표기입니다. 기본 정렬은 RS 높은 순이고, 주황 구분선 위가 4층 주도주입니다.</td></tr>
 <tr><td>1주 등락</td><td>1주 전(5거래일 전) 종가 대비 지금 등락률. 칸 제목을 누르면 이번 주 많이 오른·내린 순으로 정렬됩니다.</td></tr>
-<tr><td>6개월</td><td>6개월 종가 선(붉은색: 50일선 위, 파란색: 50일선 아래)과 초록 50일선.</td></tr>
+<tr><td>6개월</td><td>6개월 종가 선(붉은색: 50일선 위, 파란색: 50일선 아래)과 초록 50일선, 보라 200일선(주봉 40주선과 같은 뜻). 200일선이 너무 멀면 바닥에 보라 점선과 "200일 −32%"만 적습니다. 단계 칸의 <span class="ttk">정렬</span>은 추세 정렬(주가 &gt; 10주선 &gt; 40주선, 40주선 상승)입니다.</td></tr>
 <tr><td>단계</td><td>4층과 같은 단계 판정을 모든 종목에 적용. 마우스를 올리면 판정 근거가 보입니다. 칸 제목을 누르면 가격 위치 순서(상승 → 돌파 → 베이스 → 훼손)로 정렬합니다.</td></tr>
 <tr><td>고점 대비 / 저점 대비</td><td>최근 52주 최고가에서 몇 % 아래인지, 52주 최저가에서 몇 % 위인지. 고점 근처이면서 저점에서 멀리 올라온 종목이 강한 종목입니다(미너비니 기준: 고점 25% 이내, 저점 30% 이상 위).</td></tr>
 <tr><td><span class="dot on10"></span><span class="dot on40"></span></td><td>왼쪽 점은 10주선, 오른쪽 점은 40주선. 채워져 있으면 그 선 위, 빈 원이면 아래.</td></tr>
