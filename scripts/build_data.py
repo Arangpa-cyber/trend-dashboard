@@ -10,6 +10,10 @@
   1% 넘게 다르거나 최근 20일 평균의 25%도 안 되면 15분 뒤 또 받아, 두 번 연속 같아질 때까지 최대 4번 확인합니다.
   끝까지 안 맞으면 '잠정'으로 보고 data.json의 partial에 적습니다(화면은 그날 분산일·팔로스루 판정을 보류).
   (2026-11-02 QQQ 거래량이 79만 주로 들어온 일, 2026-11-05 QQQ 거래량이 동부 21시 넘어서도 바뀐 일 이후 추가)
+- 거래량 교차 확인: 시장 지표는 Nasdaq 일별 시세로 최근 5거래일 거래량을 한 번 더 맞춰 봅니다.
+  두 출처가 평소엔 맞는데(5일 중앙값 비율 0.85-1.15) 어느 날만 15% 넘게 다르면 그날은 Nasdaq 값으로 바로잡고 fixed에 적습니다.
+  그다음 최근 5거래일 모두 이상값 검사: 20일 평균의 25% 미만이거나, 4배 넘는데 그날 등락이 2% 안쪽이면 '잠정'.
+  (2026-11-10 QQQ 거래량이 실제의 10배인 4.5억 주로 들어와 분산일로 잘못 세어진 일 이후 추가)
 - 실적 일정: Nasdaq 실적 캘린더 (공식 API가 아니라서 막히면 실적 표시만 빠지고 나머지는 정상)
   지난 400일 발표일은 처음 한 번만 다 받고(약 4분), 그 뒤로는 새 날짜만 이어 받습니다.
 - 결과: 저장소 맨 위의 data.json
@@ -77,6 +81,74 @@ def fetch_series(symbol, size):
         print(f"  {symbol}: 실패 - {j.get('message')}", flush=True)
         time.sleep(GAP)
     return None
+
+
+NQ_HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)", "Accept": "application/json"}
+XCHECK_DAYS = 5                       # 최근 몇 거래일을 교차 확인할지
+XCHECK_TOL, XCHECK_BASE = 0.15, (0.85, 1.15)
+BIG_VOL, BIG_QUIET, TINY_VOL = 4.0, 0.02, 0.25
+
+
+def fetch_nasdaq_volumes(symbol):
+    """Nasdaq 일별 시세에서 최근 거래량 {날짜: 거래량}. 막히면 빈 dict"""
+    frm = (dt.date.today() - dt.timedelta(days=20)).isoformat()
+    to = dt.date.today().isoformat()
+    try:
+        j = get_json(f"https://api.nasdaq.com/api/quote/{symbol}/historical?assetclass=etf&fromdate={frm}&todate={to}&limit=20", NQ_HEADERS, timeout=20)
+        rows = (((j.get("data") or {}).get("tradesTable") or {}).get("rows")) or []
+        out = {}
+        for row in rows:
+            m, d, y = row["date"].split("/")
+            v = str(row.get("volume", "")).replace(",", "")
+            if v.isdigit():
+                out[f"{y}-{m}-{d}"] = int(v)
+        return out
+    except Exception as e:
+        print(f"  Nasdaq {symbol} 시세: 실패 - {e}", flush=True)
+        return {}
+
+
+def crosscheck_volumes(series, partial):
+    """시장 지표 최근 5거래일 거래량을 Nasdaq과 맞춰 보고(틀린 날은 바로잡음), 이상값은 잠정으로. → fixed"""
+    fixed = {}
+    for s in MARKET:
+        rows = series.get(s)
+        if not rows or len(rows) < 30:
+            continue
+        nq = fetch_nasdaq_volumes(s)
+        time.sleep(0.6)
+        tail = range(len(rows) - XCHECK_DAYS, len(rows))
+        pairs = [(i, rows[i][4], nq[rows[i][0]]) for i in tail if rows[i][0] in nq and nq[rows[i][0]] > 0]
+        confirmed = set()                     # 두 출처가 맞은 날(이상값 검사에서 '너무 큼'은 봐줌: 지수 재편일 등 실제 대량 거래)
+        if pairs:
+            ratios = sorted(td / q for _, td, q in pairs)
+            med = ratios[len(ratios) // 2]
+            if XCHECK_BASE[0] <= med <= XCHECK_BASE[1]:
+                for i, td, q in pairs:
+                    if abs(td / q - 1) <= XCHECK_TOL:
+                        confirmed.add(i)
+                    else:
+                        rows[i][4] = q
+                        confirmed.add(i)
+                        fixed.setdefault(s, {})[rows[i][0]] = [td, q]
+                        if rows[i][0] in partial.get(s, []):   # Nasdaq 확정값으로 바꿨으니 잠정 해제
+                            partial[s] = [d for d in partial[s] if d != rows[i][0]]
+                            if not partial[s]:
+                                partial.pop(s)
+                        print(f"  {s} {rows[i][0]} 거래량 바로잡음: Twelve Data {td:,} → Nasdaq {q:,}", flush=True)
+            else:
+                print(f"  {s} Nasdaq 거래량 기준이 달라 교차 확인 생략 (5일 중앙값 비율 {med:.2f})", flush=True)
+        else:
+            print(f"  {s} Nasdaq 거래량 없음 — 이상값 검사만", flush=True)
+        # 이상값 검사: 최근 5거래일
+        for i in tail:
+            avg = sum(r[4] for r in rows[i - 20:i]) / 20
+            v, chg = rows[i][4], abs(rows[i][3] / rows[i - 1][3] - 1)
+            if avg > 0 and (v < avg * TINY_VOL or (i not in confirmed and v > avg * BIG_VOL and chg < BIG_QUIET)):
+                if rows[i][0] not in partial.get(s, []):
+                    partial[s] = partial.get(s, []) + [rows[i][0]]
+                print(f"  {s} {rows[i][0]} 거래량 이상값 → 잠정: {v:,} (20일 평균 {avg:,.0f}, 등락 {chg * 100:.1f}%)", flush=True)
+    return fixed
 
 
 def fetch_earnings(symbols, start, end):
@@ -161,6 +233,10 @@ def main():
         if rnd < RECHECK_ROUNDS:
             time.sleep(max(0.0, RECHECK_GAP - (time.time() - t_round)))
 
+    partial = {s: [d] for s, d in partial.items()}      # 날짜 목록으로 (여러 날이 잠정일 수 있음)
+    print("거래량 교차 확인 (Nasdaq)", flush=True)
+    fixed = crosscheck_volumes(series, partial)
+
     # 실적: 지난 발표일은 전에 받은 것을 이어 쓰고, 그 뒤 날짜와 앞으로 60일만 새로 받음
     today = dt.date.today()
     hist_from = today - dt.timedelta(days=HIST_DAYS)
@@ -191,6 +267,7 @@ def main():
         "asOf": series["QQQ"][-1][0],
         "failed": failed,
         "partial": partial,
+        "fixed": fixed,
         "earnings": earnings,
         "earnHist": hist,
         "earnHistUpTo": upto_new,
