@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-11 23:00</title>
+<title>추세 대시보드 v2026-11-11 23:05</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -357,7 +357,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-11 23:00</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-11 23:05</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -410,13 +410,11 @@
 
   <!-- 5층 -->
   <h2 id="sec-my">5. 내 종목 — ★★ 보유는 언제 파나, ★ 관심은 언제 사나 <button class="q" data-help="h-my" title="이 층 보는 법">?</button></h2>
-  <p class="lead">종목 맨 앞의 별을 누를 때마다 ☆ → ★ 관심 → ★★ 보유 → ☆ 로 바뀝니다. 이 브라우저에만 저장되고, 다른 기기로는 ⚙ 설정의 '설정 링크 복사'로 옮깁니다.</p>
   <div id="mine" class="mycard"></div>
   <div id="watch" class="mycard"></div>
 
   <!-- 6층 -->
   <h2 id="sec-all">6. 전체 종목 — 나스닥100 RS 순위 <button class="q" data-help="h-all" title="이 층 보는 법">?</button></h2>
-  <p class="lead">4층 주도주 아래에서 무엇이 올라오고 있는지 보는 전체 명단입니다. 칸 제목을 누르면 정렬이 바뀌고, 줄을 누르면 차트를 크게 봅니다.</p>
   <div id="allBox" class="allbox">
     <div id="allSum" class="allsum">나스닥100 데이터를 모두 받으면 표시됩니다.</div>
     <div class="alltools" id="allTools"></div>
@@ -2078,6 +2076,7 @@ function buildHelp() {
 </table>
 
 <h3 id="h-all">6층 · 전체 종목 <small>나스닥100 RS 순위</small></h3>
+<p>4층 주도주 아래에서 무엇이 올라오고 있는지 보는 전체 명단입니다. 칸 제목을 누르면 정렬이 바뀌고(한 번 더 누르면 반대로), 줄을 누르면 차트를 크게 봅니다.</p>
 <p>4층에 아직 못 들어온 종목까지 나스닥100 전체를 한 종목 한 줄로 보여 줍니다. 맨 위 줄에 요약(종목 수, RS ${RS_LEADER}+, 예비 주도주, 10주선 위)이 나옵니다. ★ 칸을 눌러 바로 보유·관심으로 지정할 수 있고, ★★ 보유·★ 관심 거르기 버튼도 있습니다.</p>
 <table>
 <tr><td>순위 · RS (4주)</td><td>RS 높은 순 순위, RS 값과 4주 전 대비 RS 변화(<span class="chg-up">▲</span> 상대강도가 좋아지는 중). 다른 층과 같은 표기입니다. 기본 정렬은 RS 높은 순이고, 주황 구분선 위가 4층 주도주입니다.</td></tr>
@@ -2091,7 +2090,7 @@ function buildHelp() {
 <p>칸 제목을 누르면 그 칸으로 정렬하고, 한 번 더 누르면 반대 순서입니다. 위의 버튼으로 예비 주도주, 10주선 위, 고점 10% 이내, 훼손 제외만 볼 수 있고, 오른쪽 칸에서 티커나 이름으로 찾습니다. 2층 산업 표나 3층 요약에서 산업을 고르면 6층도 그 산업만 보여 줍니다.</p>
 
 <h3 id="h-my">5층 · 내 종목 <small>★★ 보유 · ★ 관심</small></h3>
-<p>모든 표와 카드 맨 앞의 별을 누를 때마다 <b>☆ → ★ 관심 → ★★ 보유 → ☆</b> 순서로 바뀝니다. 보유는 관심을 포함하므로 둘은 겹치지 않습니다. 잘못 눌렀으면 아래에 잠깐 뜨는 '되돌리기'를 누르세요. 별을 누를 때는 차트가 열리지 않습니다.</p>
+<p>모든 표와 카드 맨 앞의 별을 누를 때마다 <b>☆ → ★ 관심 → ★★ 보유 → ☆</b> 순서로 바뀝니다. 보유는 관심을 포함하므로 둘은 겹치지 않습니다. 잘못 눌렀으면 아래에 잠깐 뜨는 '되돌리기'를 누르세요. 별을 누를 때는 차트가 열리지 않습니다. 내 종목은 이 브라우저에만 저장되고, 다른 기기로는 ⚙ 설정의 '설정 링크 복사'로 옮깁니다.</p>
 <p><b>★★ 보유 점검 · 언제 파나</b></p>
 <table>
 <tr><td>단계 · RS</td><td>지금 단계와 RS, 4주 사이 RS 변화.</td></tr>
