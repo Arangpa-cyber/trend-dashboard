@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-11 22:35</title>
+<title>추세 대시보드 v2026-11-11 22:50</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -196,14 +196,14 @@
   .lsum { font-size: 12px; color: var(--sub); margin: 0 0 8px; line-height: 2; }
   .lsum a { text-decoration: none; color: var(--text); margin-right: 10px; white-space: nowrap; } .lsum .z { margin-right: 10px; white-space: nowrap; opacity: 0.6; }
   table.ltable { min-width: 940px; } table.ltable .bd, table.ltable th.bd { text-align: left; } table.ltable .bd .badge:first-child { margin-left: 0; }
-  table.ltable col.c-st { width: 40px; } table.ltable col.c-tk { width: 64px; } table.ltable col.c-grp { width: 154px; }
+  table.ltable col.c-st { width: 40px; } table.ltable col.c-tk { width: 60px; } table.ltable col.c-grp { width: 154px; }
   /* 산업 이름은 한 줄로 끝까지: 가장 긴 "전자상거래·소비자 서비스"(12px 약 139px)에 맞춘 폭 */
   table.ltable td.grp, table.mtable td.grp, table.alltable td.grp { white-space: nowrap; overflow: visible; text-overflow: clip; font-size: 12px; }
-  table.ltable col.c-rs { width: 72px; } table.ltable col.c-qi { width: 82px; } table.ltable col.c-bd { width: 12%; }
+  table.ltable col.c-rs { width: 68px; } table.ltable col.c-qi { width: 78px; } table.ltable col.c-bd { width: 92px; }
   td.qi { white-space: nowrap; font-variant-numeric: tabular-nums; } .qiw { font-size: 11px; }
-  .qisum { font-size: 13px; margin: 2px 0 8px; } table.ltable col.c-sp { width: 130px; } table.ltable col.c-pos { width: auto; }
-  table.ltable col.c-todo { width: 15%; }
-  table.ltable td.todo { white-space: normal; font-size: 12px; line-height: 1.35; }
+  .qisum { font-size: 13px; margin: 2px 0 8px; } table.ltable col.c-sp { width: 96px; } table.ltable col.c-pos { width: auto; }
+  table.ltable col.c-todo { width: 260px; }   /* 실제 폭은 그린 뒤 가장 긴 글에 맞춤(fitTodo) */
+  table.ltable td.todo { white-space: nowrap; font-size: 12px; }
   table.ltable td.bd { white-space: normal; } table.ltable td.bd .badge { margin: 1px 0 1px 3px; }
   table.ntable.ltable td, table.ntable.ltable th { padding-left: 6px; padding-right: 6px; }
   table.ntable.ntable td.stc, table.ntable.ntable th.stc { padding-left: 2px; padding-right: 2px; }   /* 별 칸: 좁은 여백(★★ 잘림 방지) */
@@ -357,7 +357,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-11 22:35</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-11 22:50</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1184,10 +1184,10 @@ function renderMine() {
       const sk = stateKey(x.cls), w = holdWarns(t), c = x.d[x.d.length - 1].c, bx = x.cls.box;
       if (w.length) nWarn++;
       return '<tr data-t="' + t + '" class="' + (w.length ? "mwarn" : "") + '">' + myRowHead(t) +
-        '<td class="mst">' + stageHtml(x.cls) + "</td>" +
         '<td class="mrs">' + rsCell(x) + "</td>" +
         '<td class="mwk">' + wkCell(t) + "</td>" +
         '<td class="msp">' + weekSpark(x, 100) + "</td>" +
+        '<td class="mst">' + stageHtml(x.cls) + "</td>" +
         '<td class="m10">' + pctCell(x.dist10) + "</td>" +
         (bx ? '<td class="msl" title="매도선(베이스 하단) ' + bx.bottom.toFixed(2) + '">' + pctCell(c / bx.bottom - 1) + "</td>"
             : x.lowSinceHigh ? '<td class="msl" title="베이스가 아직 5주가 안 돼, 최근 고점 뒤 저점 ' + x.lowSinceHigh.toFixed(2) + '을 기준으로 함(형성 중 저점)">' + pctCell(c / x.lowSinceHigh - 1) + '<span class="muted">*</span></td>'
@@ -1199,8 +1199,8 @@ function renderMine() {
     });
     el.innerHTML = '<div class="mh"><b>' + STAR2 + ' 보유 점검</b><span class="muted">언제 파나 · ' + MY.hold.length + "종목 · " +
       (nWarn ? '<b style="color:var(--stop)">경고 ' + nWarn + "</b>" : "경고 없음") + " · " + md(VIEW.asOf) + " 마감 기준</span></div>" +
-      '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="mgr">산업</th><th class="mst">단계</th>' +
-      '<th class="mrs">RS (4주)</th><th class="mwk">1주</th><th class="msp">26주 주봉</th><th class="m10">10주선</th><th class="msl" title="매도선(베이스 하단) 대비">매도선</th><th class="mlp" title="마지막 돌파 피벗 대비">돌파 피벗</th><th class="mw">경고 · 실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
+      '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="mgr">산업</th>' +
+      '<th class="mrs">RS (4주)</th><th class="mwk">1주</th><th class="msp">26주 주봉</th><th class="mst">단계</th><th class="m10">10주선</th><th class="msl" title="매도선(베이스 하단) 대비">매도선</th><th class="mlp" title="마지막 돌파 피벗 대비">돌파 피벗</th><th class="mw">경고 · 실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
   }
   // ★ 관심: 피벗(베이스 상단)에 가까운 순서
   if (!MY.watch.length) wl.innerHTML = '<div class="mh"><b>' + STAR1 + ' 관심 점검</b><span class="muted">관심 종목이 없습니다. 종목 맨 앞의 ☆을 한 번 누르세요.</span></div>';
@@ -1601,10 +1601,18 @@ function renderLeaders() {
       html += '<tr data-t="' + x.t + '"' + (i === 0 ? ' id="st-' + k + '" class="sfirst"' : "") + ' title="' + TICKERS[x.t].name + " · " + reasonOf(x).replace(/<[^>]+>/g, "") + '"><td class="stc">' + starHtml(x.t) + '</td><td class="tkc" title="' + TICKERS[x.t].name + '"><span class="tk">' + x.t + "</span></td>" +
         '<td class="muted grp">' + TICKERS[x.t].group + "</td><td>" + rsCell(x) + "</td>" +
         '<td class="qi" title="' + (NDXW[x.t] != null ? "나스닥100 비중 " + NDXW[x.t].toFixed(2) + "% × 1주 등락" : "") + '">' + impactCell(x.t, true) + "</td>" +
-        "<td>" + weekSpark(x) + '</td><td title="' + title + " · " + desc + '">' + posHtml(x) + '</td><td class="todo" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + '</td><td class="bd">' + badgesFor(x.t, x) + "</td></tr>";
+        "<td>" + weekSpark(x, 84) + '</td><td title="' + title + " · " + desc + '">' + posHtml(x) + '</td><td class="todo" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + '</td><td class="bd">' + badgesFor(x.t, x) + "</td></tr>";
     });
   });
   wrap.innerHTML = html + "</tbody></table></div>";
+  // '다음 할 일'은 한 줄로: 지금 보이는 글 중 가장 긴 것에 칸 폭을 맞추고, 남는 폭은 '단계 · 피벗 대비'가 씀
+  const tds = [...wrap.querySelectorAll("td.todo")];
+  if (tds.length) {
+    const cs = getComputedStyle(tds[0]), cv = (renderLeaders.cv = renderLeaders.cv || document.createElement("canvas")).getContext("2d");
+    cv.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+    const wMax = Math.max(...tds.map((td) => cv.measureText(td.textContent).width));
+    wrap.querySelector("col.c-todo").style.width = Math.ceil(wMax + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 2) + "px";
+  }
   wrap.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t)));
   renderUniverse();                               // 6층도 같은 산업 선택을 따름
 }
@@ -1623,7 +1631,7 @@ const ALL_COLS = [   // [키, 제목, 너비, 정렬값]
   ["grp", "산업", 150, (x) => TICKERS[x.t].group], ["rs", "RS (4주)", 90, (x) => x.rs], ["wk", "1주 등락", 76, (x) => weekStats(x.t).wk ?? -999], ["qi", "QQQ 영향", 150, (x) => { const q = qqqImpact(x.t); return q && q.c != null ? q.c : -999; }],
   ["spark", "6개월", 132, null], ["stage", "단계", 150, (x) => STAGE_ORDER[stateKey(x.cls)] + (x.cls.ready ? 0 : pivotNear(x.cls) ? 0.1 : 0.2) + subRank(x.cls) * 0.5],
   ["fromHi", "고점", 58, (x) => x.fromHi], ["fromLo", "저점", 58, (x) => x.fromLo],
-  ["trend", "10·40주", 50, (x) => (x.above10 ? 2 : 0) + (x.above40 ? 1 : 0)], ["tags", "꼬리표", 0, null],
+  ["tags", "꼬리표", 0, null],
 ];
 const ALL_FILTERS = [["all", "전체"], ["pre", "예비 주도주"], ["above10", "10주선 위"], ["nearHi", "고점 10% 이내"], ["noBroken", "훼손 제외"], ["hold", "★★ 보유"], ["watch", "★ 관심"]];
 
@@ -1697,8 +1705,6 @@ function renderUniverse() {
       "<td>" + sparkSvg(x.d, 92) + "</td>" +
       '<td title="' + reasonOf(x).replace(/<[^>]+>/g, "") + '">' + stageHtml(x.cls) + "</td>" +
       '<td class="num">' + pct(x.fromHi) + '</td><td class="num">' + pct(x.fromLo) + "</td>" +
-      '<td title="10주선 ' + (x.above10 ? "위" : "아래") + " · 40주선 " + (x.above40 ? "위" : x.above40 == null ? "데이터 부족" : "아래") + '">' +
-      '<span class="dot' + (x.above10 ? " on10" : "") + '"></span><span class="dot' + (x.above40 ? " on40" : "") + '"></span></td>' +
       '<td class="tg">' + tags + "</td></tr>";
     prevRs = x.rs;
   });
@@ -2079,7 +2085,6 @@ function buildHelp() {
 <tr><td>6개월</td><td>6개월 종가 선(붉은색: 50일선 위, 파란색: 50일선 아래)과 초록 50일선, 보라 200일선(주봉 40주선과 같은 뜻). 200일선이 너무 멀면 바닥에 보라 점선과 "200일 −32%"만 적습니다. 단계 칸의 <span class="ttk">정렬</span>은 추세 정렬(주가 &gt; 10주선 &gt; 40주선, 40주선 상승)입니다.</td></tr>
 <tr><td>단계</td><td>4층과 같은 단계 판정을 모든 종목에 적용. 마우스를 올리면 판정 근거가 보입니다. 칸 제목을 누르면 가격 위치 순서(상승 → 돌파 → 베이스 → 훼손)로 정렬합니다.</td></tr>
 <tr><td>고점 / 저점</td><td>최근 52주 최고가에서 몇 % 아래인지, 52주 최저가에서 몇 % 위인지. 고점 근처이면서 저점에서 멀리 올라온 종목이 강한 종목입니다(미너비니 기준: 고점 25% 이내, 저점 30% 이상 위).</td></tr>
-<tr><td><span class="dot on10"></span><span class="dot on40"></span></td><td>왼쪽 점은 10주선, 오른쪽 점은 40주선. 채워져 있으면 그 선 위, 빈 원이면 아래.</td></tr>
 <tr><td>${b("pre", "예비 주도주")}</td><td>다음 네 가지를 모두 갖춘 종목: ① RS ${PRE_RS_MIN}-${RS_LEADER - 1} ② 4주 사이 RS +${PRE_RS_GAIN} 이상 ③ 10주선 위 ④ <b>건전한 베이스</b>(베이스 저점이 고점보다 ${P(BASE_MAX_DEPTH)} 이내로 얕고, 주가가 베이스 하단 위. 아직 베이스가 생기기 전이면 통과). 크게 떨어졌다가 바닥에서 반등만 하는 종목은 RS가 빨리 올라도 ④에서 걸러집니다. 3층에 들어오기 전 미리 볼 후보입니다. 줄 배경이 옅은 초록입니다.</td></tr>
 </table>
 <p>칸 제목을 누르면 그 칸으로 정렬하고, 한 번 더 누르면 반대 순서입니다. 위의 버튼으로 예비 주도주, 10주선 위, 고점 10% 이내, 훼손 제외만 볼 수 있고, 오른쪽 칸에서 티커나 이름으로 찾습니다. 2층 산업 표나 3층 요약에서 산업을 고르면 6층도 그 산업만 보여 줍니다.</p>
