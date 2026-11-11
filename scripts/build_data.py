@@ -16,7 +16,9 @@
   (2026-11-10 QQQ 거래량이 실제의 10배인 4.5억 주로 들어와 분산일로 잘못 세어진 일 이후 추가)
 - QQQ 비중(근사): Nasdaq의 나스닥100 구성종목 시가총액으로 비중을 계산해 ndxw에 적습니다.
   (실제 QQQ는 분기마다 큰 종목 비중을 깎는 규칙이 있어 조금 다름. 막히면 전날 값을 그대로 씀)
-- 실적 일정: Nasdaq 실적 캘린더 (공식 API가 아니라서 막히면 실적 표시만 빠지고 나머지는 정상)
+- 실적 일정: Alpha Vantage 실적 달력(ALPHAVANTAGE_KEY, 하루 1회 요청으로 앞으로 3개월). 키가 없거나 실패하면 Nasdaq 실적 캘린더.
+  지난 발표일은 전에 받은 일정이 지나갈 때마다 쌓아 둠. (2026-11-11부터 GitHub에서 Nasdaq이 403으로 막혀 추가)
+- (예전) 실적 일정: Nasdaq 실적 캘린더 (공식 API가 아니라서 막히면 실적 표시만 빠지고 나머지는 정상)
   지난 400일 발표일은 처음 한 번만 다 받고(약 4분), 그 뒤로는 새 날짜만 이어 받습니다.
 - 결과: 저장소 맨 위의 data.json
 """
@@ -191,6 +193,63 @@ def fetch_ndx_weights():
         return None
 
 
+AV_KEY = os.environ.get("ALPHAVANTAGE_KEY", "").strip()
+
+
+def fetch_earnings_av(symbols):
+    """Alpha Vantage 실적 달력(앞으로 3개월, CSV 한 번) → {symbol: [{date, time}]}. 실패하면 None"""
+    if not AV_KEY:
+        return None
+    try:
+        url = "https://www.alphavantage.co/query?" + urllib.parse.urlencode({"function": "EARNINGS_CALENDAR", "horizon": "3month", "apikey": AV_KEY})
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "trend-dashboard"}), timeout=40) as r:
+            text = r.read().decode("utf-8", "replace")
+        import csv, io
+        rows = list(csv.DictReader(io.StringIO(text)))
+        if not rows or "reportDate" not in rows[0]:
+            print(f"  Alpha Vantage 실적: 응답이 이상함 - {text[:120]!r}", flush=True)
+            return None
+        want, found = set(symbols), {}
+        for row in rows:
+            s = row.get("symbol", "").upper()
+            if s in want and row.get("reportDate"):
+                found.setdefault(s, []).append({"date": row["reportDate"], "time": row.get("timeOfTheDay", "")})
+        for v in found.values():
+            v.sort(key=lambda x: x["date"])
+        print(f"  Alpha Vantage 실적: 전체 {len(rows)}건 중 우리 종목 {len(found)}개", flush=True)
+        return found
+    except Exception as e:
+        print(f"  Alpha Vantage 실적: 실패 - {e}", flush=True)
+        return None
+
+
+def earnings_nasdaq(prev, today):
+    """(예전 방식) Nasdaq 실적 캘린더: 지난 발표일은 전에 받은 것을 이어 쓰고, 그 뒤 날짜와 앞으로 60일만 새로 받음"""
+    hist_from = today - dt.timedelta(days=HIST_DAYS)
+    hist = {s: [x for x in v if x >= hist_from.isoformat()] for s, v in (prev.get("earnHist") or {}).items()}
+    upto = prev.get("earnHistUpTo")
+    start = hist_from
+    if upto and hist:
+        start = max(hist_from, dt.date.fromisoformat(upto) - dt.timedelta(days=5))   # 며칠 겹쳐서 다시 확인
+        hist = {s: [x for x in v if x < start.isoformat()] for s, v in hist.items()}
+    print(f"실적 일정 받기: {start} - {today + dt.timedelta(days=AHEAD_DAYS)}", flush=True)
+    found = fetch_earnings(STOCKS, start, today + dt.timedelta(days=AHEAD_DAYS))
+    earnings = {}
+    for s, rows in found.items():
+        for r in rows:
+            if r["date"] < today.isoformat():
+                hist.setdefault(s, []).append(r["date"])
+            elif s not in earnings:
+                earnings[s] = r   # 다가오는 가장 가까운 발표일
+    hist = {s: sorted(set(v)) for s, v in hist.items() if v}
+    upto_new = (today - dt.timedelta(days=1)).isoformat()
+    if not found and prev.get("earnHist"):   # Nasdaq이 막힌 날: 전에 받은 실적을 그대로 둠
+        hist, upto_new = prev["earnHist"], prev.get("earnHistUpTo")
+        earnings = prev.get("earnings", {})
+    print(f"  다가오는 실적 {len(earnings)}종목, 지난 실적 {sum(len(v) for v in hist.values())}건", flush=True)
+    return hist, earnings, upto_new
+
+
 def fetch_earnings(symbols, start, end):
     """start-end 날짜(포함) 사이 실적 발표일 (Nasdaq 실적 캘린더) → {symbol: [{date, time}]}"""
     want, found = set(symbols), {}
@@ -280,30 +339,27 @@ def main():
     ndxw_at = dt.date.today().isoformat() if ndxw else prev.get("ndxwAt")
     ndxw = ndxw or prev.get("ndxw") or {}
 
-    # 실적: 지난 발표일은 전에 받은 것을 이어 쓰고, 그 뒤 날짜와 앞으로 60일만 새로 받음
     today = dt.date.today()
-    hist_from = today - dt.timedelta(days=HIST_DAYS)
-    hist = {s: [x for x in v if x >= hist_from.isoformat()] for s, v in (prev.get("earnHist") or {}).items()}
-    upto = prev.get("earnHistUpTo")
-    start = hist_from
-    if upto and hist:
-        start = max(hist_from, dt.date.fromisoformat(upto) - dt.timedelta(days=5))   # 며칠 겹쳐서 다시 확인
-        hist = {s: [x for x in v if x < start.isoformat()] for s, v in hist.items()}
-    print(f"실적 일정 받기: {start} - {today + dt.timedelta(days=AHEAD_DAYS)}", flush=True)
-    found = fetch_earnings(STOCKS, start, today + dt.timedelta(days=AHEAD_DAYS))
-    earnings = {}
-    for s, rows in found.items():
-        for r in rows:
-            if r["date"] < today.isoformat():
-                hist.setdefault(s, []).append(r["date"])
-            elif s not in earnings:
-                earnings[s] = r   # 다가오는 가장 가까운 발표일
-    hist = {s: sorted(set(v)) for s, v in hist.items() if v}
-    upto_new = (today - dt.timedelta(days=1)).isoformat()
-    if not found and prev.get("earnHist"):   # Nasdaq이 막힌 날: 전에 받은 실적을 그대로 둠
-        hist, upto_new = prev["earnHist"], prev.get("earnHistUpTo")
-        earnings = prev.get("earnings", {})
-    print(f"  다가오는 실적 {len(earnings)}종목, 지난 실적 {sum(len(v) for v in hist.values())}건", flush=True)
+    print("실적 일정 받기 (Alpha Vantage)", flush=True)
+    av = fetch_earnings_av(STOCKS)
+    if av is not None:
+        # 지난 발표일: 전에 받아 둔 것 + 전에 '다가오는 일정'이었는데 이제 지나간 날
+        hist_from = (today - dt.timedelta(days=HIST_DAYS)).isoformat()
+        hist = {s: list(v) for s, v in (prev.get("earnHist") or {}).items()}
+        for s, e in (prev.get("earnings") or {}).items():
+            if e.get("date") and e["date"] < today.isoformat():
+                hist.setdefault(s, []).append(e["date"])
+        hist = {s: sorted({x for x in v if x >= hist_from}) for s, v in hist.items()}
+        hist = {s: v for s, v in hist.items() if v}
+        earnings = {}
+        for s, rows in av.items():
+            nxt = [x for x in rows if x["date"] >= today.isoformat() and x["date"] <= (today + dt.timedelta(days=AHEAD_DAYS)).isoformat()]
+            if nxt:
+                earnings[s] = nxt[0]
+        upto_new = (today - dt.timedelta(days=1)).isoformat()
+        print(f"  다가오는 실적 {len(earnings)}종목, 지난 실적 {sum(len(v) for v in hist.values())}건", flush=True)
+    else:
+        hist, earnings, upto_new = earnings_nasdaq(prev, today)
 
     data = {
         "generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
