@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-10 22:00</title>
+<title>추세 대시보드 v2026-11-11 12:20</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -340,7 +340,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-10 22:00</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-11 12:20</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -607,16 +607,26 @@ async function fetchDaily(symbol, key, size) {
   return j.values.map((v) => [v.datetime.slice(0, 10), +(+v.high).toFixed(4), +(+v.low).toFixed(4),
                               +(+v.close).toFixed(4), Math.round(+(v.volume || 0))]).reverse();
 }
+const fmtVol = (v) => v >= 1e8 ? (v / 1e8).toFixed(1) + "억" : Math.round(v / 1e4).toLocaleString() + "만";
 const unpack = (a) => a.map(([t, h, l, c, v]) => ({ t, h, l, c, v }));
-// 거래량 잠정 표시: 서버가 '잠정'이라고 알려 준 날, 또는 마지막 날 거래량이 최근 20일 평균의 25% 미만이면 pv=true
-// (잠정인 날은 분산일·팔로스루 판정을 보류하고, 차트 거래량 막대를 회색으로 그림)
-let PARTIAL = {};
+// 거래량 잠정(의심값) 표시: 서버가 '잠정'이라고 알려 준 날(여러 날일 수 있음), 또는 마지막 날 거래량이 최근 20일 평균의 25% 미만이면 pv=true
+// 서버 없이 키로 직접 받을 때는 최근 5거래일 중 20일 평균의 4배가 넘는데 등락이 2% 안쪽인 날도 의심값으로 봄
+// (서버는 Nasdaq과 맞춰 보고 같은 검사를 이미 함 · 잠정인 날은 분산일·팔로스루 판정을 보류하고, 차트 거래량 막대를 회색으로 그림)
+const BIG_VOL = 4, BIG_QUIET = 0.02;
+let PARTIAL = {}, FIXED = {};            // FIXED: 서버가 Nasdaq 값으로 바로잡은 날 {sym: {날짜: [틀린 값, 바로잡은 값]}}
 function markPartial(sym, rows) {
-  if (!rows || rows.length < 22) return;
+  if (!rows || rows.length < 26) return;
   rows.forEach((r) => delete r.pv);
-  const last = rows[rows.length - 1];
-  const avg = rows.slice(-21, -1).reduce((a, r) => a + r.v, 0) / 20;
-  if (PARTIAL[sym] === last.t || (avg > 0 && last.v < avg * PARTIAL_VOL)) last.pv = true;
+  const n = rows.length, last = rows[n - 1];
+  const avgAt = (i) => rows.slice(i - 20, i).reduce((a, r) => a + r.v, 0) / 20;
+  const ps = PARTIAL[sym], pl = Array.isArray(ps) ? ps : ps ? [ps] : [];
+  rows.slice(-25).forEach((r) => { if (pl.includes(r.t)) r.pv = true; });
+  const a = avgAt(n - 1);
+  if (a > 0 && last.v < a * PARTIAL_VOL) last.pv = true;
+  if (!SERVER) for (let i = n - 5; i < n; i++) {
+    const ai = avgAt(i);
+    if (ai > 0 && rows[i].v > ai * BIG_VOL && Math.abs(rows[i].c / rows[i - 1].c - 1) < BIG_QUIET) rows[i].pv = true;
+  }
 }
 
 // ═════════════ 5. 계산 ═════════════
@@ -681,7 +691,11 @@ function analyzeMarket(d) {
                                  (rally > 0 ? "랠리 " + rally + "일차, 팔로스루 데이 대기" : "랠리 시도 전"));
   else if (ftds.length) why.push("팔로스루 데이 " + d[ftds[ftds.length - 1]].t.slice(5).replace("-", "/"));
   else why.push("최근 1년여 " + Math.round(CORRECTION_PCT * 100) + "% 이상 조정 없음");
-  if (d[last].pv) why.push('<b class="warn">' + d[last].t.slice(5).replace("-", "/") + " 거래량 잠정(아직 집계 중) · 이날 분산일·팔로스루 판정 보류</b>");
+  const mdd = (t) => t.slice(5).replace("-", "/");
+  const pvs = d.slice(-25).filter((r) => r.pv).map((r) => mdd(r.t));
+  if (pvs.length) why.push('<b class="warn">' + pvs.join(", ") + " 거래량 확인 안 됨(잠정·의심값) · 이날 분산일·팔로스루 판정 보류</b>");
+  const fx = Object.entries(FIXED.QQQ || {}).filter(([t]) => d.slice(-25).some((r) => r.t === t));
+  if (fx.length) why.push('<span class="muted">' + fx.map(([t, [bad, good]]) => mdd(t) + " 거래량 정정(" + fmtVol(bad) + " → Nasdaq 기준 " + fmtVol(good) + ")").join(", ") + "</span>");
   return { verdict, cls, why: why.join(" · "), ma50, ma200, dd, dd25, ftds };
 }
 
@@ -1757,6 +1771,7 @@ async function loadServer() {
     const j = await r.json();
     if (!j.series || !j.series.QQQ) return false;
     PARTIAL = j.partial || {};
+    FIXED = j.fixed || {};
     for (const [s, rows] of Object.entries(j.series)) DATA[s] = unpack(rows);
     EARN = j.earnings || {};
     EARN_HIST = j.earnHist || {};
@@ -2038,7 +2053,7 @@ function buildHelp() {
 <h3 id="h-data">데이터와 갱신</h3>
 <p>시세는 Twelve Data, 실적 일정은 Nasdaq 실적 캘린더에서 받습니다. 대상은 나스닥100 구성종목(GOOG처럼 중복된 주식 종류는 하나만)과 QQQ, QQQE, XLY, XLP입니다.</p>
 <p>GitHub가 미국 평일 장의 <b>시간외 거래까지 끝난 뒤</b>(한국시간 화-토 <b>오전 10시 45분 무렵</b> 반영) 자동으로 새로 받습니다. 예약은 한국시간 9시 30분이고, 서버는 미국 동부 20시 15분(시간외 거래 마감 15분 뒤)이 되기 전이면 그때까지 기다렸다 받습니다. 장 마감 직후에는 거래량이 아직 집계 중이기 때문입니다.</p>
-<p><b>거래량 잠정</b>: 그래도 QQQ 등 시장 지표의 마지막 날 거래량이 확정되지 않았을 수 있어 두 겹으로 확인합니다. ① 서버가 수집 맨 처음과 맨 끝(약 15분 간격)에 두 번 받아 비교하고, 1% 넘게 다르면 15분 간격으로 다시 받아 같아질 때까지 최대 4번 확인합니다. 그래도 안 맞으면 '잠정'(다시 확인하는 동안 반영이 최대 45분 늦어짐) ② 화면에서 마지막 날 거래량이 최근 20일 평균의 ${P(PARTIAL_VOL)} 미만이면 '잠정'. 잠정인 날은 1층 차트의 거래량 막대가 회색이 되고, 신호등에 "거래량 잠정 · 판정 보류"가 붙으며, 그날의 분산일·팔로스루 판정을 하지 않습니다. 틀린 판정보다 보류가 낫기 때문입니다. 다음 갱신에서 확정값으로 바뀝니다.</p>
+<p><b>거래량 잠정</b>: 그래도 QQQ 등 시장 지표의 마지막 날 거래량이 확정되지 않았을 수 있어 두 겹으로 확인합니다. ① 서버가 수집 맨 처음과 맨 끝(약 15분 간격)에 두 번 받아 비교하고, 1% 넘게 다르면 15분 간격으로 다시 받아 같아질 때까지 최대 4번 확인합니다. 그래도 안 맞으면 '잠정'(다시 확인하는 동안 반영이 최대 45분 늦어짐) ② 서버가 Nasdaq 일별 시세로 최근 5거래일 거래량을 한 번 더 맞춰 봅니다. 두 출처가 평소엔 맞는데 어느 날만 15% 넘게 다르면 그날은 Nasdaq 값으로 바로잡고, 신호등 줄에 "11/10 거래량 정정(4.5억 → Nasdaq 기준 4,516만)"처럼 적습니다. ③ 최근 5거래일 중 20일 평균의 4배가 넘는데 그날 등락이 2% 안쪽인 날(거래량만 튀고 가격은 조용함)은 의심값으로 '잠정'. 두 출처가 같은 값을 준 날은 지수 재편일 같은 실제 대량 거래로 보고 넘어갑니다. ④ 화면에서 마지막 날 거래량이 최근 20일 평균의 ${P(PARTIAL_VOL)} 미만이면 '잠정'. (2026-11-10 QQQ 거래량이 실제의 10배로 들어와 분산일로 잘못 세어진 일 이후 ②③ 추가) 잠정인 날은 1층 차트의 거래량 막대가 회색이 되고, 신호등에 "거래량 잠정 · 판정 보류"가 붙으며, 그날의 분산일·팔로스루 판정을 하지 않습니다. 틀린 판정보다 보류가 낫기 때문입니다. 다음 갱신에서 확정값으로 바뀝니다.</p>
 <p>화면 위 줄에 <b>데이터 기준일</b>(어느 날 장 마감까지 반영됐는지)과 <b>다음 갱신 예정 시각</b>이 나옵니다. 페이지를 열어 둔 채로 갱신 시각이 지나면 알아서 다시 읽습니다.</p>
 <p><b>갱신 지연</b>: GitHub의 예약 실행은 정각에 바로 돌지 않고 대기열에 들어가, 보통 1시간 안팎 늦게 시작합니다. 예상 시각(10시 45분 무렵)이 지났는데 새 데이터가 아직 없으면 위 줄에 <b>"오늘 서버 갱신 지연 중"</b>이 뜨고, 들어올 때까지 10분마다 다시 확인해 바로 반영합니다. 4시간이 지나도 없으면 <b>"오늘 서버 갱신이 오지 않음"</b>으로 바뀝니다. GitHub가 그날 예약을 빼먹은 경우로, 다음 날 갱신에서 빠진 날까지 함께 채워집니다.</p>
 <p>⚙ 설정의 "새로 받기"는 서버에 올라온 최신 파일을 다시 읽는 버튼입니다.</p>
