@@ -28,6 +28,7 @@ jobs:
       - name: 시세·실적 받기
         env:
           TWELVE_DATA_KEY: ${{ secrets.TWELVE_DATA_KEY }}
+          ALPHAVANTAGE_KEY: ${{ secrets.ALPHAVANTAGE_KEY }}
         run: python scripts/build_data.py
       - name: data.json 저장
         run: |
