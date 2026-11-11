@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-11 22:50</title>
+<title>추세 대시보드 v2026-11-11 23:00</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -357,7 +357,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-11 22:50</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-11 23:00</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1075,8 +1075,8 @@ function earnBadge(t) {
   const today = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
   const days = Math.round((new Date(e.date + "T00:00:00") - new Date(today.toDateString())) / 86400000);
   if (days < 0 || days > 45) return "";
-  return '<span class="badge earn' + (days > EARN_WARN_DAYS ? " far" : "") + '">실적 ' + e.date.slice(5).replace("-", "/") +
-         " D-" + days + "</span>";
+  // 날짜는 마우스를 올리면, 칸에는 D-n만
+  return '<span class="badge earn' + (days > EARN_WARN_DAYS ? " far" : "") + '" title="실적 발표 ' + e.date.slice(5).replace("-", "/") + '">실적 D-' + days + "</span>";
 }
 function nearPullback(x) { return !!(x && x.cls && (x.cls.state === "extended" || x.cls.state === "forming") && x.dist10 != null && x.dist10 >= 0 && x.dist10 <= PULLBACK_NEAR); }
 function badgesFor(t, x, noP10) {
@@ -1097,13 +1097,14 @@ function earnDays(t) {
 function earnNote(t, warn) {
   const dd = earnDays(t);
   if (dd == null || dd < 0 || dd > 45) return "";
-  const txt = "실적 " + md(EARN[t].date) + " D-" + dd;
-  return warn && dd <= EARN_WARN_DAYS ? ' <span class="wtag">' + txt + "</span>" : ' <span class="muted enote">' + txt + "</span>";
+  const txt = "실적 D-" + dd, tip = ' title="실적 발표 ' + md(EARN[t].date) + '"';
+  return warn && dd <= EARN_WARN_DAYS ? ' <span class="wtag"' + tip + ">" + txt + "</span>" : ' <span class="muted enote"' + tip + ">" + txt + "</span>";
 }
 function earnCell(t) {
   const dd = earnDays(t);
   if (dd == null || dd < 0 || dd > 45) return '<span class="muted">-</span>';
-  return dd <= EARN_WARN_DAYS ? '<span class="wtag">' + md(EARN[t].date) + " D-" + dd + "</span>" : '<span class="muted">' + md(EARN[t].date) + " D-" + dd + "</span>";
+  const tip = ' title="실적 발표 ' + md(EARN[t].date) + '"';
+  return dd <= EARN_WARN_DAYS ? '<span class="wtag"' + tip + ">D-" + dd + "</span>" : '<span class="muted"' + tip + ">D-" + dd + "</span>";
 }
 // 보유 종목 경고: 추세 이탈·베이스 이탈·베이스 붕괴, RS 80 아래, 실적 14일 안
 function holdWarns(t) {
@@ -1113,7 +1114,7 @@ function holdWarns(t) {
   if (x.rs < RS_LEADER) w.push("RS " + RS_LEADER + " 아래");
   if (x.lp && x.d[x.d.length - 1].c < x.lp.top && !BROKEN.has(x.cls.state)) w.push("돌파 피벗 아래");
   const dd = earnDays(t);
-  if (dd != null && dd >= 0 && dd <= EARN_WARN_DAYS) w.push("실적 " + md(EARN[t].date) + " D-" + dd);
+  if (dd != null && dd >= 0 && dd <= EARN_WARN_DAYS) w.push("실적 D-" + dd);
   return w;
 }
 const rsCell = (x) => "<b>" + x.rs + "</b> " + (x.rsChg == null ? "" : x.rsChg > 0 ? '<span class="chg-up">▲' + x.rsChg + "</span>" : x.rsChg < 0 ? '<span class="chg-down">▼' + -x.rsChg + "</span>" : "");
@@ -2105,7 +2106,7 @@ function buildHelp() {
 <table>
 <tr><td>단계 · 피벗 대비</td><td>4층과 같은 표기입니다: [단계] 피벗 대비 ±n% · 보조 정보. 아래 4층 도움말의 "단계 · 피벗 대비" 참고.</td></tr>
 <tr><td>다음 할 일</td><td>단계와 <b>맨 위 시장 신호등</b>을 함께 보고 정합니다. 시장이 <b>공격 가능</b>일 때만 "매수 검토", "돌파 + 거래량 시 매수"가 나옵니다. <b>신규 매수 중지</b>면 피벗 표시와 관찰까지만, <b>방어</b>면 관찰만입니다. 실적이 ${EARN_WARN_DAYS}일 안이면 "실적 지난 뒤"를 덧붙입니다. 매수 범위를 지난 종목은 추격하지 않고 다음 베이스나 10주선 눌림을 기다립니다. '준비'는 단계 칸에 표시됩니다.</td></tr>
-<tr><td>실적</td><td>보유는 "경고 · 실적" 칸, 관심은 "다음 할 일 · 실적" 칸 끝에 45일 안 발표일을 작게 붙입니다. ${EARN_WARN_DAYS}일 안이면 붉은 꼬리표. 실적 직전 돌파 매수는 갭 위험이 있습니다.</td></tr>
+<tr><td>실적</td><td>보유는 "경고 · 실적" 칸, 관심은 "다음 할 일 · 실적" 칸 끝에 45일 안 발표를 "실적 D-n"으로 작게 붙입니다(날짜는 마우스를 올리면). ${EARN_WARN_DAYS}일 안이면 붉은 꼬리표. 실적 직전 돌파 매수는 갭 위험이 있습니다.</td></tr>
 </table>
 <table>
 <tr><td>⚙ 설정 › 내 종목</td><td>티커로 넣고 빼기(나스닥100 종목만), 전체 지우기, <b>설정 링크 복사</b>.</td></tr>
@@ -2118,8 +2119,8 @@ function buildHelp() {
 <tr><td>${b("new", "베이스→돌파")}</td><td>1주 전 이후 단계가 바뀐 종목. 화살표 앞이 예전, 뒤가 지금.</td></tr>
 <tr><td>${b("p10", "10주선 근접")}</td><td>상승 종목, 또는 신고가 부근에서 쉬는 베이스 종목이 10주선 위 ${P(PULLBACK_NEAR)} 이내까지 눌림. 돌파 후 첫 10주선 눌림에서 반등하면 추가 매수 자리. 10주선 아래로 내려가면 훼손(이탈)으로 바뀝니다.</td></tr>
 <tr><td>${b("rsh", "RS선 신고가")}</td><td>종목 ÷ QQQ 선이 52주 신고가. 주가보다 상대강도가 먼저 신고가를 내면 큰 자본이 사 모으는 흔적일 수 있습니다.</td></tr>
-<tr><td>${b("earn", "실적 11/05 D-5")}</td><td>${EARN_WARN_DAYS}일 안에 실적 발표. 실적 직후 갭 하락은 계획보다 큰 손실을 만들 수 있어 붉게 표시합니다.</td></tr>
-<tr><td>${b("earn far", "실적 12/01 D-31")}</td><td>${EARN_WARN_DAYS + 1}-45일 뒤 실적 발표(회색).</td></tr>
+<tr><td>${b("earn", "실적 D-5")}</td><td>${EARN_WARN_DAYS}일 안에 실적 발표(발표 날짜는 마우스를 올리면). 실적 직후 갭 하락은 계획보다 큰 손실을 만들 수 있어 붉게 표시합니다.</td></tr>
+<tr><td>${b("earn far", "실적 D-31")}</td><td>${EARN_WARN_DAYS + 1}-45일 뒤 실적 발표(회색).</td></tr>
 <tr><td><span class="stg2 rdy">준비</span> <span class="stg2 nr">임박</span></td><td>베이스 단계 옆 표시. 위 "단계 4가지"의 베이스 참고.</td></tr>
 <tr><td><span class="warn">거래량 부족</span></td><td>돌파일 거래량이 기준(50일 평균의 ${BREAKOUT_VOL}배)에 못 미침.</td></tr>
 </table>
@@ -2137,7 +2138,7 @@ function buildHelp() {
 </table>
 
 <h3 id="h-data">데이터와 갱신</h3>
-<p>시세는 Twelve Data, 실적 일정은 Nasdaq 실적 캘린더에서 받습니다. 대상은 나스닥100 구성종목(GOOG처럼 중복된 주식 종류는 하나만)과 QQQ, QQQE, XLY, XLP입니다.</p>
+<p>시세는 Twelve Data, 실적 일정은 Alpha Vantage 실적 달력(막히면 Nasdaq)에서 받습니다. 대상은 나스닥100 구성종목(GOOG처럼 중복된 주식 종류는 하나만)과 QQQ, QQQE, XLY, XLP입니다.</p>
 <p>GitHub가 미국 평일 장의 <b>시간외 거래까지 끝난 뒤</b>(한국시간 화-토 <b>오전 10시 45분 무렵</b> 반영) 자동으로 새로 받습니다. 예약은 한국시간 9시 30분이고, 서버는 미국 동부 20시 15분(시간외 거래 마감 15분 뒤)이 되기 전이면 그때까지 기다렸다 받습니다. 장 마감 직후에는 거래량이 아직 집계 중이기 때문입니다.</p>
 <p><b>거래량 잠정</b>: 그래도 QQQ 등 시장 지표의 마지막 날 거래량이 확정되지 않았을 수 있어 두 겹으로 확인합니다. ① 서버가 수집 맨 처음과 맨 끝(약 15분 간격)에 두 번 받아 비교하고, 1% 넘게 다르면 15분 간격으로 다시 받아 같아질 때까지 최대 4번 확인합니다. 그래도 안 맞으면 '잠정'(다시 확인하는 동안 반영이 최대 45분 늦어짐) ② 서버가 Nasdaq 일별 시세로 최근 5거래일 거래량을 한 번 더 맞춰 봅니다. 두 출처가 평소엔 맞는데 어느 날만 15% 넘게 다르면 그날은 Nasdaq 값으로 바로잡고, 신호등 줄에 "11/10 거래량 정정(4.5억 → Nasdaq 기준 4,516만)"처럼 적습니다. ③ 최근 5거래일 중 20일 평균의 4배가 넘는데 그날 등락이 2% 안쪽인 날(거래량만 튀고 가격은 조용함)은 의심값으로 '잠정'. 두 출처가 같은 값을 준 날은 지수 재편일 같은 실제 대량 거래로 보고 넘어갑니다. ④ 화면에서 마지막 날 거래량이 최근 20일 평균의 ${P(PARTIAL_VOL)} 미만이면 '잠정'. (2026-11-10 QQQ 거래량이 실제의 10배로 들어와 분산일로 잘못 세어진 일 이후 ②③ 추가) 잠정인 날은 1층 차트의 거래량 막대가 회색이 되고, 신호등에 "거래량 잠정 · 판정 보류"가 붙으며, 그날의 분산일·팔로스루 판정을 하지 않습니다. 틀린 판정보다 보류가 낫기 때문입니다. 다음 갱신에서 확정값으로 바뀝니다.</p>
 <p>화면 위 줄에 <b>데이터 기준일</b>(어느 날 장 마감까지 반영됐는지)과 <b>다음 갱신 예정 시각</b>이 나옵니다. 페이지를 열어 둔 채로 갱신 시각이 지나면 알아서 다시 읽습니다.</p>
