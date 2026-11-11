@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-11 21:55</title>
+<title>추세 대시보드 v2026-11-11 22:05</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -196,8 +196,9 @@
   .lsum { font-size: 12px; color: var(--sub); margin: 0 0 8px; line-height: 2; }
   .lsum a { text-decoration: none; color: var(--text); margin-right: 10px; white-space: nowrap; } .lsum .z { margin-right: 10px; white-space: nowrap; opacity: 0.6; }
   table.ltable { min-width: 940px; } table.ltable .bd, table.ltable th.bd { text-align: left; } table.ltable .bd .badge:first-child { margin-left: 0; }
-  table.ltable col.c-st { width: 32px; } table.ltable col.c-tk { width: 64px; } table.ltable col.c-grp { width: 112px; }
-  table.ltable td.grp, table.mtable td.grp, table.alltable td.grp, table.flow td.grp { white-space: normal; font-size: 12px; line-height: 1.3; word-break: keep-all; }
+  table.ltable col.c-st { width: 32px; } table.ltable col.c-tk { width: 64px; } table.ltable col.c-grp { width: 154px; }
+  /* 산업 이름은 한 줄로 끝까지: 가장 긴 "전자상거래·소비자 서비스"(12px 약 139px)에 맞춘 폭 */
+  table.ltable td.grp, table.mtable td.grp, table.alltable td.grp { white-space: nowrap; overflow: visible; text-overflow: clip; font-size: 12px; }
   table.ltable col.c-rs { width: 72px; } table.ltable col.c-qi { width: 82px; } table.ltable col.c-bd { width: 12%; }
   td.qi { white-space: nowrap; font-variant-numeric: tabular-nums; } .qiw { font-size: 11px; }
   .qisum { font-size: 13px; margin: 2px 0 8px; } table.ltable col.c-sp { width: 130px; } table.ltable col.c-pos { width: auto; }
@@ -248,19 +249,19 @@
   /* 화면 폭 1000px 안팎에서도 가로 스크롤 없이 (종목명은 티커에 마우스를 올리면) */
   table.alltable { min-width: 920px; }
   table.alltable col.c-rank { width: 30px; } table.alltable col.c-t { width: 60px; }
-  table.alltable col.c-grp { width: 112px; } table.alltable col.c-rs { width: 72px; } table.alltable col.c-wk { width: 64px; } table.alltable col.c-qi { width: 80px; }
-  table.alltable col.c-spark { width: 112px; } table.alltable col.c-stage { width: 128px; } table.alltable col.c-fromHi { width: 54px; } table.alltable col.c-fromLo { width: 62px; }
-  table.alltable col.c-trend { width: 46px; } table.alltable col.c-tags { width: auto; }
+  table.alltable col.c-grp { width: 154px; } table.alltable col.c-rs { width: 66px; } table.alltable col.c-wk { width: 60px; } table.alltable col.c-qi { width: 74px; }
+  table.alltable col.c-spark { width: 104px; } table.alltable col.c-stage { width: 128px; } table.alltable col.c-fromHi { width: 54px; } table.alltable col.c-fromLo { width: 62px; }
+  table.alltable col.c-trend { width: 42px; } table.alltable col.c-tags { width: auto; }
   table.alltable td.tg { white-space: normal; } table.alltable td.tg .badge { margin: 1px 3px 1px 0; }
-  table.alltable.alltable th, table.alltable.alltable td { padding-left: 6px; padding-right: 6px; }
+  table.alltable.alltable th, table.alltable.alltable td { padding-left: 4px; padding-right: 4px; }
   table.alltable th { position: sticky; top: 0; z-index: 2; background: var(--card); text-align: left; font-size: 11px; color: var(--sub); font-weight: 700;
                       padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; cursor: pointer; user-select: none; }
   table.alltable th.on { color: var(--accent); }
   table.alltable td { padding: 4px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
   table.alltable tbody tr { cursor: zoom-in; } table.alltable tbody tr:hover td { background: linear-gradient(rgba(127,127,127,0.07), rgba(127,127,127,0.07)), var(--card); }
   table.alltable .stk { position: sticky; z-index: 1; background: var(--card); }
-  table.alltable .stk0 { left: 0; text-align: center; padding-left: 2px; padding-right: 2px; } table.alltable .stk1 { left: 36px; }
-  table.alltable col.c-my { width: 36px; }
+  table.alltable .stk0 { left: 0; text-align: center; padding-left: 2px; padding-right: 2px; } table.alltable .stk1 { left: 38px; }
+  table.alltable col.c-my { width: 38px; }
   table.alltable th.stk { z-index: 3; }
   table.alltable tr.pre td { background: linear-gradient(rgba(22,163,74,0.06), rgba(22,163,74,0.06)), var(--card); }
   table.alltable tr.cut td { padding: 3px 8px; font-size: 11px; color: var(--accent); background: transparent; border-bottom: 2px solid var(--accent); cursor: default; }
@@ -287,7 +288,7 @@
     table.alltable .stk2 { position: static; box-shadow: none; }
     table.ntable .tkc { width: 62px; } table.alltable col.c-t { width: 62px; }
     table.ntable .tkc, table.alltable .stk1 { box-shadow: 6px 0 6px -6px rgba(0,0,0,0.35); }
-    table.ntable .stc, table.alltable col.c-my { width: 36px; } table.ntable .tkc, table.alltable .stk1 { left: 36px; }
+    table.ntable .stc, table.alltable col.c-my { width: 36px; } table.ntable .tkc, table.alltable .stk1 { left: 38px; }
   }
   /* 내 종목: 보유 ★★ · 관심 ★ (금색) */
   .star { display: inline-block; min-width: 30px; padding: 4px 2px; text-align: center; cursor: pointer; user-select: none; -webkit-user-select: none;
@@ -302,12 +303,12 @@
   table.mtable { min-width: 900px; }
   table.ntable.mtable td, table.ntable.mtable th { padding-left: 6px; padding-right: 6px; }
   table.mtable .stc { width: 32px; } table.mtable .tkc { width: 64px; }
-  table.mtable .msl { width: 92px; } table.mtable .mpv { width: 160px; } table.mtable .mrd { width: 24%; } table.mtable .mer { width: 112px; }
+  table.mtable .msl { width: 88px; } table.mtable .mpv { width: 160px; } table.mtable .mrd { width: 24%; } table.mtable .mer { width: 90px; }
   table.mtable td.mrd, table.mtable td.mw { white-space: normal; line-height: 1.35; } table.mtable td.mrd { font-size: 12px; } table.mtable td.mw .wtag, table.mtable td.mw .oktag { margin: 1px 4px 1px 0; }
   #changes { scroll-margin-top: 60px; }
   table.mtable .stg { margin-right: 4px; }
-  table.mtable .mgr { width: 112px; } table.mtable .mpos { width: auto; } table.mtable .mlp { width: 110px; }
-  table.mtable .mst { width: 120px; } table.mtable td.mst { white-space: normal; line-height: 1.6; } table.mtable .mrs { width: 72px; } table.mtable .mwk { width: 62px; } table.mtable .m10 { width: 68px; } table.mtable .mhi { width: 90px; } table.mtable .mw { width: auto; }
+  table.mtable .mgr { width: 154px; } table.mtable .mpos { width: auto; } table.mtable .mlp { width: 100px; }
+  table.mtable .mst { width: 112px; } table.mtable td.mst { white-space: normal; line-height: 1.6; } table.mtable .mrs { width: 72px; } table.mtable .mwk { width: 62px; } table.mtable .m10 { width: 68px; } table.mtable .mhi { width: 90px; } table.mtable .mw { width: auto; }
   table.mtable tr.mwarn td.tkc { box-shadow: inset 3px 0 0 var(--stop); }
   .wtag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-right: 4px; background: var(--stop-bg); color: var(--stop); border: 1px solid var(--stop); }
   .oktag { font-size: 11px; color: var(--go); font-weight: 700; }
@@ -355,7 +356,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-11 21:55</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-11 22:05</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1683,7 +1684,7 @@ function renderUniverse() {
       "<td>" + rsCell(x) + "</td>" +
       '<td class="num">' + wkCell(x.t) + "</td>" +
       '<td class="qi" title="' + (NDXW[x.t] != null ? "나스닥100 비중 " + NDXW[x.t].toFixed(2) + "% × 1주 등락" : "") + '">' + impactCell(x.t, true) + "</td>" +
-      "<td>" + sparkSvg(x.d, 100) + "</td>" +
+      "<td>" + sparkSvg(x.d, 92) + "</td>" +
       '<td title="' + reasonOf(x).replace(/<[^>]+>/g, "") + '">' + stageHtml(x.cls) + "</td>" +
       '<td class="num">' + pct(x.fromHi) + '</td><td class="num">' + pct(x.fromLo) + "</td>" +
       '<td title="10주선 ' + (x.above10 ? "위" : "아래") + " · 40주선 " + (x.above40 ? "위" : x.above40 == null ? "데이터 부족" : "아래") + '">' +
