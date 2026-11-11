@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-11 20:10</title>
+<title>추세 대시보드 v2026-11-11 21:20</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -195,12 +195,15 @@
   .placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 13px; text-align: center; padding: 0 16px; }
   .lsum { font-size: 12px; color: var(--sub); margin: 0 0 8px; line-height: 2; }
   .lsum a { text-decoration: none; color: var(--text); margin-right: 10px; white-space: nowrap; } .lsum .z { margin-right: 10px; white-space: nowrap; opacity: 0.6; }
-  table.ltable { min-width: 1180px; } table.ltable .bd, table.ltable th.bd { text-align: left; } table.ltable .bd .badge:first-child { margin-left: 0; }
-  table.ltable col.c-st { width: 40px; } table.ltable col.c-tk { width: 66px; } table.ltable col.c-grp { width: 96px; }
-  table.ltable col.c-rs { width: 84px; } table.ltable col.c-qi { width: 150px; }
+  table.ltable { min-width: 940px; } table.ltable .bd, table.ltable th.bd { text-align: left; } table.ltable .bd .badge:first-child { margin-left: 0; }
+  table.ltable col.c-st { width: 32px; } table.ltable col.c-tk { width: 64px; } table.ltable col.c-grp { width: 76px; }
+  table.ltable col.c-rs { width: 72px; } table.ltable col.c-qi { width: 76px; } table.ltable col.c-bd { width: 13%; }
   td.qi { white-space: nowrap; font-variant-numeric: tabular-nums; } .qiw { font-size: 11px; }
-  .qisum { font-size: 13px; margin: 2px 0 8px; } table.ltable col.c-sp { width: 130px; } table.ltable col.c-pos { width: 320px; }
-  table.ltable col.c-todo { width: 290px; }
+  .qisum { font-size: 13px; margin: 2px 0 8px; } table.ltable col.c-sp { width: 130px; } table.ltable col.c-pos { width: auto; }
+  table.ltable col.c-todo { width: 18%; }
+  table.ltable td.todo { white-space: normal; font-size: 12px; line-height: 1.35; }
+  table.ltable td.bd { white-space: normal; } table.ltable td.bd .badge { margin: 1px 0 1px 3px; }
+  table.ntable.ltable td, table.ntable.ltable th { padding-left: 6px; padding-right: 6px; }
   table.ltable .nm, table.ltable .bd { width: auto; } table.ltable .nm { position: sticky; }
   table.ltable td { padding-top: 5px; padding-bottom: 5px; }
   table.ltable tr.sg td { padding: 10px 10px 4px; font-size: 12px; border-bottom: 2px solid var(--line); background: var(--bg); cursor: default; overflow: visible; }
@@ -342,7 +345,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-11 20:10</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-11 21:20</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -390,8 +393,6 @@
 
   <!-- 4층 -->
   <h2 id="sec-leaders">4. 주도주 — 나스닥100 RS 80 이상, 지금 어느 단계인가 <button class="q" data-help="h-leaders" title="이 층 보는 법">?</button></h2>
-  <p class="lead">RS는 오닐식 가중 12개월 상대강도(최근 3개월 2배 가중)를 나스닥100 안에서 1-99로 매긴 값입니다. 줄을 누르면 주봉·일봉 차트를 크게 봅니다. 26주 주봉 그림: 주봉 종가(붉은색 10주선 위, 파란색 아래) · <span style="color:#16a34a">━</span> 10주선 · <span style="color:#7c3aed">━</span> 40주선(멀면 바닥에 ┄와 거리 %) · <span style="color:#f59e0b">┄</span> 피벗 · <span class="ttk">정렬</span> 추세 정렬(주가 &gt; 10주선 &gt; 40주선, 40주선 상승)</p>
-  <div class="legend" style="padding:0 0 8px"><span class="badge rsh">RS선 신고가</span> 종목÷QQQ 선이 52주 신고가 &nbsp; <span class="badge earn">실적 D-7</span> 14일 안 실적 발표 &nbsp; <span class="badge p10">10주선 근접</span> 상승 후 10주선 +5% 이내 눌림</div>
     <div id="filterChip"><button id="clearFilter"></button></div>
   <div id="leaders"><div class="muted" style="font-size:13px">나스닥100 데이터를 모두 받으면 표시됩니다.</div></div>
 
@@ -1359,14 +1360,14 @@ function qqqImpact(t) {
   const w = NDXW[t], w0 = startWeights()[t], wk = weekStats(t).wk;
   return { w, c: wk == null ? null : (w0 * wk) / 100 };
 }
-const fmtPp = (c) => (c > 0 ? "+" : c < 0 ? "−" : "") + Math.abs(c).toFixed(Math.abs(c) >= 0.1 ? 2 : 3) + "%p";
-function impactCell(t) {
+const fmtPp = (c, short) => (c > 0 ? "+" : c < 0 ? "−" : "") + Math.abs(c).toFixed(short || Math.abs(c) >= 0.1 ? 2 : 3) + "%p";
+function impactCell(t, short) {
   const q = qqqImpact(t);
   if (!q) return '<span class="muted">-</span>';
   if (q.w == null) return '<span class="muted">비편입</span>';
   if (q.c == null) return '<span class="muted">비중 ' + q.w.toFixed(1) + "%</span>";
   const cls = q.c > 0 ? "chg-up" : q.c < 0 ? "chg-down" : "";
-  return '<span class="' + cls + '">' + (Math.abs(q.c) >= QI_BOLD ? "<b>" + fmtPp(q.c) + "</b>" : fmtPp(q.c)) + '</span> <span class="muted qiw">· 비중 ' + q.w.toFixed(1) + "%</span>";
+  return '<span class="' + cls + '">' + (Math.abs(q.c) >= QI_BOLD ? "<b>" + fmtPp(q.c, short) + "</b>" : fmtPp(q.c, short)) + "</span>" + (short ? "" : ' <span class="muted qiw">· 비중 ' + q.w.toFixed(1) + "%</span>");
 }
 function moveItems() {
   // 종목마다 방향: +1 들어옴(RS 80 진입, 단계 좋아짐) · -1 빠짐(탈락, 단계 나빠짐) · 0 중립(같은 수준 안에서 바뀜)
@@ -1567,7 +1568,7 @@ function renderLeaders() {
       ' <span class="muted">(QQQ 안 비중 합계 ' + sumW.toFixed(1) + "%)</span>" + (qw != null ? " · QQQ 1주 <b class=\"" + (qw >= 0 ? "chg-up" : "chg-down") + '">' + (qw > 0 ? "+" : "") + qw.toFixed(1) + "%</b>" : "") + "</div>";
   }
   html += '<div class="nbox"><table class="ntable ltable"><colgroup><col class="c-st"><col class="c-tk"><col class="c-grp"><col class="c-rs"><col class="c-qi"><col class="c-sp"><col class="c-pos"><col class="c-todo"><col class="c-bd"></colgroup>' +
-    '<thead><tr><th class="stc">★</th><th class="tkc">티커</th><th>산업</th><th>RS (4주)</th><th title="나스닥100 비중 × 1주 등락률 = 이 종목이 이번 주 QQQ를 몇 %p 움직였나">QQQ 영향 (1주)</th><th>26주 주봉</th><th>단계 · 피벗 대비</th><th>다음 할 일</th><th class="bd">꼬리표</th></tr></thead><tbody>';
+    '<thead><tr><th class="stc">★</th><th class="tkc">티커</th><th>산업</th><th>RS (4주)</th><th title="나스닥100 비중 × 1주 등락률 = 이 종목이 이번 주 QQQ를 몇 %p 움직였나 (비중은 칸에 마우스를 올리면)">QQQ 영향</th><th>26주 주봉</th><th>단계 · 피벗 대비</th><th>다음 할 일</th><th class="bd">꼬리표</th></tr></thead><tbody>';
   STAGES.forEach(([k, title, desc]) => {
     const items = by[k];
     if (!items) return;
@@ -1578,7 +1579,7 @@ function renderLeaders() {
     items.forEach(({ x, pl }, i) => {      // 구분 줄 없이: 단계 첫 줄에 앵커(고정 바·요약에서 이동)와 단계 경계선
       html += '<tr data-t="' + x.t + '"' + (i === 0 ? ' id="st-' + k + '" class="sfirst"' : "") + ' title="' + TICKERS[x.t].name + " · " + reasonOf(x).replace(/<[^>]+>/g, "") + '"><td class="stc">' + starHtml(x.t) + '</td><td class="tkc" title="' + TICKERS[x.t].name + '"><span class="tk">' + x.t + "</span></td>" +
         '<td class="muted" title="' + TICKERS[x.t].group + '">' + TICKERS[x.t].group + "</td><td>" + rsCell(x) + "</td>" +
-        '<td class="qi">' + impactCell(x.t) + "</td>" +
+        '<td class="qi" title="' + (NDXW[x.t] != null ? "나스닥100 비중 " + NDXW[x.t].toFixed(2) + "% × 1주 등락" : "") + '">' + impactCell(x.t, true) + "</td>" +
         "<td>" + weekSpark(x) + '</td><td title="' + title + " · " + desc + '">' + posHtml(x) + '</td><td class="todo" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + '</td><td class="bd">' + badgesFor(x.t, x) + "</td></tr>";
     });
   });
@@ -2021,6 +2022,7 @@ function buildHelp() {
 ④ 주가만 봄(실적·거래량 미반영). 실적 발표 같은 하루짜리 큰 갭 하나가 점수를 크게 움직일 수 있음.</td></tr>
 <tr><td>RS선과의 차이</td><td>RS 등급은 "지금 몇 등인가", RS선(종목 ÷ QQQ)은 "상대강도가 어느 방향으로 가는가". RS선이 52주 신고가면 꼬리표로 따로 알려 줍니다.</td></tr>
 </table>
+<p>줄을 누르면 주봉·일봉 차트를 크게 봅니다. 맨 오른쪽 꼬리표(RS선 신고가 · 실적 D-n · 10주선 근접 · NEW)의 뜻은 <a href="#h-tags">꼬리표</a> 항목에 있습니다.</p>
 <p>차트 없이 <b>표 하나</b>에 모든 단계를 담아 한 화면에 봅니다. 맨 위 줄은 4단계의 종목 수(누르면 그 단계로 이동, 0종목 단계는 흐리게). 표는 가격 위치 순서인 <b>상승 → 돌파 → 베이스 → 훼손</b>으로 놓아, 피벗 대비 숫자가 위에서 아래로 줄어드는 사다리처럼 읽힙니다(단계가 바뀌는 곳에 굵은 선), 한 종목 한 줄입니다. 단계 칸에 마우스를 올리면 그 단계 설명이 보입니다. 줄을 누르면 주봉·일봉 차트가 크게 뜨고, 마우스를 올리면 종목명과 단계 판정 근거가 보입니다. 칸 순서: 티커 · 산업 · RS(4주) · 26주 주봉 · 단계 · 피벗 대비 · 다음 할 일 · 꼬리표.</p>
 <table>
 <tr><td>26주 주봉</td><td>최근 26주 주봉 종가 선(붉은색: 10주선 위, 파란색: 아래), 초록 10주선, 보라 40주선, 주황 점선 피벗(베이스 상단, 없으면 마지막 돌파 피벗). 베이스 모양과 피벗과의 위치를 한눈에 봅니다. 40주선이 주가에서 너무 멀면(그림을 25% 넘게 넓혀야 하면) 베이스 모양이 눌리지 않도록 선 대신 바닥에 보라 점선과 "40주 −32%"(40주선이 지금 주가보다 32% 아래)만 적습니다. 상장한 지 얼마 안 돼 40주 데이터가 없으면 그리지 않습니다.</td></tr>
