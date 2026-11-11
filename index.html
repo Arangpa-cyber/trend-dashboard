@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-11 21:40</title>
+<title>추세 대시보드 v2026-11-11 21:45</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -196,11 +196,12 @@
   .lsum { font-size: 12px; color: var(--sub); margin: 0 0 8px; line-height: 2; }
   .lsum a { text-decoration: none; color: var(--text); margin-right: 10px; white-space: nowrap; } .lsum .z { margin-right: 10px; white-space: nowrap; opacity: 0.6; }
   table.ltable { min-width: 940px; } table.ltable .bd, table.ltable th.bd { text-align: left; } table.ltable .bd .badge:first-child { margin-left: 0; }
-  table.ltable col.c-st { width: 32px; } table.ltable col.c-tk { width: 64px; } table.ltable col.c-grp { width: 76px; }
-  table.ltable col.c-rs { width: 72px; } table.ltable col.c-qi { width: 76px; } table.ltable col.c-bd { width: 13%; }
+  table.ltable col.c-st { width: 32px; } table.ltable col.c-tk { width: 64px; } table.ltable col.c-grp { width: 112px; }
+  table.ltable td.grp { white-space: normal; font-size: 12px; line-height: 1.3; word-break: keep-all; }
+  table.ltable col.c-rs { width: 72px; } table.ltable col.c-qi { width: 82px; } table.ltable col.c-bd { width: 12%; }
   td.qi { white-space: nowrap; font-variant-numeric: tabular-nums; } .qiw { font-size: 11px; }
   .qisum { font-size: 13px; margin: 2px 0 8px; } table.ltable col.c-sp { width: 130px; } table.ltable col.c-pos { width: auto; }
-  table.ltable col.c-todo { width: 18%; }
+  table.ltable col.c-todo { width: 15%; }
   table.ltable td.todo { white-space: normal; font-size: 12px; line-height: 1.35; }
   table.ltable td.bd { white-space: normal; } table.ltable td.bd .badge { margin: 1px 0 1px 3px; }
   table.ntable.ltable td, table.ntable.ltable th { padding-left: 6px; padding-right: 6px; }
@@ -354,7 +355,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-11 21:40</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-11 21:45</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1587,7 +1588,7 @@ function renderLeaders() {
     else if (k === "broken") items.sort((a, b) => subRank(a.x.cls) - subRank(b.x.cls) || b.x.rs - a.x.rs);
     items.forEach(({ x, pl }, i) => {      // 구분 줄 없이: 단계 첫 줄에 앵커(고정 바·요약에서 이동)와 단계 경계선
       html += '<tr data-t="' + x.t + '"' + (i === 0 ? ' id="st-' + k + '" class="sfirst"' : "") + ' title="' + TICKERS[x.t].name + " · " + reasonOf(x).replace(/<[^>]+>/g, "") + '"><td class="stc">' + starHtml(x.t) + '</td><td class="tkc" title="' + TICKERS[x.t].name + '"><span class="tk">' + x.t + "</span></td>" +
-        '<td class="muted" title="' + TICKERS[x.t].group + '">' + TICKERS[x.t].group + "</td><td>" + rsCell(x) + "</td>" +
+        '<td class="muted grp">' + TICKERS[x.t].group + "</td><td>" + rsCell(x) + "</td>" +
         '<td class="qi" title="' + (NDXW[x.t] != null ? "나스닥100 비중 " + NDXW[x.t].toFixed(2) + "% × 1주 등락" : "") + '">' + impactCell(x.t, true) + "</td>" +
         "<td>" + weekSpark(x) + '</td><td title="' + title + " · " + desc + '">' + posHtml(x) + '</td><td class="todo" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + '</td><td class="bd">' + badgesFor(x.t, x) + "</td></tr>";
     });
