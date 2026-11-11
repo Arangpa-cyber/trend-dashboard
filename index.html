@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-11 19:50</title>
+<title>추세 대시보드 v2026-11-11 20:10</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -342,7 +342,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-11 19:50</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-11 20:10</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1326,14 +1326,38 @@ function weekStats(t) {
   return { wk: (d[m - 1].c / d[m - 6].c - 1) * 100, vm: pv > 0 ? wv / pv : null };
 }
 // QQQ 영향(1주): 나스닥100 비중(시가총액 근사, %) × 1주 등락률(%) ÷ 100 = QQQ를 몇 %p 움직였나
-let NDXW = {};                         // 서버가 준 나스닥100 비중 {symbol: %}
+// 나스닥100(=QQQ) 실제 지수 비중(%) 스냅샷. 출처: slickcharts.com/nasdaq100 (2026-11-11 확인).
+// QQQ는 분기마다(3·6·9·12월) 재조정하므로 그 뒤 새 값으로 바꿈. GOOG는 GOOGL과 같은 회사의 다른 주식(목록엔 GOOGL만)
+const QQQ_W_AT = "2026-11-11";
+const QQQ_W = {"AAPL":12.51,"NVDA":10.71,"MSFT":9.87,"AMZN":7.29,"SPCX":4.95,"GOOGL":4.57,"GOOG":4.29,"META":4.12,"AVGO":4.11,"TSLA":3.81,"WMT":2.45,"AMD":2.22,"MU":2.18,"ASML":1.5,"COST":1.18,"PLTR":1.04,"CSCO":0.97,"INTC":0.82,"AMAT":0.78,"LRCX":0.73,"TXN":0.7,"PANW":0.68,"NFLX":0.64,"AMGN":0.62,"LIN":0.59,"CRWD":0.59,"GILD":0.52,"KLAC":0.52,"ARM":0.51,"ADI":0.49,"PEP":0.48,"QCOM":0.48,"SHOP":0.47,"TMUS":0.44,"ISRG":0.39,"MRVL":0.37,"VRTX":0.35,"SNDK":0.33,"APP":0.32,"SBUX":0.31,"STX":0.31,"ADP":0.3,"BKNG":0.29,"WDC":0.29,"PDD":0.28,"MAR":0.27,"ABNB":0.27,"MRNA":0.26,"CEG":0.24,"REGN":0.24,"CSX":0.23,"FTNT":0.23,"CDNS":0.23,"ADBE":0.23,"INTU":0.23,"SNPS":0.22,"MNST":0.22,"CTAS":0.22,"CMCSA":0.22,"MDLZ":0.21,"DASH":0.19,"MELI":0.19,"ROST":0.19,"HON":0.18,"ORLY":0.18,"MPWR":0.17,"AEP":0.17,"NXPI":0.17,"DDOG":0.16,"FAST":0.16,"LITE":0.14,"PCAR":0.14,"IDXX":0.14,"ADSK":0.14,"HONA":0.13,"MSTR":0.13,"XEL":0.13,"CCEP":0.13,"KDP":0.13,"FANG":0.12,"PYPL":0.12,"BKR":0.12,"EXC":0.12,"TRI":0.12,"ROP":0.12,"WDAY":0.11,"FER":0.11,"TTWO":0.1,"PAYX":0.1,"TER":0.1,"NBIS":0.1,"ALAB":0.1,"RKLB":0.1,"GEHC":0.09,"ODFL":0.09,"MCHP":0.08,"CRWV":0.08,"DXCM":0.07,"CPRT":0.07,"AXON":0.06,"ALNY":0.05};
+let NDXW = QQQ_W, NDXW_AT = QQQ_W_AT;  // 서버가 비중을 주면(ndxw) 그것을 씀
+// 기여도는 '그 주 시작 시점 비중 × 그 주 등락률'이어야 QQQ 실제 등락과 맞음. 받아 둔 비중(스냅샷 날짜 기준)을
+// 각 종목 주가로 1주 전 시점 비중으로 되돌려 씀: w(1주 전) ∝ w(스냅샷) × 1주 전 종가 ÷ 스냅샷 날 종가
+let W0_CACHE = { key: "", w: {} };
+function startWeights() {
+  const q = DATA.QQQ, key = (q ? q[q.length - 1].t : "") + "|" + NDXW_AT;
+  if (W0_CACHE.key === key) return W0_CACHE.w;
+  const raw = {}; let sum = 0;
+  for (const [t, w] of Object.entries(NDXW)) {
+    const d = DATA[t === "GOOG" ? "GOOGL" : t];       // GOOG는 GOOGL 주가로
+    let f = 1;
+    if (d && d.length >= 6) {
+      const m = d.length, p0 = d[m - 6].c;
+      let ps = d[m - 1].c;
+      for (let i = m - 1; i >= 0; i--) if (d[i].t <= NDXW_AT) { ps = d[i].c; break; }
+      f = p0 / ps;
+    }
+    raw[t] = w * f; sum += raw[t];
+  }
+  const out = {}; for (const t in raw) out[t] = (raw[t] / sum) * 100;
+  W0_CACHE = { key, w: out };
+  return out;
+}
 const QI_BOLD = 0.1;                   // 이 %p 이상이면 굵게
 function qqqImpact(t) {
-  if (!Object.keys(NDXW).length) return null;          // 서버 없이 키로 받을 때는 비중을 모름
-  const w = NDXW[t];
-  if (w == null) return { w: null, c: null };          // 나스닥100 비편입
-  const wk = weekStats(t).wk;
-  return { w, c: wk == null ? null : (w * wk) / 100 };
+  if (NDXW[t] == null) return { w: null, c: null };    // 나스닥100 비편입
+  const w = NDXW[t], w0 = startWeights()[t], wk = weekStats(t).wk;
+  return { w, c: wk == null ? null : (w0 * wk) / 100 };
 }
 const fmtPp = (c) => (c > 0 ? "+" : c < 0 ? "−" : "") + Math.abs(c).toFixed(Math.abs(c) >= 0.1 ? 2 : 3) + "%p";
 function impactCell(t) {
@@ -1543,7 +1567,7 @@ function renderLeaders() {
       ' <span class="muted">(QQQ 안 비중 합계 ' + sumW.toFixed(1) + "%)</span>" + (qw != null ? " · QQQ 1주 <b class=\"" + (qw >= 0 ? "chg-up" : "chg-down") + '">' + (qw > 0 ? "+" : "") + qw.toFixed(1) + "%</b>" : "") + "</div>";
   }
   html += '<div class="nbox"><table class="ntable ltable"><colgroup><col class="c-st"><col class="c-tk"><col class="c-grp"><col class="c-rs"><col class="c-qi"><col class="c-sp"><col class="c-pos"><col class="c-todo"><col class="c-bd"></colgroup>' +
-    '<thead><tr><th class="stc">★</th><th class="tkc">티커</th><th>산업</th><th>RS (4주)</th><th title="나스닥100 비중(근사) × 1주 등락률 = 이 종목이 이번 주 QQQ를 몇 %p 움직였나">QQQ 영향 (1주)</th><th>26주 주봉</th><th>단계 · 피벗 대비</th><th>다음 할 일</th><th class="bd">꼬리표</th></tr></thead><tbody>';
+    '<thead><tr><th class="stc">★</th><th class="tkc">티커</th><th>산업</th><th>RS (4주)</th><th title="나스닥100 비중 × 1주 등락률 = 이 종목이 이번 주 QQQ를 몇 %p 움직였나">QQQ 영향 (1주)</th><th>26주 주봉</th><th>단계 · 피벗 대비</th><th>다음 할 일</th><th class="bd">꼬리표</th></tr></thead><tbody>';
   STAGES.forEach(([k, title, desc]) => {
     const items = by[k];
     if (!items) return;
@@ -1804,7 +1828,7 @@ async function loadServer() {
     for (const [s, rows] of Object.entries(j.series)) DATA[s] = unpack(rows);
     EARN = j.earnings || {};
     EARN_HIST = j.earnHist || {};
-    NDXW = j.ndxw || {};
+    if (j.ndxw && Object.keys(j.ndxw).length > 90) { NDXW = j.ndxw; NDXW_AT = j.ndxwAt || QQQ_W_AT; } else { NDXW = QQQ_W; NDXW_AT = QQQ_W_AT; }
     SERVER = { generated: j.generated };
     renderAll();
     await showRefreshInfo();
@@ -2000,7 +2024,7 @@ function buildHelp() {
 <p>차트 없이 <b>표 하나</b>에 모든 단계를 담아 한 화면에 봅니다. 맨 위 줄은 4단계의 종목 수(누르면 그 단계로 이동, 0종목 단계는 흐리게). 표는 가격 위치 순서인 <b>상승 → 돌파 → 베이스 → 훼손</b>으로 놓아, 피벗 대비 숫자가 위에서 아래로 줄어드는 사다리처럼 읽힙니다(단계가 바뀌는 곳에 굵은 선), 한 종목 한 줄입니다. 단계 칸에 마우스를 올리면 그 단계 설명이 보입니다. 줄을 누르면 주봉·일봉 차트가 크게 뜨고, 마우스를 올리면 종목명과 단계 판정 근거가 보입니다. 칸 순서: 티커 · 산업 · RS(4주) · 26주 주봉 · 단계 · 피벗 대비 · 다음 할 일 · 꼬리표.</p>
 <table>
 <tr><td>26주 주봉</td><td>최근 26주 주봉 종가 선(붉은색: 10주선 위, 파란색: 아래), 초록 10주선, 보라 40주선, 주황 점선 피벗(베이스 상단, 없으면 마지막 돌파 피벗). 베이스 모양과 피벗과의 위치를 한눈에 봅니다. 40주선이 주가에서 너무 멀면(그림을 25% 넘게 넓혀야 하면) 베이스 모양이 눌리지 않도록 선 대신 바닥에 보라 점선과 "40주 −32%"(40주선이 지금 주가보다 32% 아래)만 적습니다. 상장한 지 얼마 안 돼 40주 데이터가 없으면 그리지 않습니다.</td></tr>
-<tr><td>QQQ 영향 (1주)</td><td>이 종목이 이번 주 QQQ를 몇 %p 움직였나 = 나스닥100 안 비중 × 1주 등락률. QQQ는 시가총액 가중이라 같은 −5%라도 비중 8%인 종목은 −0.4%p, 비중 0.3%인 종목은 −0.015%p입니다. ${QI_BOLD}%p 이상은 굵게. 맨 위 "합계"는 이 표에 있는 종목들의 영향을 더한 값으로, 주도주가 지수를 받치는 중인지(순환매) 함께 끌어내리는 중인지(위험 신호) 봅니다. 비중은 서버가 매일 Nasdaq의 나스닥100 구성종목 시가총액으로 계산한 <b>근사값</b>입니다(실제 QQQ는 분기마다 큰 종목 비중을 깎는 규칙이 있어 상위 종목은 조금 다를 수 있음). 나스닥100에 없는 종목은 "비편입". GOOGL은 GOOG(같은 회사의 다른 주식)를 뺀 몫입니다.</td></tr>
+<tr><td>QQQ 영향 (1주)</td><td>이 종목이 이번 주 QQQ를 몇 %p 움직였나 = 나스닥100 안 비중 × 1주 등락률. QQQ는 시가총액 가중이라 같은 −5%라도 비중 8%인 종목은 −0.4%p, 비중 0.3%인 종목은 −0.015%p입니다. ${QI_BOLD}%p 이상은 굵게. 맨 위 "합계"는 이 표에 있는 종목들의 영향을 더한 값으로, 주도주가 지수를 받치는 중인지(순환매) 함께 끌어내리는 중인지(위험 신호) 봅니다. 비중은 나스닥100 실제 지수 비중을 ${QQQ_W_AT}에 받아 둔 값입니다(출처 slickcharts). 계산할 때는 각 종목 주가로 1주 전 시점의 비중으로 되돌려서 씁니다(그 주에 많이 내린 종목은 주초에 비중이 더 컸으므로). 이렇게 하면 전체 종목 기여도 합이 QQQ 실제 1주 등락률과 거의 맞습니다(11/10 기준 −1.48%p 대 실제 −1.54%). QQQ가 분기마다 재조정하면 새 비중으로 바꿉니다. 칸에 함께 적는 "비중"은 받아 둔 날의 비중입니다. 나스닥100에 없는 종목은 "비편입". GOOGL은 GOOG(같은 회사의 다른 주식, 비중 따로)를 뺀 몫입니다.</td></tr>
 <tr><td><span class="ttk">정렬</span></td><td>단계 옆 표시. <b>추세 정렬</b>(미너비니 추세 조건): 주가 &gt; 10주선 &gt; 40주선이고, 40주선이 4주 전보다 높음(한 달 넘게 상승 중). 2단계 상승 추세에 있다는 뜻으로, 돌파 매수는 이 조건을 갖춘 종목에서 고릅니다. 5층·6층의 단계 칸에도 같은 표시가 붙습니다.</td></tr>
 <tr><td>단계 · 피벗 대비</td><td>단계와 위치를 한 칸에: <b>[단계] ±n% · 보조 정보</b>. 앞 숫자는 언제나 <b>피벗 대비</b>입니다(− 피벗 아래, + 피벗 위). 피벗은 베이스 상단이고, 베이스가 아직 완성 전이면 최근 고점(완성되면 그대로 피벗이 됨), 상승 단계는 마지막으로 돌파한 피벗입니다. 숫자에 마우스를 올리면 피벗 가격이 보입니다.<br>
 뒤 보조 정보는 단계마다 하나: 돌파 → 돌파일 거래량(50일 평균 대비, ${BREAKOUT_VOL}배 미만이면 붉게) · 베이스 → 베이스 주수(완성 전이면 흐리게) · 상승 → 10주선 대비와 돌파한 때 · 훼손 이탈 → 10주선 대비 · 훼손 붕괴 → 베이스 하단 대비 또는 베이스 깊이.</td></tr>
