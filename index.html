@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-11 22:05</title>
+<title>추세 대시보드 v2026-11-11 22:35</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -196,7 +196,7 @@
   .lsum { font-size: 12px; color: var(--sub); margin: 0 0 8px; line-height: 2; }
   .lsum a { text-decoration: none; color: var(--text); margin-right: 10px; white-space: nowrap; } .lsum .z { margin-right: 10px; white-space: nowrap; opacity: 0.6; }
   table.ltable { min-width: 940px; } table.ltable .bd, table.ltable th.bd { text-align: left; } table.ltable .bd .badge:first-child { margin-left: 0; }
-  table.ltable col.c-st { width: 32px; } table.ltable col.c-tk { width: 64px; } table.ltable col.c-grp { width: 154px; }
+  table.ltable col.c-st { width: 40px; } table.ltable col.c-tk { width: 64px; } table.ltable col.c-grp { width: 154px; }
   /* 산업 이름은 한 줄로 끝까지: 가장 긴 "전자상거래·소비자 서비스"(12px 약 139px)에 맞춘 폭 */
   table.ltable td.grp, table.mtable td.grp, table.alltable td.grp { white-space: nowrap; overflow: visible; text-overflow: clip; font-size: 12px; }
   table.ltable col.c-rs { width: 72px; } table.ltable col.c-qi { width: 82px; } table.ltable col.c-bd { width: 12%; }
@@ -206,6 +206,7 @@
   table.ltable td.todo { white-space: normal; font-size: 12px; line-height: 1.35; }
   table.ltable td.bd { white-space: normal; } table.ltable td.bd .badge { margin: 1px 0 1px 3px; }
   table.ntable.ltable td, table.ntable.ltable th { padding-left: 6px; padding-right: 6px; }
+  table.ntable.ntable td.stc, table.ntable.ntable th.stc { padding-left: 2px; padding-right: 2px; }   /* 별 칸: 좁은 여백(★★ 잘림 방지) */
   table.ltable .nm, table.ltable .bd { width: auto; } table.ltable .nm { position: sticky; }
   table.ltable td { padding-top: 5px; padding-bottom: 5px; }
   table.ltable tr.sg td { padding: 10px 10px 4px; font-size: 12px; border-bottom: 2px solid var(--line); background: var(--bg); cursor: default; overflow: visible; }
@@ -288,7 +289,7 @@
     table.alltable .stk2 { position: static; box-shadow: none; }
     table.ntable .tkc { width: 62px; } table.alltable col.c-t { width: 62px; }
     table.ntable .tkc, table.alltable .stk1 { box-shadow: 6px 0 6px -6px rgba(0,0,0,0.35); }
-    table.ntable .stc, table.alltable col.c-my { width: 36px; } table.ntable .tkc, table.alltable .stk1 { left: 38px; }
+    table.ntable .stc, table.alltable col.c-my, table.ltable col.c-st { width: 38px; } table.ntable .tkc, table.alltable .stk1 { left: 38px; }
   }
   /* 내 종목: 보유 ★★ · 관심 ★ (금색) */
   .star { display: inline-block; min-width: 30px; padding: 4px 2px; text-align: center; cursor: pointer; user-select: none; -webkit-user-select: none;
@@ -302,12 +303,12 @@
   /* 화면 폭 1000px 안팎에서도 가로 스크롤 없이: 긴 칸(경고·다음 할 일)은 줄바꿈 */
   table.mtable { min-width: 900px; }
   table.ntable.mtable td, table.ntable.mtable th { padding-left: 6px; padding-right: 6px; }
-  table.mtable .stc { width: 32px; } table.mtable .tkc { width: 64px; }
-  table.mtable .msl { width: 88px; } table.mtable .mpv { width: 160px; } table.mtable .mrd { width: 24%; } table.mtable .mer { width: 90px; }
+  table.mtable .stc { width: 40px; } table.mtable .tkc { width: 64px; }
+  table.mtable .msl { width: 74px; } table.mtable .msp { width: 112px; } table.mtable .enote { font-size: 11px; white-space: nowrap; } table.mtable .mpv { width: 160px; } table.mtable .mrd { width: 24%; } table.mtable .mer { width: 90px; }
   table.mtable td.mrd, table.mtable td.mw { white-space: normal; line-height: 1.35; } table.mtable td.mrd { font-size: 12px; } table.mtable td.mw .wtag, table.mtable td.mw .oktag { margin: 1px 4px 1px 0; }
   #changes { scroll-margin-top: 60px; }
   table.mtable .stg { margin-right: 4px; }
-  table.mtable .mgr { width: 154px; } table.mtable .mpos { width: auto; } table.mtable .mlp { width: 100px; }
+  table.mtable .mgr { width: 154px; } table.mtable .mpos { width: auto; } table.mtable .mlp { width: 78px; }
   table.mtable .mst { width: 112px; } table.mtable td.mst { white-space: normal; line-height: 1.6; } table.mtable .mrs { width: 72px; } table.mtable .mwk { width: 62px; } table.mtable .m10 { width: 68px; } table.mtable .mhi { width: 90px; } table.mtable .mw { width: auto; }
   table.mtable tr.mwarn td.tkc { box-shadow: inset 3px 0 0 var(--stop); }
   .wtag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-right: 4px; background: var(--stop-bg); color: var(--stop); border: 1px solid var(--stop); }
@@ -356,7 +357,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-11 22:05</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-11 22:35</span></h1>
     <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1092,6 +1093,13 @@ function earnDays(t) {
   const today = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
   return Math.round((new Date(e.date + "T00:00:00") - new Date(today.toDateString())) / 86400000);
 }
+// 5층: 실적 일정을 칸 대신 짧게 덧붙임(45일 안, 14일 안이면 붉은 꼬리표)
+function earnNote(t, warn) {
+  const dd = earnDays(t);
+  if (dd == null || dd < 0 || dd > 45) return "";
+  const txt = "실적 " + md(EARN[t].date) + " D-" + dd;
+  return warn && dd <= EARN_WARN_DAYS ? ' <span class="wtag">' + txt + "</span>" : ' <span class="muted enote">' + txt + "</span>";
+}
 function earnCell(t) {
   const dd = earnDays(t);
   if (dd == null || dd < 0 || dd > 45) return '<span class="muted">-</span>';
@@ -1172,26 +1180,27 @@ function renderMine() {
     let nWarn = 0;
     const rows = MY.hold.map((t) => {
       const x = VIEW.info[t];
-      if (!x || !x.cls) return "<tr>" + myRowHead(t) + '<td colspan="8" class="muted">데이터 없음</td></tr>';
+      if (!x || !x.cls) return "<tr>" + myRowHead(t) + '<td colspan="8" class="muted">데이터 없음</td></tr>';   // 단계~경고 8칸
       const sk = stateKey(x.cls), w = holdWarns(t), c = x.d[x.d.length - 1].c, bx = x.cls.box;
       if (w.length) nWarn++;
       return '<tr data-t="' + t + '" class="' + (w.length ? "mwarn" : "") + '">' + myRowHead(t) +
         '<td class="mst">' + stageHtml(x.cls) + "</td>" +
         '<td class="mrs">' + rsCell(x) + "</td>" +
         '<td class="mwk">' + wkCell(t) + "</td>" +
+        '<td class="msp">' + weekSpark(x, 100) + "</td>" +
         '<td class="m10">' + pctCell(x.dist10) + "</td>" +
         (bx ? '<td class="msl" title="매도선(베이스 하단) ' + bx.bottom.toFixed(2) + '">' + pctCell(c / bx.bottom - 1) + "</td>"
-            : x.lowSinceHigh ? '<td class="msl" title="베이스가 아직 5주가 안 돼, 최근 고점 뒤 저점 ' + x.lowSinceHigh.toFixed(2) + '을 기준으로 함">' + pctCell(c / x.lowSinceHigh - 1) + ' <span class="muted">형성 중 저점</span></td>'
+            : x.lowSinceHigh ? '<td class="msl" title="베이스가 아직 5주가 안 돼, 최근 고점 뒤 저점 ' + x.lowSinceHigh.toFixed(2) + '을 기준으로 함(형성 중 저점)">' + pctCell(c / x.lowSinceHigh - 1) + '<span class="muted">*</span></td>'
             : '<td class="msl"><span class="muted">-</span></td>') +
-        (x.lp ? '<td class="mlp" title="마지막 돌파 피벗 ' + x.lp.top.toFixed(2) + " · " + md(x.lp.t) + ' 주 돌파">' + pctCell(c / x.lp.top - 1) + ' <span class="muted">' + agoTxt(x.lp) + "</span></td>"
+        (x.lp ? '<td class="mlp" title="마지막 돌파 피벗 ' + x.lp.top.toFixed(2) + " · " + md(x.lp.t) + " 주 돌파 · " + agoTxt(x.lp) + '">' + pctCell(c / x.lp.top - 1) + "</td>"
               : '<td class="mlp"><span class="muted">돌파 없음</span></td>') +
-        '<td class="mer">' + earnCell(t) + "</td>" +
-        '<td class="mw">' + (w.length ? w.map((z) => '<span class="wtag">' + z + "</span>").join("") : '<span class="oktag">이상 없음</span>') + "</td></tr>";
+        '<td class="mw">' + (w.length ? w.map((z) => '<span class="wtag">' + z + "</span>").join("") : '<span class="oktag">이상 없음</span>') +
+        (w.some((z) => z.startsWith("실적")) ? "" : earnNote(t)) + "</td></tr>";
     });
     el.innerHTML = '<div class="mh"><b>' + STAR2 + ' 보유 점검</b><span class="muted">언제 파나 · ' + MY.hold.length + "종목 · " +
       (nWarn ? '<b style="color:var(--stop)">경고 ' + nWarn + "</b>" : "경고 없음") + " · " + md(VIEW.asOf) + " 마감 기준</span></div>" +
       '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="mgr">산업</th><th class="mst">단계</th>' +
-      '<th class="mrs">RS (4주)</th><th class="mwk">1주</th><th class="m10">10주선</th><th class="msl" title="매도선(베이스 하단) 대비">매도선</th><th class="mlp" title="마지막 돌파 피벗 대비">돌파 피벗</th><th class="mer">실적</th><th class="mw">경고</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
+      '<th class="mrs">RS (4주)</th><th class="mwk">1주</th><th class="msp">26주 주봉</th><th class="m10">10주선</th><th class="msl" title="매도선(베이스 하단) 대비">매도선</th><th class="mlp" title="마지막 돌파 피벗 대비">돌파 피벗</th><th class="mw">경고 · 실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
   }
   // ★ 관심: 피벗(베이스 상단)에 가까운 순서
   if (!MY.watch.length) wl.innerHTML = '<div class="mh"><b>' + STAR1 + ' 관심 점검</b><span class="muted">관심 종목이 없습니다. 종목 맨 앞의 ☆을 한 번 누르세요.</span></div>';
@@ -1211,13 +1220,14 @@ function renderMine() {
       return '<tr data-t="' + t + '" class="wg' + pl.g + '">' + myRowHead(t) +
         '<td class="mrs">' + rsCell(x) + "</td>" +
         '<td class="mwk">' + wkCell(t) + "</td>" +
+        '<td class="msp">' + weekSpark(x, 100) + "</td>" +
         '<td class="mpos">' + posHtml(x) + "</td>" +
-        '<td class="mrd" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + '</td><td class="mer">' + earnCell(t) + "</td></tr>";
+        '<td class="mrd" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + earnNote(t, true) + "</td></tr>";
     });
     const mtxt = MARKET_STATE ? '<span class="pill ' + MARKET_STATE.cls + '" style="padding:1px 8px;font-size:11px">시장 ' + MARKET_STATE.verdict + "</span> 기준" : "시장 판정 전";
     wl.innerHTML = '<div class="mh"><b>' + STAR1 + ' 관심 점검</b><span class="muted">언제 사나 · ' + MY.watch.length + "종목 · 할 일 순서(돌파 → 준비 → 임박 → 베이스 → 상승 → 훼손) · " + mtxt + " · " + md(VIEW.asOf) + " 마감 기준</span></div>" +
       '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="mgr">산업</th>' +
-      '<th class="mrs">RS (4주)</th><th class="mwk">1주</th><th class="mpos">단계 · 피벗 대비</th><th class="mrd">다음 할 일</th><th class="mer">실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
+      '<th class="mrs">RS (4주)</th><th class="mwk">1주</th><th class="msp">26주 주봉</th><th class="mpos">단계 · 피벗 대비</th><th class="mrd">다음 할 일 · 실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
   }
   [el, wl].forEach((box) => box.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t))));
 }
@@ -1540,8 +1550,8 @@ function longLine(lo, hi, ml, cLast, lbl) {
   } };
 }
 // 26주 주봉 종가 선 + 10주선(초록) + 40주선(보라) + 피벗(주황 점선)
-function weekSpark(x) {
-  const W = 120, H = 34, w = x.w, n = Math.min(26, w.length), cl = w.map((y) => y.c), ma = smaArr(cl, 10);
+function weekSpark(x, W = 120) {
+  const H = 34, w = x.w, n = Math.min(26, w.length), cl = w.map((y) => y.c), ma = smaArr(cl, 10);
   const c = cl.slice(-n), m = ma.slice(-n), m4 = smaArr(cl, 40).slice(-n);
   const piv = x.cls.box ? x.cls.box.top : x.lp ? x.lp.top : null;
   const all0 = c.concat(m.filter((v) => v != null)).concat(piv ? [piv] : []);
@@ -2080,16 +2090,17 @@ function buildHelp() {
 <table>
 <tr><td>단계 · RS</td><td>지금 단계와 RS, 4주 사이 RS 변화.</td></tr>
 <tr><td>1주 등락</td><td>1주 전(5거래일 전) 종가 대비 지금 등락률. 3층 자금 이동과 같은 기준입니다.</td></tr>
+<tr><td>26주 주봉</td><td>4층과 같은 작은 그림: 주봉 종가 선, 초록 10주선, 보라 40주선, 주황 점선 피벗. 매도선·돌파 피벗 숫자를 그림으로 함께 봅니다.</td></tr>
 <tr><td>10주선 대비</td><td>주가가 10주선보다 몇 % 위(붉은색)·아래(파란색)인지. 아래로 내려가면 훼손(이탈)입니다.</td></tr>
-<tr><td>매도선(베이스 하단) 대비</td><td>주가가 감지된 베이스의 하단보다 몇 % 위인지. 베이스마다 매도선을 올리는 원칙의 기준선입니다. 마우스를 올리면 매도선 가격이 보입니다. 베이스가 아직 ${BASE_MIN_WEEKS}주가 안 됐으면 최근 고점 뒤 저점("형성 중 저점")을 대신 씁니다. 규칙으로 찾은 근사치이니 실제 매도선은 차트로 정하세요.</td></tr>
-<tr><td>돌파 피벗 대비</td><td>마지막으로 돌파한 베이스 상단(돌파 피벗)보다 몇 % 위인지와 몇 주 전 돌파였는지. 최근 ${PIVOT_MEMORY_WEEKS}주 안에서, 그 시점에 완성된 베이스(얕으면 ${BASE_MIN_WEEKS}주, 깊으면 ${CUP_MIN_WEEKS}주 이상)·깊이 ${P(BASE_MAX_DEPTH)} 이내 베이스의 상단을 주봉 종가로 넘은 가장 최근 주를 찾습니다. 돌파 뒤 신고가가 이어져 지금 베이스가 잡히지 않아도 돌파 지점은 기억합니다. 마우스를 올리면 피벗 가격과 돌파 주가 보입니다.</td></tr>
-<tr><td>경고</td><td><span class="wtag">훼손 · 이탈</span><span class="wtag">훼손 · 붕괴</span> 단계 · <span class="wtag">RS ${RS_LEADER} 아래</span> · <span class="wtag">돌파 피벗 아래</span> 주가가 마지막 돌파 피벗 아래로 되돌아옴(돌파 실패 신호) · <span class="wtag">실적 D-n</span> ${EARN_WARN_DAYS}일 안 실적 발표. 하나라도 있으면 줄 왼쪽에 붉은 띠가 생기고, 고정 바의 "★★ 보유" 옆에 경고 수가 붉게 나옵니다.</td></tr>
+<tr><td>매도선 (베이스 하단 대비)</td><td>주가가 감지된 베이스의 하단보다 몇 % 위인지. 베이스마다 매도선을 올리는 원칙의 기준선입니다. 마우스를 올리면 매도선 가격이 보입니다. 베이스가 아직 ${BASE_MIN_WEEKS}주가 안 됐으면 최근 고점 뒤 저점("형성 중 저점")을 대신 씁니다. 규칙으로 찾은 근사치이니 실제 매도선은 차트로 정하세요.</td></tr>
+<tr><td>돌파 피벗</td><td>마지막으로 돌파한 베이스 상단(돌파 피벗)보다 몇 % 위인지(몇 주 전 돌파였는지는 마우스를 올리면). 최근 ${PIVOT_MEMORY_WEEKS}주 안에서, 그 시점에 완성된 베이스(얕으면 ${BASE_MIN_WEEKS}주, 깊으면 ${CUP_MIN_WEEKS}주 이상)·깊이 ${P(BASE_MAX_DEPTH)} 이내 베이스의 상단을 주봉 종가로 넘은 가장 최근 주를 찾습니다. 돌파 뒤 신고가가 이어져 지금 베이스가 잡히지 않아도 돌파 지점은 기억합니다. 마우스를 올리면 피벗 가격과 돌파 주가 보입니다.</td></tr>
+<tr><td>경고 · 실적</td><td><span class="wtag">훼손 · 이탈</span><span class="wtag">훼손 · 붕괴</span> 단계 · <span class="wtag">RS ${RS_LEADER} 아래</span> · <span class="wtag">돌파 피벗 아래</span> 주가가 마지막 돌파 피벗 아래로 되돌아옴(돌파 실패 신호) · <span class="wtag">실적 D-n</span> ${EARN_WARN_DAYS}일 안 실적 발표. 하나라도 있으면 줄 왼쪽에 붉은 띠가 생기고, 고정 바의 "★★ 보유" 옆에 경고 수가 붉게 나옵니다.</td></tr>
 </table>
 <p><b>★ 관심 점검 · 언제 사나</b> <span class="muted">지금 할 수 있는 일 순서: 돌파(매수 범위) → 베이스 중 준비 → 임박(가까운 순) → 나머지 베이스 → 상승(10주선 근접 먼저) → 훼손(이탈 → 붕괴)</span></p>
 <table>
 <tr><td>단계 · 피벗 대비</td><td>4층과 같은 표기입니다: [단계] 피벗 대비 ±n% · 보조 정보. 아래 4층 도움말의 "단계 · 피벗 대비" 참고.</td></tr>
 <tr><td>다음 할 일</td><td>단계와 <b>맨 위 시장 신호등</b>을 함께 보고 정합니다. 시장이 <b>공격 가능</b>일 때만 "매수 검토", "돌파 + 거래량 시 매수"가 나옵니다. <b>신규 매수 중지</b>면 피벗 표시와 관찰까지만, <b>방어</b>면 관찰만입니다. 실적이 ${EARN_WARN_DAYS}일 안이면 "실적 지난 뒤"를 덧붙입니다. 매수 범위를 지난 종목은 추격하지 않고 다음 베이스나 10주선 눌림을 기다립니다. '준비'는 단계 칸에 표시됩니다.</td></tr>
-<tr><td>실적</td><td>${EARN_WARN_DAYS}일 안이면 붉게. 실적 직전 돌파 매수는 갭 위험이 있습니다.</td></tr>
+<tr><td>실적</td><td>보유는 "경고 · 실적" 칸, 관심은 "다음 할 일 · 실적" 칸 끝에 45일 안 발표일을 작게 붙입니다. ${EARN_WARN_DAYS}일 안이면 붉은 꼬리표. 실적 직전 돌파 매수는 갭 위험이 있습니다.</td></tr>
 </table>
 <table>
 <tr><td>⚙ 설정 › 내 종목</td><td>티커로 넣고 빼기(나스닥100 종목만), 전체 지우기, <b>설정 링크 복사</b>.</td></tr>
