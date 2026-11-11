@@ -14,6 +14,8 @@
   두 출처가 평소엔 맞는데(5일 중앙값 비율 0.85-1.15) 어느 날만 15% 넘게 다르면 그날은 Nasdaq 값으로 바로잡고 fixed에 적습니다.
   그다음 최근 5거래일 모두 이상값 검사: 20일 평균의 25% 미만이거나, 4배 넘는데 그날 등락이 2% 안쪽이면 '잠정'.
   (2026-11-10 QQQ 거래량이 실제의 10배인 4.5억 주로 들어와 분산일로 잘못 세어진 일 이후 추가)
+- QQQ 비중(근사): Nasdaq의 나스닥100 구성종목 시가총액으로 비중을 계산해 ndxw에 적습니다.
+  (실제 QQQ는 분기마다 큰 종목 비중을 깎는 규칙이 있어 조금 다름. 막히면 전날 값을 그대로 씀)
 - 실적 일정: Nasdaq 실적 캘린더 (공식 API가 아니라서 막히면 실적 표시만 빠지고 나머지는 정상)
   지난 400일 발표일은 처음 한 번만 다 받고(약 4분), 그 뒤로는 새 날짜만 이어 받습니다.
 - 결과: 저장소 맨 위의 data.json
@@ -151,6 +153,44 @@ def crosscheck_volumes(series, partial):
     return fixed
 
 
+def _find_rows(j):
+    """Nasdaq 응답 안에서 symbol·marketCap이 있는 행 목록을 찾음 (응답 모양이 조금 바뀌어도 견디게)"""
+    if isinstance(j, list):
+        if j and isinstance(j[0], dict) and "symbol" in j[0] and "marketCap" in j[0]:
+            return j
+        for x in j:
+            r = _find_rows(x)
+            if r:
+                return r
+    elif isinstance(j, dict):
+        for x in j.values():
+            r = _find_rows(x)
+            if r:
+                return r
+    return None
+
+
+def fetch_ndx_weights():
+    """나스닥100 구성종목 시가총액 비중(%) {symbol: 비중}. 실패하면 None"""
+    try:
+        j = get_json("https://api.nasdaq.com/api/quote/list-type/nasdaq100", NQ_HEADERS, timeout=20)
+        rows = _find_rows(j) or []
+        caps = {}
+        for row in rows:
+            c = re.sub(r"[^0-9.]", "", str(row.get("marketCap", "")))
+            if c:
+                caps[str(row["symbol"]).upper().replace(".", "-")] = float(c)
+        total = sum(caps.values())
+        if len(caps) < 90 or total <= 0:
+            print(f"  나스닥100 비중: 종목 수가 이상함({len(caps)}) — 전날 값 유지", flush=True)
+            return None
+        print(f"  나스닥100 비중: {len(caps)}종목", flush=True)
+        return {s: round(c / total * 100, 4) for s, c in caps.items()}
+    except Exception as e:
+        print(f"  나스닥100 비중: 실패 - {e}", flush=True)
+        return None
+
+
 def fetch_earnings(symbols, start, end):
     """start-end 날짜(포함) 사이 실적 발표일 (Nasdaq 실적 캘린더) → {symbol: [{date, time}]}"""
     want, found = set(symbols), {}
@@ -236,6 +276,9 @@ def main():
     partial = {s: [d] for s, d in partial.items()}      # 날짜 목록으로 (여러 날이 잠정일 수 있음)
     print("거래량 교차 확인 (Nasdaq)", flush=True)
     fixed = crosscheck_volumes(series, partial)
+    ndxw = fetch_ndx_weights()
+    ndxw_at = dt.date.today().isoformat() if ndxw else prev.get("ndxwAt")
+    ndxw = ndxw or prev.get("ndxw") or {}
 
     # 실적: 지난 발표일은 전에 받은 것을 이어 쓰고, 그 뒤 날짜와 앞으로 60일만 새로 받음
     today = dt.date.today()
@@ -268,6 +311,8 @@ def main():
         "failed": failed,
         "partial": partial,
         "fixed": fixed,
+        "ndxw": ndxw,
+        "ndxwAt": ndxw_at,
         "earnings": earnings,
         "earnHist": hist,
         "earnHistUpTo": upto_new,
