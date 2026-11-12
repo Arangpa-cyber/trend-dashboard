@@ -17,7 +17,7 @@
 - QQQ 비중(근사): Nasdaq의 나스닥100 구성종목 시가총액으로 비중을 계산해 ndxw에 적습니다.
   (실제 QQQ는 분기마다 큰 종목 비중을 깎는 규칙이 있어 조금 다름. 막히면 전날 값을 그대로 씀)
 - QQQ 보유 종목: Alpha Vantage ETF_PROFILE(QQQ)로 매일 비중을 받아 ndxw에 쓰고, 대시보드 종목 목록과 다르면 알림(notices)에 적음.
-- 나스닥100 변경 발표: 매주 그 주 첫 거래일 자료를 받는 날, Nasdaq IR 보도자료 RSS와 Alpha Vantage 뉴스(NDAQ·QQQ)에서
+- 나스닥100 변경 발표: 매주 그 주 첫 거래일 자료를 받는 날, Nasdaq, Inc. 보도자료 RSS(GlobeNewswire, 막히면 Nasdaq IR)에서
   "Nasdaq-100" 편입·교체·정기 변경 발표를 찾아 알림에 적음. 그날 둘 다 실패하면 그 주 안에 다음 실행에서 다시.
 - 실적 일정: Alpha Vantage 실적 달력(ALPHAVANTAGE_KEY, 하루 1회 요청으로 앞으로 3개월). 키가 없거나 실패하면 Nasdaq 실적 캘린더.
   지난 발표일은 전에 받은 일정이 지나갈 때마다 쌓아 둠. (2026-11-11부터 GitHub에서 Nasdaq이 403으로 막혀 추가)
@@ -249,13 +249,24 @@ def fetch_qqq_holdings_av():
         return None
 
 
-NDX_NEWS_RSS = "https://ir.nasdaq.com/rss/news-releases.xml"
+# Nasdaq, Inc. 보도자료 RSS(최근 20건). 나스닥100 편입·교체 발표도 여기로 나옴. GlobeNewswire를 먼저, 막히면 Nasdaq IR
+# (Nasdaq IR은 2026-11-12 GitHub에서 403. Alpha Vantage 뉴스는 무료 키로 안 됨(유료 전용))
+NDX_NEWS_RSS = [("GlobeNewswire", "https://www.globenewswire.com/rssfeed/organization/-G-rdUWjLv63d_yc-SXRbw=="),
+                ("Nasdaq IR", "https://ir.nasdaq.com/rss/news-releases.xml")]
 
 
 def fetch_ndx_announcements():
-    """Nasdaq IR 보도자료 RSS에서 나스닥100 편입·교체·정기 변경 발표만 골라 [{id, date, title, url}]. 실패하면 None"""
+    """Nasdaq 보도자료 RSS에서 나스닥100 편입·교체·정기 변경 발표만 골라 [{id, date, title, url}]. 모두 실패하면 None"""
+    for src, feed in NDX_NEWS_RSS:
+        out = _ndx_rss(src, feed)
+        if out is not None:
+            return out
+    return None
+
+
+def _ndx_rss(src, feed):
     try:
-        req = urllib.request.Request(NDX_NEWS_RSS, headers={"User-Agent": "trend-dashboard (RSS reader)"})
+        req = urllib.request.Request(feed, headers={"User-Agent": "trend-dashboard (RSS reader)", "Accept": "application/rss+xml, application/xml"})
         with urllib.request.urlopen(req, timeout=30) as r:
             xml = r.read().decode("utf-8", "replace")
         import xml.etree.ElementTree as ET
@@ -270,11 +281,11 @@ def fetch_ndx_announcements():
                 d = parsedate_to_datetime(it.findtext("pubDate")).date().isoformat()
             except Exception:
                 d = ""
-            out.append({"id": "press-" + re.sub(r"\W+", "", title.lower())[:80], "date": d, "kind": "press", "title": title, "url": link, "source": "Nasdaq"})
-        print(f"  나스닥100 발표: RSS에서 {len(out)}건", flush=True)
+            out.append({"id": "press-" + re.sub(r"\W+", "", title.lower())[:80], "date": d, "kind": "press", "title": title, "url": link, "source": "Nasdaq 보도자료"})
+        print(f"  나스닥100 발표({src}): 보도자료에서 {len(out)}건", flush=True)
         return out
     except Exception as e:
-        print(f"  나스닥100 발표: 실패 - {e}", flush=True)
+        print(f"  나스닥100 발표({src}): 실패 - {e}", flush=True)
         return None
 
 
@@ -492,7 +503,7 @@ def main():
     this_week = wk(q[-1][0]) if q else None
     if first_trading_day_of_week(q) or not news_checked or (this_week and wk(news_checked) < this_week):
         print("나스닥100 변경 발표 확인 (주 1회)", flush=True)
-        got = [a for a in (fetch_ndx_announcements(), fetch_ndx_news_av()) if a is not None]
+        got = [a for a in (fetch_ndx_announcements(),) if a is not None]
         if got:
             for ann in got:
                 for n in ann:
