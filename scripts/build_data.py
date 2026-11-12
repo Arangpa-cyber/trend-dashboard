@@ -16,6 +16,8 @@
   (2026-11-10 QQQ 거래량이 실제의 10배인 4.5억 주로 들어와 분산일로 잘못 세어진 일 이후 추가)
 - QQQ 비중(근사): Nasdaq의 나스닥100 구성종목 시가총액으로 비중을 계산해 ndxw에 적습니다.
   (실제 QQQ는 분기마다 큰 종목 비중을 깎는 규칙이 있어 조금 다름. 막히면 전날 값을 그대로 씀)
+- QQQ 보유 종목: Alpha Vantage ETF_PROFILE(QQQ)로 매일 비중을 받아 ndxw에 쓰고, 대시보드 종목 목록과 다르면 알림(notices)에 적음.
+- 나스닥100 변경 발표: 매주 그 주 첫 거래일 자료를 받는 날, Nasdaq IR 보도자료 RSS에서 "Nasdaq-100" 편입·교체 발표를 찾아 알림에 적음.
 - 실적 일정: Alpha Vantage 실적 달력(ALPHAVANTAGE_KEY, 하루 1회 요청으로 앞으로 3개월). 키가 없거나 실패하면 Nasdaq 실적 캘린더.
   지난 발표일은 전에 받은 일정이 지나갈 때마다 쌓아 둠. (2026-11-11부터 GitHub에서 Nasdaq이 403으로 막혀 추가)
 - (예전) 실적 일정: Nasdaq 실적 캘린더 (공식 API가 아니라서 막히면 실적 표시만 빠지고 나머지는 정상)
@@ -196,6 +198,70 @@ def fetch_ndx_weights():
 AV_KEY = os.environ.get("ALPHAVANTAGE_KEY", "").strip()
 
 
+def fetch_qqq_holdings_av():
+    """Alpha Vantage ETF_PROFILE: QQQ 보유 종목 비중(%) {symbol: 비중}. 실패하면 None"""
+    if not AV_KEY:
+        return None
+    try:
+        url = "https://www.alphavantage.co/query?" + urllib.parse.urlencode({"function": "ETF_PROFILE", "symbol": "QQQ", "apikey": AV_KEY})
+        j = get_json(url, {"User-Agent": "trend-dashboard"}, timeout=40)
+        rows = j.get("holdings") or []
+        w = {}
+        for h in rows:
+            sym = str(h.get("symbol", "")).upper().replace(".", "-")
+            try:
+                v = float(h.get("weight"))
+            except (TypeError, ValueError):
+                continue
+            if re.fullmatch(r"[A-Z][A-Z0-9-]{0,6}", sym) and v > 0:
+                w[sym] = round(v * 100, 4)
+        if len(w) < 90:
+            print(f"  QQQ 보유 종목: 개수가 이상함({len(w)}) - {str(j)[:120]!r}", flush=True)
+            return None
+        print(f"  QQQ 보유 종목: {len(w)}개 (합 {sum(w.values()):.1f}%)", flush=True)
+        return w
+    except Exception as e:
+        print(f"  QQQ 보유 종목: 실패 - {e}", flush=True)
+        return None
+
+
+NDX_NEWS_RSS = "https://ir.nasdaq.com/rss/news-releases.xml"
+
+
+def fetch_ndx_announcements():
+    """Nasdaq IR 보도자료 RSS에서 나스닥100 편입·교체·정기 변경 발표만 골라 [{id, date, title, url}]. 실패하면 None"""
+    try:
+        req = urllib.request.Request(NDX_NEWS_RSS, headers={"User-Agent": "trend-dashboard (RSS reader)"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            xml = r.read().decode("utf-8", "replace")
+        import xml.etree.ElementTree as ET
+        from email.utils import parsedate_to_datetime
+        out = []
+        for it in ET.fromstring(xml).iter("item"):
+            title = (it.findtext("title") or "").strip()
+            if not re.search(r"nasdaq-?100", title, re.I) or not re.search(r"join|replac|change|reconstitut|rebalanc|add|remov", title, re.I):
+                continue
+            link = (it.findtext("link") or "").strip()
+            try:
+                d = parsedate_to_datetime(it.findtext("pubDate")).date().isoformat()
+            except Exception:
+                d = ""
+            out.append({"id": "press-" + (link or title)[-80:], "date": d, "kind": "press", "title": title, "url": link})
+        print(f"  나스닥100 발표: RSS에서 {len(out)}건", flush=True)
+        return out
+    except Exception as e:
+        print(f"  나스닥100 발표: 실패 - {e}", flush=True)
+        return None
+
+
+def first_trading_day_of_week(rows):
+    """마지막 거래일이 그 주의 첫 거래일인가(바로 전 거래일이 다른 주)"""
+    if len(rows) < 2:
+        return False
+    a, b = dt.date.fromisoformat(rows[-2][0]), dt.date.fromisoformat(rows[-1][0])
+    return a.isocalendar()[:2] != b.isocalendar()[:2]
+
+
 def fetch_earnings_av(symbols):
     """Alpha Vantage 실적 달력(앞으로 3개월, CSV 한 번) → {symbol: [{date, time}]}. 실패하면 None"""
     if not AV_KEY:
@@ -335,9 +401,40 @@ def main():
     partial = {s: [d] for s, d in partial.items()}      # 날짜 목록으로 (여러 날이 잠정일 수 있음)
     print("거래량 교차 확인 (Nasdaq)", flush=True)
     fixed = crosscheck_volumes(series, partial)
-    ndxw = fetch_ndx_weights()
+    # QQQ 비중: Alpha Vantage 보유 종목 → (막히면) Nasdaq → 전날 값
+    print("QQQ 보유 종목 받기 (Alpha Vantage)", flush=True)
+    hold = fetch_qqq_holdings_av()
+    ndxw = hold or fetch_ndx_weights()
     ndxw_at = dt.date.today().isoformat() if ndxw else prev.get("ndxwAt")
     ndxw = ndxw or prev.get("ndxw") or {}
+
+    # 알림: 전에 적힌 것 + 새로 생긴 것(같은 id는 한 번만), 최근 30건
+    notices = list(prev.get("notices") or [])
+    have = {n["id"] for n in notices}
+    def add_notice(n):
+        if n["id"] not in have:
+            notices.append(n); have.add(n["id"])
+    today_s = dt.date.today().isoformat()
+    if hold:
+        mine = set(STOCKS)
+        held = {s for s in hold if not (s == "GOOG" and "GOOGL" in mine)}
+        added, removed = sorted(held - mine), sorted(mine - held)
+        if added or removed:
+            add_notice({"id": "hold-" + ",".join(added) + "|" + ",".join(removed), "date": today_s, "kind": "holdings",
+                        "title": "QQQ 보유 종목이 대시보드 목록과 다름",
+                        "detail": ("새로 들어옴: " + ", ".join(added) if added else "") + (" · " if added and removed else "") + ("빠짐: " + ", ".join(removed) if removed else ""),
+                        "added": added, "removed": removed})
+            print(f"  QQQ 구성 차이: +{added} -{removed}", flush=True)
+    news_checked = prev.get("newsCheckedAt")
+    q = series.get("QQQ") or []
+    if first_trading_day_of_week(q) or not news_checked:
+        print("나스닥100 변경 발표 확인 (주 1회)", flush=True)
+        ann = fetch_ndx_announcements()
+        if ann is not None:
+            for n in ann:
+                add_notice(n)
+            news_checked = today_s
+    notices = sorted(notices, key=lambda n: n.get("date", ""), reverse=True)[:30]
 
     today = dt.date.today()
     print("실적 일정 받기 (Alpha Vantage)", flush=True)
@@ -368,6 +465,8 @@ def main():
         "partial": partial,
         "fixed": fixed,
         "ndxw": ndxw,
+        "notices": notices,
+        "newsCheckedAt": news_checked,
         "ndxwAt": ndxw_at,
         "earnings": earnings,
         "earnHist": hist,
