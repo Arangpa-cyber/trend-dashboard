@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-11 23:05</title>
+<title>추세 대시보드 v2026-11-12 18:40</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -54,6 +54,21 @@
   #help td:first-child { white-space: nowrap; width: 1%; font-weight: 700; }
   #help .hl { animation: hl 1.6s ease-out; }
   @keyframes hl { from { background: rgba(194,65,12,0.18); } to { background: transparent; } }
+  /* 알림(나스닥100 구성 변경) */
+  .nwrap { position: relative; }
+  #bell { border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 4px 9px; font-size: 13px; position: relative; }
+  #bell b { position: absolute; top: -6px; right: -6px; min-width: 16px; height: 16px; line-height: 16px; border-radius: 8px; background: var(--down, #dc2626); background: #dc2626;
+            color: #fff; font-size: 10px; text-align: center; padding: 0 4px; }
+  #nPanel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 130; width: min(420px, 92vw); max-height: 70vh; overflow-y: auto;
+            background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); padding: 12px 14px; font-size: 13px; }
+  #nPanel h4 { margin: 0 0 6px; font-size: 14px; }
+  #nPanel .ni { padding: 8px 0; border-top: 1px solid var(--line); }
+  #nPanel .ni.new { background: linear-gradient(90deg, rgba(220,38,38,0.07), transparent); }
+  #nPanel .nd { color: var(--sub); font-size: 11px; }
+  #nPanel .nk { font-size: 10px; font-weight: 700; border-radius: 4px; padding: 0 5px; margin-right: 4px; border: 1px solid currentColor; }
+  #nPanel .nk.press { color: #7c3aed; } #nPanel .nk.holdings { color: #b45309; }
+  #nPanel .nfoot { color: var(--sub); font-size: 11px; margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; }
+  @media (max-width: 700px) { #nPanel { position: fixed; left: 8px; right: 8px; top: 56px; width: auto; } }
   #gear { border: 1px solid var(--line); background: var(--card); color: var(--sub); border-radius: 8px; padding: 4px 10px; font-size: 13px; }
   #settings { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card);
               display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
@@ -357,8 +372,8 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-11 23:05</span></h1>
-    <div class="topbtns"><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
+    <h1>추세 대시보드<span class="ver">v2026-11-12 18:40</span></h1>
+    <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
     <span>Twelve Data API 키</span>
@@ -1389,6 +1404,31 @@ function impactCell(t, short) {
   const cls = q.c > 0 ? "chg-up" : q.c < 0 ? "chg-down" : "";
   return '<span class="' + cls + '">' + (Math.abs(q.c) >= QI_BOLD ? "<b>" + fmtPp(q.c, short) + "</b>" : fmtPp(q.c, short)) + "</span>" + (short ? "" : ' <span class="muted qiw">· 비중 ' + q.w.toFixed(1) + "%</span>");
 }
+// ── 알림: 서버가 찾은 나스닥100 변경 발표(주 1회)와 QQQ 보유 종목 차이(매일). 본 것은 이 브라우저에 기억 ──
+let NOTICES = [], NEWS_AT = null, NDXW_SRC_AT = null;
+const SEEN_KEY = "td2_seen_notices";
+const seenSet = () => { try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || "[]")); } catch (e) { return new Set(); } };
+function markNoticesSeen() {
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify(NOTICES.map((n) => n.id))); } catch (e) {}
+  setTimeout(renderBell, 1500);
+}
+function renderBell() {
+  const seen = seenSet(), n = NOTICES.filter((x) => !seen.has(x.id)).length, el = document.getElementById("bellN");
+  el.hidden = !n; el.textContent = n;
+}
+function renderNotices() {
+  const seen = seenSet(), esc = (t) => String(t || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const items = NOTICES.length ? NOTICES.map((n) =>
+    '<div class="ni' + (seen.has(n.id) ? "" : " new") + '"><span class="nk ' + n.kind + '">' + (n.kind === "press" ? "발표" : "구성 차이") + "</span>" +
+    '<span class="nd">' + esc(n.date) + "</span><br>" +
+    (n.url ? '<a href="' + esc(n.url) + '" target="_blank" rel="noopener">' + esc(n.title) + "</a>" : "<b>" + esc(n.title) + "</b>") +
+    (n.detail ? '<br><span>' + esc(n.detail) + "</span>" : "") +
+    (n.kind === "holdings" ? '<br><span class="nd">대시보드 종목 목록·산업 분류를 갱신해야 합니다.</span>' : "") + "</div>").join("")
+    : '<div class="ni nd">아직 알림이 없습니다.</div>';
+  document.getElementById("nPanel").innerHTML = "<h4>나스닥100(QQQ) 구성 변경 알림</h4>" + items +
+    '<div class="nfoot">발표 확인: 매주 첫 거래일 자료를 받는 날 Nasdaq 보도자료에서' + (NEWS_AT ? " (마지막 " + esc(NEWS_AT) + ")" : " (아직 확인 전)") +
+    "<br>보유 종목 비교: 매일 QQQ 보유 종목을 대시보드 목록과 비교" + (NDXW_SRC_AT ? " (마지막 " + esc(NDXW_SRC_AT) + ")" : "") + "</div>";
+}
 function moveItems() {
   // 종목마다 방향: +1 들어옴(RS 80 진입, 단계 좋아짐) · -1 빠짐(탈락, 단계 나빠짐) · 0 중립(같은 수준 안에서 바뀜)
   const items = [];
@@ -1858,6 +1898,8 @@ async function loadServer() {
     EARN_HIST = j.earnHist || {};
     if (j.ndxw && Object.keys(j.ndxw).length > 90) { NDXW = j.ndxw; NDXW_AT = j.ndxwAt || QQQ_W_AT; } else { NDXW = QQQ_W; NDXW_AT = QQQ_W_AT; }
     SERVER = { generated: j.generated };
+    NOTICES = j.notices || []; NEWS_AT = j.newsCheckedAt || null; NDXW_SRC_AT = j.ndxwAt || null;
+    renderBell();
     renderAll();
     await showRefreshInfo();
     statusEl.textContent = j.failed && j.failed.length ? "서버가 받지 못한 종목: " + j.failed.join(", ") : "";
@@ -2137,6 +2179,7 @@ function buildHelp() {
 </table>
 
 <h3 id="h-data">데이터와 갱신</h3>
+<p><b>🔔 알림</b>: 오른쪽 위 종 모양을 누르면 나스닥100(QQQ) 구성 변경 소식이 보입니다. 새 알림이 있으면 빨간 숫자가 붙습니다. ① <b>발표</b>: 매주 그 주 첫 거래일 자료를 받는 날(보통 화요일 오전) 서버가 Nasdaq 보도자료(RSS)에서 나스닥100 편입·교체·정기 변경 발표를 찾아 적습니다. 발표는 보통 실제 적용 1주일 안팎 전에 나옵니다. ② <b>구성 차이</b>: 서버가 매일 Alpha Vantage에서 QQQ 보유 종목과 비중을 받아, 대시보드 종목 목록과 다르면 적습니다(실제 변경 뒤 며칠 늦을 수 있음). 받은 비중은 4층·6층 QQQ 영향 계산에 바로 씁니다. 구성 차이 알림이 오면 종목 목록과 산업 분류를 갱신해야 하니 말씀해 주세요.</p>
 <p>시세는 Twelve Data, 실적 일정은 Alpha Vantage 실적 달력(막히면 Nasdaq)에서 받습니다. 대상은 나스닥100 구성종목(GOOG처럼 중복된 주식 종류는 하나만)과 QQQ, QQQE, XLY, XLP입니다.</p>
 <p>GitHub가 미국 평일 장의 <b>시간외 거래까지 끝난 뒤</b>(한국시간 화-토 <b>오전 10시 45분 무렵</b> 반영) 자동으로 새로 받습니다. 예약은 한국시간 9시 30분이고, 서버는 미국 동부 20시 15분(시간외 거래 마감 15분 뒤)이 되기 전이면 그때까지 기다렸다 받습니다. 장 마감 직후에는 거래량이 아직 집계 중이기 때문입니다.</p>
 <p><b>거래량 잠정</b>: 그래도 QQQ 등 시장 지표의 마지막 날 거래량이 확정되지 않았을 수 있어 두 겹으로 확인합니다. ① 서버가 수집 맨 처음과 맨 끝(약 15분 간격)에 두 번 받아 비교하고, 1% 넘게 다르면 15분 간격으로 다시 받아 같아질 때까지 최대 4번 확인합니다. 그래도 안 맞으면 '잠정'(다시 확인하는 동안 반영이 최대 45분 늦어짐) ② 서버가 Nasdaq 일별 시세로 최근 5거래일 거래량을 한 번 더 맞춰 봅니다. 두 출처가 평소엔 맞는데 어느 날만 15% 넘게 다르면 그날은 Nasdaq 값으로 바로잡고, 신호등 줄에 "11/10 거래량 정정(4.5억 → Nasdaq 기준 4,516만)"처럼 적습니다. ③ 최근 5거래일 중 20일 평균의 4배가 넘는데 그날 등락이 2% 안쪽인 날(거래량만 튀고 가격은 조용함)은 의심값으로 '잠정'. 두 출처가 같은 값을 준 날은 지수 재편일 같은 실제 대량 거래로 보고 넘어갑니다. ④ 화면에서 마지막 날 거래량이 최근 20일 평균의 ${P(PARTIAL_VOL)} 미만이면 '잠정'. (2026-11-10 QQQ 거래량이 실제의 10배로 들어와 분산일로 잘못 세어진 일 이후 ②③ 추가) 잠정인 날은 1층 차트의 거래량 막대가 회색이 되고, 신호등에 "거래량 잠정 · 판정 보류"가 붙으며, 그날의 분산일·팔로스루 판정을 하지 않습니다. 틀린 판정보다 보류가 낫기 때문입니다. 다음 갱신에서 확정값으로 바뀝니다.</p>
@@ -2165,6 +2208,12 @@ function openHelp(id) {
 function closeHelp() { document.getElementById("help").classList.remove("open"); }
 buildHelp();
 document.getElementById("helpBtn").addEventListener("click", () => openHelp());
+document.getElementById("bell").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const pn = document.getElementById("nPanel");
+  if (pn.hidden) { renderNotices(); pn.hidden = false; markNoticesSeen(); } else pn.hidden = true;
+});
+document.addEventListener("click", (e) => { const pn = document.getElementById("nPanel"); if (!pn.hidden && !pn.contains(e.target)) pn.hidden = true; });
 document.querySelectorAll("h2 .q").forEach((q) => q.addEventListener("click", () => openHelp(q.dataset.help)));
 document.getElementById("help").addEventListener("click", (e) => { if (e.target.id === "help") closeHelp(); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeHelp(); });
