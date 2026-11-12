@@ -198,6 +198,19 @@ def fetch_ndx_weights():
 
 
 AV_KEY = os.environ.get("ALPHAVANTAGE_KEY", "").strip()
+_AV_LAST = [0.0]
+
+
+def av_get(params, as_text=False):
+    """Alpha Vantage 요청: 무료 키는 1초에 1번까지라 요청 사이를 3초 띄움(2026-11-12 연속 요청이 막힌 일 이후)"""
+    time.sleep(max(0.0, 3.0 - (time.time() - _AV_LAST[0])))
+    url = "https://www.alphavantage.co/query?" + urllib.parse.urlencode(dict(params, apikey=AV_KEY))
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "trend-dashboard"}), timeout=40) as r:
+            text = r.read().decode("utf-8", "replace")
+    finally:
+        _AV_LAST[0] = time.time()
+    return text if as_text else json.loads(text)
 
 
 def fetch_qqq_holdings_av():
@@ -205,8 +218,7 @@ def fetch_qqq_holdings_av():
     if not AV_KEY:
         return None
     try:
-        url = "https://www.alphavantage.co/query?" + urllib.parse.urlencode({"function": "ETF_PROFILE", "symbol": "QQQ", "apikey": AV_KEY})
-        j = get_json(url, {"User-Agent": "trend-dashboard"}, timeout=40)
+        j = av_get({"function": "ETF_PROFILE", "symbol": "QQQ"})
         rows = j.get("holdings") or []
         w, unnamed = {}, []
         for h in rows:
@@ -275,8 +287,7 @@ def fetch_ndx_news_av(days=8):
     out, ok = [], False
     for tk in ("NDAQ", "QQQ"):
         try:
-            url = "https://www.alphavantage.co/query?" + urllib.parse.urlencode({"function": "NEWS_SENTIMENT", "tickers": tk, "time_from": since, "limit": 200, "sort": "LATEST", "apikey": AV_KEY})
-            j = get_json(url, {"User-Agent": "trend-dashboard"}, timeout=40)
+            j = av_get({"function": "NEWS_SENTIMENT", "tickers": tk, "time_from": since, "limit": 200, "sort": "LATEST"})
             feed = j.get("feed")
             if feed is None:
                 print(f"  나스닥100 기사({tk}): 응답이 이상함 - {str(j)[:120]!r}", flush=True)
@@ -292,7 +303,6 @@ def fetch_ndx_news_av(days=8):
                             "url": it.get("url", ""), "source": it.get("source", "")})
         except Exception as e:
             print(f"  나스닥100 기사({tk}): 실패 - {e}", flush=True)
-        time.sleep(1.5)
     if not ok:
         return None
     print(f"  나스닥100 기사: Alpha Vantage에서 {len(out)}건", flush=True)
@@ -315,12 +325,11 @@ def fetch_earnings_av(symbols):
     if not AV_KEY:
         return None
     try:
-        url = "https://www.alphavantage.co/query?" + urllib.parse.urlencode({"function": "EARNINGS_CALENDAR", "horizon": "3month", "apikey": AV_KEY})
-        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "trend-dashboard"}), timeout=40) as r:
-            text = r.read().decode("utf-8", "replace")
+        text = av_get({"function": "EARNINGS_CALENDAR", "horizon": "3month"}, as_text=True)
         import csv, io
         rows = list(csv.DictReader(io.StringIO(text)))
-        if not rows or "reportDate" not in rows[0]:
+        # 정상이면 미국 전체 3개월치 수천 건. 수십 건도 안 되면 한도 안내문 등으로 보고 실패 처리(전날 일정 유지)
+        if len(rows) < 100 or "reportDate" not in rows[0]:
             print(f"  Alpha Vantage 실적: 응답이 이상함 - {text[:120]!r}", flush=True)
             return None
         want, found = set(symbols), {}
