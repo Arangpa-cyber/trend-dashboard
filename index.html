@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-14 00:27</title>
+<title>추세 대시보드 v2026-11-14 00:47</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -130,7 +130,7 @@
   .kind.out { background: var(--down); color: #fff; } .kind.dn { color: var(--down); border: 1px solid var(--down); }
   .kind.nt { color: var(--sub); border: 1px solid var(--line); }
   #sec-move, #changes { scroll-margin-top: 60px; }
-  .mv2 .side + .side { margin-top: 18px; }
+  .mv2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
   .mv2 .sh { font-weight: 800; font-size: 14px; padding: 6px 0 4px; border-bottom: 2px solid currentColor; }
   .mv2 .sh.in { color: #16a34a; } .mv2 .sh.out { color: var(--down); }
   .mv2 table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -143,20 +143,13 @@
   .mv2 tr.gh .n { font-weight: 800; margin-left: 4px; } .mv2 .side.in .n { color: #16a34a; } .mv2 .side.out .n { color: var(--down); }
   .mv2 tr.gh .kind, .mv2 td.tg .kind { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 4px; }
   .mv2 tr[data-t] { cursor: pointer; } .mv2 tr[data-t]:hover td { background: var(--hover, rgba(127,127,127,.08)); }
-  .mv2 .tk { width: 66px; padding-left: 12px; font-weight: 800; } .mv2 .rsx { width: 122px; font-variant-numeric: tabular-nums; }
-  .mv2 .sp { width: 100px; } .mv2 td.sp .spark { display: block; }
-  .mv2 .pc { width: 66px; text-align: right; font-variant-numeric: tabular-nums; } .mv2 th.pc { text-align: right; }
-  .mv2 .vm { width: 92px; color: var(--sub); font-variant-numeric: tabular-nums; } .mv2 td.vm.heavy { color: var(--text, inherit); font-weight: 800; }
-  .mv2 .tg { width: 84px; }
-  .mv2 .vl { display: none; }
-  .mv2 td.wt { color: var(--sub); white-space: normal; }
+  .mv2 .tk { width: 62px; padding-left: 8px; font-weight: 800; } .mv2 .rsx { width: 104px; font-variant-numeric: tabular-nums; }
+  .mv2 .sp { width: auto; } .mv2 td.sp .spark { display: block; }
+  .mv2 .pc { width: 64px; text-align: right; font-variant-numeric: tabular-nums; } .mv2 th.pc { text-align: right; }
   .mv2 .none { color: var(--sub); font-size: 13px; padding: 8px 0; }
   #changes .neutral { margin-top: 10px; font-size: 12px; color: var(--sub); }
   #changes .neutral span[data-t] { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
-  @media (max-width: 700px) { .mv2 thead { display: none; } .mv2 tr.gh, .mv2 tr.gh td { display: block; }
-    .mv2 tr[data-t] { display: grid; grid-template-columns: 56px 1fr 60px auto; align-items: baseline; }
-    .mv2 td { width: auto !important; } .mv2 td.tk { padding-left: 6px; } .mv2 td.vm { text-align: right; } .mv2 .vl { display: inline; } .mv2 td.sp { display: none; }
-    .mv2 td.tg { grid-column: 1 / 3; padding-left: 6px; } .mv2 td.wt { grid-column: 3 / -1; font-size: 12px; } }
+  @media (max-width: 800px) { .mv2 { grid-template-columns: 1fr; gap: 18px; } }
   .tk { font-weight: 700; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
 
   h2 { font-size: 16px; margin: 28px 0 4px; scroll-margin-top: 60px; }
@@ -214,17 +207,19 @@
   .placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 13px; text-align: center; padding: 0 16px; }
   .lsum { font-size: 12px; color: var(--sub); margin: 0 0 8px; line-height: 2; }
   .lsum a { text-decoration: none; color: var(--text); margin-right: 10px; white-space: nowrap; } .lsum .z { margin-right: 10px; white-space: nowrap; opacity: 0.6; }
-  table.ltable { min-width: 940px; } table.ltable .bd, table.ltable th.bd { text-align: left; } table.ltable .bd .badge:first-child { margin-left: 0; }
-  table.ltable col.c-st { width: 40px; } table.ltable col.c-tk { width: 60px; } table.ltable col.c-grp { width: 154px; }
+  table.ltable { min-width: 940px; } table.ltable td.num, table.ltable th.num, table.mtable td.num, table.mtable th.num { text-align: right; } table.ltable .bd, table.ltable th.bd { text-align: left; } table.ltable .bd .badge:first-child { margin-left: 0; }
+  table.ltable col.c-st { width: 36px; } table.ltable col.c-tk { width: 56px; } table.ltable col.c-grp { width: 154px; }
   /* 산업 이름은 한 줄로 끝까지: 가장 긴 "전자상거래·소비자 서비스"(12px 약 139px)에 맞춘 폭 */
   table.ltable td.grp, table.mtable td.grp, table.alltable td.grp { white-space: nowrap; overflow: visible; text-overflow: clip; font-size: 12px; }
-  table.ltable col.c-rs { width: 68px; } table.ltable col.c-qi { width: 78px; } table.ltable col.c-bd { width: 92px; }
+  table.ltable col.c-rs { width: 62px; } table.ltable col.c-pc { width: 62px; } table.ltable col.c-qw { width: 58px; } table.ltable col.c-qi { width: 72px; } table.ltable col.c-bd { width: 76px; }
   td.qi { white-space: nowrap; font-variant-numeric: tabular-nums; } .qiw { font-size: 11px; }
-  .qisum { font-size: 13px; margin: 2px 0 8px; } table.ltable col.c-sp { width: 96px; } table.ltable col.c-pos { width: auto; }
+  .qisum { font-size: 13px; margin: 2px 0 8px; } table.ltable col.c-sp { width: 90px; } table.ltable col.c-pos { width: auto; }
   table.ltable col.c-todo { width: 260px; }   /* 실제 폭은 그린 뒤 가장 긴 글에 맞춤(fitTodo) */
   table.ltable td.todo { white-space: nowrap; font-size: 12px; }
+  table.ltable td.pos, table.mtable td.mpos { white-space: normal; line-height: 1.5; } .psub { display: none; }
+  @media (min-width: 1240px) { .psub { display: inline; } }
   table.ltable td.bd { white-space: normal; } table.ltable td.bd .badge { margin: 1px 0 1px 3px; }
-  table.ntable.ltable td, table.ntable.ltable th { padding-left: 6px; padding-right: 6px; }
+  table.ntable.ltable td, table.ntable.ltable th { padding-left: 4px; padding-right: 4px; }
   table.ntable.ntable td.stc, table.ntable.ntable th.stc { padding-left: 2px; padding-right: 2px; }   /* 별 칸: 좁은 여백(★★ 잘림 방지) */
   table.ltable .nm, table.ltable .bd { width: auto; } table.ltable .nm { position: sticky; }
   table.ltable td { padding-top: 5px; padding-bottom: 5px; }
@@ -267,10 +262,10 @@
   .allwrap { max-height: 78vh; overflow: auto; border-top: 1px solid var(--line); }
   table.alltable { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; table-layout: fixed; }
   /* 화면 폭 1000px 안팎에서도 가로 스크롤 없이 (종목명은 티커에 마우스를 올리면) */
-  table.alltable { min-width: 920px; }
+  table.alltable { min-width: 940px; }
   table.alltable col.c-rank { width: 30px; } table.alltable col.c-t { width: 60px; }
-  table.alltable col.c-grp { width: 154px; } table.alltable col.c-rs { width: 66px; } table.alltable col.c-wk { width: 60px; } table.alltable col.c-qi { width: 74px; }
-  table.alltable col.c-spark { width: 104px; } table.alltable col.c-stage { width: 128px; } table.alltable col.c-fromHi { width: 54px; } table.alltable col.c-fromLo { width: 62px; }
+  table.alltable col.c-grp { width: 154px; } table.alltable col.c-rs { width: 60px; } table.alltable col.c-pc { width: 64px; } table.alltable col.c-qw { width: 56px; } table.alltable col.c-qi { width: 74px; }
+  table.alltable col.c-spark { width: 98px; } table.alltable col.c-stage { width: 120px; } table.alltable col.c-fromHi { width: 54px; } table.alltable col.c-fromLo { width: 62px; }
   table.alltable col.c-trend { width: 42px; } table.alltable col.c-tags { width: auto; }
   table.alltable td.tg { white-space: normal; } table.alltable td.tg .badge { margin: 1px 3px 1px 0; }
   table.alltable.alltable th, table.alltable.alltable td { padding-left: 4px; padding-right: 4px; }
@@ -321,14 +316,14 @@
   .mycard .mbox { margin-top: 8px; overflow-x: auto; border-top: 1px solid var(--line); }
   /* 화면 폭 1000px 안팎에서도 가로 스크롤 없이: 긴 칸(경고·다음 할 일)은 줄바꿈 */
   table.mtable { min-width: 900px; }
-  table.ntable.mtable td, table.ntable.mtable th { padding-left: 6px; padding-right: 6px; }
+  table.ntable.mtable td, table.ntable.mtable th { padding-left: 4px; padding-right: 4px; }
   table.mtable .stc { width: 40px; } table.mtable .tkc { width: 64px; }
-  table.mtable .msl { width: 74px; } table.mtable .msp { width: 112px; } table.mtable .enote { font-size: 11px; white-space: nowrap; } table.mtable .mpv { width: 160px; } table.mtable .mrd { width: 24%; } table.mtable .mer { width: 90px; }
+  table.mtable .msl { width: 66px; } table.mtable .msp { width: 84px; } table.mtable .enote { font-size: 11px; white-space: nowrap; } table.mtable .mpv { width: 160px; } table.mtable .mrd { width: 24%; } table.mtable .mer { width: 90px; }
   table.mtable td.mrd, table.mtable td.mw { white-space: normal; line-height: 1.35; } table.mtable td.mrd { font-size: 12px; } table.mtable td.mw .wtag, table.mtable td.mw .oktag { margin: 1px 4px 1px 0; }
   #changes { scroll-margin-top: 60px; }
   table.mtable .stg { margin-right: 4px; }
-  table.mtable .mgr { width: 154px; } table.mtable .mpos { width: auto; } table.mtable .mlp { width: 78px; }
-  table.mtable .mst { width: 112px; } table.mtable td.mst { white-space: normal; line-height: 1.6; } table.mtable .mrs { width: 72px; } table.mtable .mwk { width: 62px; } table.mtable .m10 { width: 68px; } table.mtable .mhi { width: 90px; } table.mtable .mw { width: auto; }
+  table.mtable .mgr { width: 154px; } table.mtable .mpos { width: auto; } table.mtable .mlp { width: 62px; }
+  table.mtable .mst { width: 96px; } table.mtable td.mst { white-space: normal; line-height: 1.6; } table.mtable .mrs { width: 60px; } table.mtable .mwk { width: 62px; } table.mtable .mqw { width: 58px; } table.mtable .mqi { width: 72px; white-space: nowrap; } table.mtable .m10 { width: 58px; } table.mtable .mhi { width: 90px; } table.mtable .mw { width: auto; }
   table.mtable tr.mwarn td.tkc { box-shadow: inset 3px 0 0 var(--stop); }
   .wtag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-right: 4px; background: var(--stop-bg); color: var(--stop); border: 1px solid var(--stop); }
   .oktag { font-size: 11px; color: var(--go); font-weight: 700; }
@@ -376,7 +371,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-14 00:27</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-14 00:47</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -413,7 +408,7 @@
   </div>
   <div class="card" style="margin-top:12px;overflow-x:auto">
     <table class="flow">
-      <thead><tr><th data-k="rs">순위<span class="ar"></span></th><th data-k="g">산업<span class="ar"></span></th><th>평균 RS 12주</th><th data-k="rc">평균 RS (4주)<span class="ar"></span></th><th data-k="bc">10주선 위 (4주)<span class="ar"></span></th><th data-k="flow">흐름<span class="ar"></span></th><th>주도주(RS 80+)</th></tr></thead>
+      <thead><tr><th data-k="rs">순위<span class="ar"></span></th><th data-k="g">산업<span class="ar"></span></th><th>평균 RS 40주</th><th data-k="rc">평균 RS (4주)<span class="ar"></span></th><th data-k="bc">10주선 위 (4주)<span class="ar"></span></th><th data-k="flow">흐름<span class="ar"></span></th><th>주도주(RS 80+)</th></tr></thead>
       <tbody id="flowBody"><tr><td colspan="7" class="muted">나스닥100 데이터를 모두 받으면 계산됩니다.</td></tr></tbody>
     </table>
   </div>
@@ -876,24 +871,11 @@ function posHtml(x) {
   else if (cl.state === "trendbreak") sub = x.dist10 == null ? "" : mu("10주선 ") + pctf(x.dist10);
   else if (cl.state === "basebreak") sub = mu("하단 ") + pctf(c / cl.box.bottom - 1);
   else sub = mu("깊이 " + (cl.depth * 100).toFixed(0) + "%");
-  return stageHtml(cl) + " " + main + (sub ? mu(" · ") + sub : "");
+  return stageHtml(cl) + " " + main + (sub ? '<span class="psub">' + mu(" · ") + sub + "</span>" : "");
 }
 const DETAIL = { trendbreak: "훼손 · 이탈", basebreak: "훼손 · 붕괴", basefail: "훼손 · 붕괴" };
 
-// 추세 변화: 그 전 4주 RS 변화(c0)와 최근 4주 RS 변화(c1)를 비교
-//   같은 방향으로 더 커짐 = 가속 · 비슷함 = 유지 · 같은 방향이지만 줄어듦 = 둔화 · 방향이 뒤집힘 = 반전
-const TREND_RS = 5;   // RS 5 넘게 달라져야 '달라졌다'고 봄 (며칠 써 본 뒤 조정)
-function trendOf(c0, c1) {
-  const T = TREND_RS;
-  if (Math.abs(c1) < T && Math.abs(c0) < T) return null;                 // 둘 다 잠잠함
-  if (c1 >= T && c0 <= -T) return { k: "rev", dir: 1 };                  // 하락 → 상승 반전
-  if (c1 <= -T && c0 >= T) return { k: "rev", dir: -1 };                 // 상승 → 하락 반전
-  if (c1 >= T) return { k: c1 - c0 >= T ? "acc" : "keep", dir: 1 };      // 상승 가속·유지
-  if (c1 <= -T) return { k: c0 - c1 >= T ? "acc" : "keep", dir: -1 };    // 하락 가속·유지
-  if (c0 >= T) return { k: "slow", dir: 1 };                             // 상승 둔화(멈춤)
-  if (c0 <= -T) return { k: "slow", dir: -1 };                           // 하락 둔화(멈춤)
-  return null;
-}
+const HIST_W = 40;     // RS 흐름 그래프 길이(주)
 // k 거래일 전 시점으로 잘라서 전체를 계산 (k=0 지금, 20 4주 전)
 function computeView(k) {
   const cut = (d) => (k ? d.slice(0, d.length - k) : d);
@@ -931,20 +913,14 @@ function computeView(k) {
       x.pre = x.rs >= PRE_RS_MIN && x.rs < RS_LEADER && x.rsChg != null && x.rsChg >= PRE_RS_GAIN && x.above10 && x.soundBase;
     }
   });
-  // 2층 12주 흐름: 1주(5거래일) 간격으로 12개 시점의 RS를 다시 매겨 산업 평균을 구함 (지금 시점 계산에서만)
+  // 2·3층 40주 흐름: 1주(5거래일) 간격으로 40개 시점의 RS를 다시 매겨 산업 평균을 구함 (지금 시점 계산에서만)
   const hist = [];
-  if (!k) for (let j = 11; j >= 0; j--) {
+  if (!k) for (let j = HIST_W - 1; j >= 0; j--) {
     const sc = {}; have.forEach((t) => (sc[t] = rsScore(D[t], j * 5)));
     hist.push(ratings(sc));
   }
-  // 3층용: 종목별 RS 12주 흐름(1주 간격, 오래된 것부터 지금까지)과 추세 변화(최근 4주 변화 vs 그 전 4주 변화)
-  if (hist.length) have.forEach((t) => {
-    const h = hist.map((r) => r[t] ?? null); info[t].rsHist = h;
-    const r0 = h[11], r4 = h[7], r8 = h[3];
-    const tr = r0 != null && r4 != null && r8 != null ? trendOf(r4 - r8, r0 - r4) : null;
-    if (tr) { tr.c0 = r4 - r8; tr.c1 = r0 - r4; }
-    info[t].trend = tr;
-  });
+  // 3층용: 종목별 RS 40주 흐름(1주 간격, 오래된 것부터 지금까지)
+  if (hist.length) have.forEach((t) => { info[t].rsHist = hist.map((r) => r[t] ?? null); });
   const groups = UNIVERSE.map(([g, items]) => {
     const ts = items.map(([t]) => t).filter((t) => info[t]);
     const avg = (f) => (ts.length ? ts.reduce((s, t) => s + (f(info[t]) ?? 0), 0) / ts.length : 0);
@@ -1220,13 +1196,15 @@ function renderMine() {
     let nWarn = 0;
     const rows = MY.hold.map((t) => {
       const x = VIEW.info[t];
-      if (!x || !x.cls) return "<tr>" + myRowHead(t) + '<td colspan="8" class="muted">데이터 없음</td></tr>';   // 단계~경고 8칸
+      if (!x || !x.cls) return "<tr>" + myRowHead(t) + '<td colspan="10" class="muted">데이터 없음</td></tr>';   // 4주~경고 10칸
       const sk = stateKey(x.cls), w = holdWarns(t), c = x.d[x.d.length - 1].c, bx = x.cls.box;
       if (w.length) nWarn++;
       return '<tr data-t="' + t + '" class="' + (w.length ? "mwarn" : "") + '">' + myRowHead(t) +
         '<td class="mrs">' + rsCell(x) + "</td>" +
-        '<td class="mwk">' + pcCell(t) + "</td>" +
-        '<td class="msp">' + weekSpark(x, 100) + "</td>" +
+        '<td class="mwk num">' + pcCell(t) + "</td>" +
+        '<td class="mqw num">' + weightCell(t) + "</td>" +
+        '<td class="mqi" title="' + QI_TIP(t) + '">' + impactCell(t, true) + "</td>" +
+        '<td class="msp">' + weekSpark(x, 72) + "</td>" +
         '<td class="mst">' + stageHtml(x.cls) + "</td>" +
         '<td class="m10">' + pctCell(x.dist10) + "</td>" +
         (bx ? '<td class="msl" title="매도선(베이스 하단) ' + bx.bottom.toFixed(2) + '">' + pctCell(c / bx.bottom - 1) + "</td>"
@@ -1240,7 +1218,7 @@ function renderMine() {
     el.innerHTML = '<div class="mh"><b>' + STAR2 + ' 보유 점검</b><span class="muted">언제 파나 · ' + MY.hold.length + "종목 · " +
       (nWarn ? '<b style="color:var(--stop)">경고 ' + nWarn + "</b>" : "경고 없음") + " · " + md(VIEW.asOf) + " 마감 기준</span></div>" +
       '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="mgr">산업</th>' +
-      '<th class="mrs">RS (4주)</th><th class="mwk">4주</th><th class="msp">26주 주봉</th><th class="mst">단계</th><th class="m10">10주선</th><th class="msl" title="매도선(베이스 하단) 대비">매도선</th><th class="mlp" title="마지막 돌파 피벗 대비">돌파 피벗</th><th class="mw">경고 · 실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
+      '<th class="mrs">RS (4주)</th><th class="mwk num">4주 등락</th><th class="mqw num" title="나스닥100 안 비중(%)">QQQ 비중</th><th class="mqi" title="나스닥100 비중 × 4주 등락률">QQQ 영향</th><th class="msp">26주 주봉</th><th class="mst">단계</th><th class="m10">10주선</th><th class="msl" title="매도선(베이스 하단) 대비">매도선</th><th class="mlp" title="마지막 돌파 피벗 대비">돌파 피벗</th><th class="mw">경고 · 실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
   }
   // ★ 관심: 피벗(베이스 상단)에 가까운 순서
   if (!MY.watch.length) wl.innerHTML = '<div class="mh"><b>' + STAR1 + ' 관심 점검</b><span class="muted">관심 종목이 없습니다. 종목 맨 앞의 ☆을 한 번 누르세요.</span></div>';
@@ -1255,19 +1233,21 @@ function renderMine() {
     const GTXT = ["매수 범위", "준비", "피벗 아래", "지나감", "이탈"];
     const rows = list.map((t) => {
       const x = VIEW.info[t];
-      if (!x || !x.cls) return "<tr>" + myRowHead(t) + '<td colspan="5" class="muted">데이터 없음</td></tr>';
+      if (!x || !x.cls) return "<tr>" + myRowHead(t) + '<td colspan="7" class="muted">데이터 없음</td></tr>';
       const pl = plan(t);
       return '<tr data-t="' + t + '" class="wg' + pl.g + '">' + myRowHead(t) +
         '<td class="mrs">' + rsCell(x) + "</td>" +
-        '<td class="mwk">' + pcCell(t) + "</td>" +
-        '<td class="msp">' + weekSpark(x, 100) + "</td>" +
+        '<td class="mwk num">' + pcCell(t) + "</td>" +
+        '<td class="mqw num">' + weightCell(t) + "</td>" +
+        '<td class="mqi" title="' + QI_TIP(t) + '">' + impactCell(t, true) + "</td>" +
+        '<td class="msp">' + weekSpark(x, 72) + "</td>" +
         '<td class="mpos">' + posHtml(x) + "</td>" +
         '<td class="mrd" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + earnNote(t, true) + "</td></tr>";
     });
     const mtxt = MARKET_STATE ? '<span class="pill ' + MARKET_STATE.cls + '" style="padding:1px 8px;font-size:11px">시장 ' + MARKET_STATE.verdict + "</span> 기준" : "시장 판정 전";
     wl.innerHTML = '<div class="mh"><b>' + STAR1 + ' 관심 점검</b><span class="muted">언제 사나 · ' + MY.watch.length + "종목 · 할 일 순서(돌파 → 준비 → 임박 → 베이스 → 상승 → 훼손) · " + mtxt + " · " + md(VIEW.asOf) + " 마감 기준</span></div>" +
       '<div class="mbox"><table class="ntable mtable"><thead><tr><th class="stc">★</th><th class="tkc">티커</th><th class="mgr">산업</th>' +
-      '<th class="mrs">RS (4주)</th><th class="mwk">4주</th><th class="msp">26주 주봉</th><th class="mpos">단계 · 피벗 대비</th><th class="mrd">다음 할 일 · 실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
+      '<th class="mrs">RS (4주)</th><th class="mwk num">4주 등락</th><th class="mqw num" title="나스닥100 안 비중(%)">QQQ 비중</th><th class="mqi" title="나스닥100 비중 × 4주 등락률">QQQ 영향</th><th class="msp">26주 주봉</th><th class="mpos">단계 · 피벗 대비</th><th class="mrd">다음 할 일 · 실적</th></tr></thead><tbody>' + rows.join("") + "</tbody></table></div>";
   }
   [el, wl].forEach((box) => box.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t))));
 }
@@ -1424,6 +1404,12 @@ function qqqImpact(t) {
   return { w, c: pc == null ? null : (w0 * pc) / 100 };
 }
 const fmtPp = (c, short) => (c > 0 ? "+" : c < 0 ? "−" : "") + Math.abs(c).toFixed(short || Math.abs(c) >= 0.1 ? 2 : 3) + "%p";
+// QQQ 비중 칸(나스닥100 안 비중 %). 나스닥100에 없으면 '-'
+function weightCell(t) {
+  const w = NDXW[t];
+  return w == null ? '<span class="muted">-</span>' : '<span class="muted">' + w.toFixed(w >= 1 ? 1 : 2) + "%</span>";
+}
+const QI_TIP = (t) => (NDXW[t] != null ? "나스닥100 비중 " + NDXW[t].toFixed(2) + "% × 4주 등락" : "");
 function impactCell(t, short) {
   const q = qqqImpact(t);
   if (!q) return '<span class="muted">-</span>';
@@ -1467,21 +1453,9 @@ function moveItems() {
     items.push({ t, dir: moveDir(a, b), rs0: null, rs1: x.rs, rc: null, what: LABEL[a] + " → " + LABEL[b] }); });
   DIFF.dropped.forEach(([t, rs, rsPrev]) =>
     items.push({ t, dir: -1, rs0: rsPrev, rs1: rs, rc: rs != null && rsPrev != null ? rs - rsPrev : null, what: "탈락" }));
-  items.forEach((x) => { Object.assign(x, periodStats(x.t)); const i = VIEW.info[x.t]; x.hist = i.rsHist; x.trend = i.trend; });
+  items.forEach((x) => { Object.assign(x, periodStats(x.t)); const i = VIEW.info[x.t]; x.hist = i.rsHist; });
   return items;
 }
-// 추세 변화 꼬리표(3층): 가속·유지·둔화·반전. 색은 2층 흐름 꼬리표와 같은 모양(초록=올라가는 쪽 확인, 파랑=내려가는 쪽 확인)
-const TREND_TAGS = {
-  acc:  { 1: ["가속", "kind in", "최근 4주 RS 상승이 그 전 4주보다 더 큼"], "-1": ["가속", "kind out", "최근 4주 RS 하락이 그 전 4주보다 더 큼"] },
-  keep: { 1: ["유지", "kind up", "최근 4주도 그 전 4주와 비슷하게 RS가 오름"], "-1": ["유지", "kind dn", "최근 4주도 그 전 4주와 비슷하게 RS가 내림"] },
-  slow: { 1: ["둔화", "kind nt", "그 전 4주에는 RS가 올랐는데 최근 4주는 멈춤"], "-1": ["둔화", "kind nt", "그 전 4주에는 RS가 내렸는데 최근 4주는 멈춤"] },
-  rev:  { 1: ["반전 ▲", "kind in", "그 전 4주 하락에서 최근 4주 상승으로 방향이 바뀜"], "-1": ["반전 ▼", "kind out", "그 전 4주 상승에서 최근 4주 하락으로 방향이 바뀜"] },
-};
-const trendTag = (tr) => {
-  if (!tr) return '<span class="muted">-</span>';
-  const t = TREND_TAGS[tr.k][tr.dir], f = (v) => (v > 0 ? "+" : "") + v;
-  return '<span class="' + t[1] + '" title="' + t[2] + " (그 전 4주 RS " + f(tr.c0) + " → 최근 4주 " + f(tr.c1) + ')">' + t[0] + "</span>";
-};
 // 3층: 위는 들어온 쪽, 아래는 빠진 쪽. 산업별로 묶고 산업 순서는 2층 흐름 꼬리표를 따름(들어온 쪽은 유입이 센 산업부터, 빠진 쪽은 유출이 센 산업부터). 종목은 RS 변화 크기 순
 function renderChanges() {
   const el = document.getElementById("changes");
@@ -1499,18 +1473,15 @@ function renderChanges() {
     const fo = (g) => FLOW_ORDER[flowOf(GX[g])] ?? 2, rcg = (g) => GX[g].rs - GX[g].rsThen;
     const gs = Object.entries(by).sort((a, b) => dir > 0 ? fo(a[0]) - fo(b[0]) || rcg(b[0]) - rcg(a[0]) : fo(b[0]) - fo(a[0]) || rcg(a[0]) - rcg(b[0]));
     const n = gs.reduce((a, [, xs]) => a + xs.length, 0);
-    const body = gs.length ? '<table><thead><tr><th class="tk">티커</th><th class="rsx">RS (4주)</th><th class="sp">RS 12주</th><th class="pc">4주 등락</th><th class="vm" title="최근 20거래일 평균 거래량 ÷ 그 전 50거래일 평균">거래량</th><th class="tg">추세</th><th>바뀐 것</th></tr></thead><tbody>' +
+    const body = gs.length ? '<table><thead><tr><th class="tk">티커</th><th class="rsx">RS (4주)</th><th class="sp">RS 40주</th><th class="pc">4주 등락</th></tr></thead><tbody>' +
       gs.map(([g, xs]) => {
         const f = flowOf(GX[g]);
-        return '<tr class="gh"><td colspan="7"><span class="mgh' + (selectedGroup === g ? " sel" : "") + '" data-g="' + g + '"><b>' + g + '</b><span class="n">' + (dir > 0 ? "+" : "−") + xs.length + '</span> <span class="muted">· ' + (GN[g] || "?") + "종목 중 " + xs.length + "종목</span></span>" +
+        return '<tr class="gh"><td colspan="4"><span class="mgh' + (selectedGroup === g ? " sel" : "") + '" data-g="' + g + '"><b>' + g + '</b><span class="n">' + (dir > 0 ? "+" : "−") + xs.length + '</span> <span class="muted">· ' + (GN[g] || "?") + "종목 중 " + xs.length + "종목</span></span>" +
           (f ? ' <span class="' + FLOW_TAGS[f][1] + '" title="2층 흐름: ' + FLOW_TAGS[f][2] + '">' + FLOW_TAGS[f][0] + "</span>" : "") + "</td></tr>" +
           xs.slice().sort((a, b) => mag(b) - mag(a)).map((x) =>
             '<tr data-t="' + x.t + '" title="' + nm(x.t) + '"><td class="tk">' + x.t + '</td><td class="rsx">' + rsTxt(x) + "</td>" +
-            '<td class="sp">' + (x.hist ? flowSpark(x.hist, 84) : "") + "</td>" +
-            '<td class="pc ' + (x.pc > 0 ? "chg-up" : x.pc < 0 ? "chg-down" : "") + '">' + (x.pc == null ? "" : (x.pc > 0 ? "+" : "") + x.pc.toFixed(1) + "%") + "</td>" +
-            '<td class="vm' + (x.vm >= VOL_HEAVY ? " heavy" : "") + '" title="최근 20거래일 평균 거래량 ÷ 그 전 50거래일 평균">' + (x.vm == null ? "" : '<span class="vl">거래량 </span>' + x.vm.toFixed(1) + "배") + "</td>" +
-            '<td class="tg">' + trendTag(x.trend) + "</td>" +
-            '<td class="wt">' + x.what + "</td></tr>").join("");
+            '<td class="sp">' + (x.hist ? flowSpark(x.hist, 150) : "") + "</td>" +
+            '<td class="pc ' + (x.pc > 0 ? "chg-up" : x.pc < 0 ? "chg-down" : "") + '">' + (x.pc == null ? "" : (x.pc > 0 ? "+" : "") + x.pc.toFixed(1) + "%") + "</td></tr>").join("");
       }).join("") + "</tbody></table>" : '<div class="none">없음</div>';
     return '<div class="side ' + cls + '"><div class="sh ' + cls + '">' + lbl + " " + n + "</div>" + body + "</div>";
   };
@@ -1544,7 +1515,7 @@ function flowOf(x) {
 }
 const FLOW_ORDER = { in: 0, inEarly: 1, outEarly: 3, out: 4 };
 let FLOW_SORT = { k: "rs", dir: -1 };
-// 산업 평균 RS 12주 흐름 (작은 선 그래프): 세로 폭은 최소 20점으로 고정해 작은 흔들림이 크게 보이지 않게
+// 평균 RS 40주 흐름 (작은 선 그래프): 세로 폭은 최소 20점으로 고정해 작은 흔들림이 크게 보이지 않게.
 function flowSpark(h, W = 96) {
   const v = h.filter((y) => y != null); if (v.length < 2) return "";
   const H = 24, lo0 = Math.min(...v), hi0 = Math.max(...v), mid = (lo0 + hi0) / 2, sp = Math.max(20, hi0 - lo0 + 4);
@@ -1592,7 +1563,7 @@ function renderFlow() {
     return '<tr class="row' + (selectedGroup === x.g ? " sel" : "") + '" data-g="' + x.g + '"' +
       (small ? ' title="종목이 ' + x.n + '개뿐이라 한 종목 변화로 숫자가 크게 흔들림"' : "") + ">" +
       "<td>" + x.rank + "</td><td><b>" + x.g + '</b> <span class="muted">' + x.n + "</span></td>" +
-      "<td>" + flowSpark(x.hist) + "</td>" +
+      "<td>" + flowSpark(x.hist, 160) + "</td>" +
       "<td><b>" + Math.round(x.rs) + "</b> " + chgSpan(rc, "0") + "</td>" +
       "<td>" + x.above + '<span class="muted">/' + x.n + "</span> " + chgSpan(bc, "0") + "</td>" +
       "<td>" + (f ? '<span class="' + FLOW_TAGS[f][1] + '" title="' + FLOW_TAGS[f][2] + '">' + FLOW_TAGS[f][0] + "</span>" : '<span class="muted">-</span>') + "</td>" +
@@ -1672,8 +1643,8 @@ function renderLeaders() {
     html += '<div class="qisum">이 ' + list.length + "종목의 QQQ 영향(4주) 합계 <b class=\"" + (sumC >= 0 ? "chg-up" : "chg-down") + '">' + fmtPp(sumC) + "</b>" +
       ' <span class="muted">(QQQ 안 비중 합계 ' + sumW.toFixed(1) + "%)</span>" + (qw != null ? " · QQQ 4주 <b class=\"" + (qw >= 0 ? "chg-up" : "chg-down") + '">' + (qw > 0 ? "+" : "") + qw.toFixed(1) + "%</b>" : "") + "</div>";
   }
-  html += '<div class="nbox"><table class="ntable ltable"><colgroup><col class="c-st"><col class="c-tk"><col class="c-grp"><col class="c-rs"><col class="c-qi"><col class="c-sp"><col class="c-pos"><col class="c-todo"><col class="c-bd"></colgroup>' +
-    '<thead><tr><th class="stc">★</th><th class="tkc">티커</th><th>산업</th><th>RS (4주)</th><th title="나스닥100 비중 × 4주 등락률 = 이 종목이 지난 4주 동안 QQQ를 몇 %p 움직였나 (비중은 칸에 마우스를 올리면)">QQQ 영향</th><th>26주 주봉</th><th>단계 · 피벗 대비</th><th>다음 할 일</th><th class="bd">꼬리표</th></tr></thead><tbody>';
+  html += '<div class="nbox"><table class="ntable ltable"><colgroup><col class="c-st"><col class="c-tk"><col class="c-grp"><col class="c-rs"><col class="c-pc"><col class="c-qw"><col class="c-qi"><col class="c-sp"><col class="c-pos"><col class="c-todo"><col class="c-bd"></colgroup>' +
+    '<thead><tr><th class="stc">★</th><th class="tkc">티커</th><th>산업</th><th>RS (4주)</th><th class="num">4주 등락</th><th class="num" title="나스닥100 안 비중(%)">QQQ 비중</th><th title="나스닥100 비중 × 4주 등락률 = 이 종목이 지난 4주 동안 QQQ를 몇 %p 움직였나 (비중은 칸에 마우스를 올리면)">QQQ 영향</th><th>26주 주봉</th><th>단계 · 피벗 대비</th><th>다음 할 일</th><th class="bd">꼬리표</th></tr></thead><tbody>';
   STAGES.forEach(([k, title, desc]) => {
     const items = by[k];
     if (!items) return;
@@ -1684,8 +1655,10 @@ function renderLeaders() {
     items.forEach(({ x, pl }, i) => {      // 구분 줄 없이: 단계 첫 줄에 앵커(고정 바·요약에서 이동)와 단계 경계선
       html += '<tr data-t="' + x.t + '"' + (i === 0 ? ' id="st-' + k + '" class="sfirst"' : "") + ' title="' + TICKERS[x.t].name + " · " + reasonOf(x).replace(/<[^>]+>/g, "") + '"><td class="stc">' + starHtml(x.t) + '</td><td class="tkc" title="' + TICKERS[x.t].name + '"><span class="tk">' + x.t + "</span></td>" +
         '<td class="muted grp">' + TICKERS[x.t].group + "</td><td>" + rsCell(x) + "</td>" +
-        '<td class="qi" title="' + (NDXW[x.t] != null ? "나스닥100 비중 " + NDXW[x.t].toFixed(2) + "% × 4주 등락" : "") + '">' + impactCell(x.t, true) + "</td>" +
-        "<td>" + weekSpark(x, 84) + '</td><td title="' + title + " · " + desc + '">' + posHtml(x) + '</td><td class="todo" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + '</td><td class="bd">' + badgesFor(x.t, x) + "</td></tr>";
+        '<td class="num">' + pcCell(x.t) + "</td>" +
+        '<td class="num">' + weightCell(x.t) + "</td>" +
+        '<td class="qi" title="' + QI_TIP(x.t) + '">' + impactCell(x.t, true) + "</td>" +
+        "<td>" + weekSpark(x, 78) + '</td><td class="pos" title="' + title + " · " + desc + '">' + posHtml(x) + '</td><td class="todo" title="' + pl.todo.replace(/<[^>]+>/g, "") + '">' + pl.todo + '</td><td class="bd">' + badgesFor(x.t, x) + "</td></tr>";
     });
   });
   wrap.innerHTML = html + "</tbody></table></div>";
@@ -1695,7 +1668,11 @@ function renderLeaders() {
     const cs = getComputedStyle(tds[0]), cv = (renderLeaders.cv = renderLeaders.cv || document.createElement("canvas")).getContext("2d");
     cv.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
     const wMax = Math.max(...tds.map((td) => cv.measureText(td.textContent).width));
-    wrap.querySelector("col.c-todo").style.width = Math.ceil(wMax + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 2) + "px";
+    // 다른 칸 폭과 '단계 · 피벗 대비' 최소 폭(150px)을 뺀 나머지까지만 쓰고, 넘치는 글은 말줄임(마우스를 올리면 전체)
+    const need = Math.ceil(wMax + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 2);
+    const cols = [...wrap.querySelectorAll("col")].filter((c) => !/c-(todo|pos)$/.test(c.className));
+    const room = wrap.querySelector(".nbox").clientWidth - cols.reduce((a, c) => a + parseFloat(getComputedStyle(c).width), 0) - 150;
+    wrap.querySelector("col.c-todo").style.width = Math.max(140, Math.min(need, room)) + "px";
   }
   wrap.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t)));
   renderUniverse();                               // 6층도 같은 산업 선택을 따름
@@ -1712,7 +1689,7 @@ let ALL_SORT = { key: "rs", dir: -1 }, ALL_FILTER = "all", ALL_Q = "";
 const STAGE_ORDER = { extended: 0, breakout: 1, base: 2, broken: 3 };   // 가격 위치 순서
 const ALL_COLS = [   // [키, 제목, 너비, 정렬값]
   ["my", "★", 40, (x) => myLevel(x.t)], ["rank", "순위", 44, (x) => x.rs], ["t", "티커", 60, (x) => x.t],
-  ["grp", "산업", 150, (x) => TICKERS[x.t].group], ["rs", "RS (4주)", 90, (x) => x.rs], ["pc", "4주 등락", 76, (x) => periodStats(x.t).pc ?? -999], ["qi", "QQQ 영향", 150, (x) => { const q = qqqImpact(x.t); return q && q.c != null ? q.c : -999; }],
+  ["grp", "산업", 150, (x) => TICKERS[x.t].group], ["rs", "RS (4주)", 90, (x) => x.rs], ["pc", "4주 등락", 56, (x) => periodStats(x.t).pc ?? -999], ["qw", "QQQ 비중", 54, (x) => NDXW[x.t] ?? -1], ["qi", "QQQ 영향", 72, (x) => { const q = qqqImpact(x.t); return q && q.c != null ? q.c : -999; }],
   ["spark", "6개월", 132, null], ["stage", "단계", 150, (x) => STAGE_ORDER[stateKey(x.cls)] + (x.cls.ready ? 0 : pivotNear(x.cls) ? 0.1 : 0.2) + subRank(x.cls) * 0.5],
   ["fromHi", "고점", 58, (x) => x.fromHi], ["fromLo", "저점", 58, (x) => x.fromLo],
   ["tags", "꼬리표", 0, null],
@@ -1766,7 +1743,7 @@ function renderUniverse() {
   // 티커·종목명 칸은 가로로 밀어도 왼쪽에 고정 (너비는 CSS col.c-* 에서)
   const STK = { my: " stk stk0", t: " stk stk1", name: " stk stk2" };
   const head = "<colgroup>" + ALL_COLS.map((c) => '<col class="c-' + c[0] + '">').join("") + "</colgroup><thead><tr>" +
-    ALL_COLS.map((c) => '<th data-k="' + c[0] + '" class="' + (STK[c[0]] || "") + (c[0] === ALL_SORT.key ? " on" : "") + (["fromHi", "fromLo", "rank", "wk"].includes(c[0]) ? " num" : "") + '"' +
+    ALL_COLS.map((c) => '<th data-k="' + c[0] + '" class="' + (STK[c[0]] || "") + (c[0] === ALL_SORT.key ? " on" : "") + (["fromHi", "fromLo", "rank", "pc", "qw"].includes(c[0]) ? " num" : "") + '"' +
       (c[0] === "fromHi" ? ' title="52주 고점 대비"' : c[0] === "fromLo" ? ' title="52주 저점 대비"' : "") +
       ">" + c[1] + (c[0] === ALL_SORT.key ? (ALL_SORT.dir < 0 ? " ▼" : " ▲") : "") + "</th>").join("") + "</tr></thead>";
   const showCut = ALL_SORT.key === "rs" || ALL_SORT.key === "rank";
@@ -1785,7 +1762,8 @@ function renderUniverse() {
       '<td class="muted grp">' + TICKERS[x.t].group + "</td>" +
       "<td>" + rsCell(x) + "</td>" +
       '<td class="num">' + pcCell(x.t) + "</td>" +
-      '<td class="qi" title="' + (NDXW[x.t] != null ? "나스닥100 비중 " + NDXW[x.t].toFixed(2) + "% × 4주 등락" : "") + '">' + impactCell(x.t, true) + "</td>" +
+      '<td class="num">' + weightCell(x.t) + "</td>" +
+      '<td class="qi" title="' + QI_TIP(x.t) + '">' + impactCell(x.t, true) + "</td>" +
       "<td>" + sparkSvg(x.d, 92) + "</td>" +
       '<td title="' + reasonOf(x).replace(/<[^>]+>/g, "") + '">' + stageHtml(x.cls) + "</td>" +
       '<td class="num">' + pct(x.fromHi) + '</td><td class="num">' + pct(x.fromLo) + "</td>" +
@@ -2092,7 +2070,7 @@ function buildHelp() {
 <p><b>아래 산업 표</b>는 나스닥100 종목을 산업별로 묶어, 돈이 지금 어디에 있고 4주 동안 어디로 흐르는지 봅니다. 3층은 같은 4주를 종목 단위로 보여 주고, 산업 순서도 이 표의 흐름 꼬리표를 따릅니다. 칸 제목을 누르면 그 칸으로 정렬하고, 행을 누르면 4층·6층이 그 산업만 보여 줍니다(다시 누르면 풀림).</p>
 <table>
 <tr><td>순위 · 산업</td><td>평균 RS 순위와 산업 이름(옆 숫자는 종목 수). 종목이 적은 산업은 한두 종목 변화로 숫자가 크게 흔들리니 종목 수를 함께 보세요(2개 이하면 마우스를 올렸을 때 알려 줍니다).</td></tr>
-<tr><td>평균 RS 12주</td><td>1주 간격 12개 시점의 산업 평균 RS를 이은 작은 선(붉은색: 12주 전보다 높음, 파란색: 낮음). 4주 변화 숫자만으로는 알 수 없는 <b>방향과 가속</b>(계속 오르는지, 꼭대기를 찍고 꺾이는지, 바닥에서 돌아서는지)을 봅니다. 세로 폭은 최소 20점으로 고정해 작은 흔들림이 과장되지 않게 했습니다.</td></tr>
+<tr><td>평균 RS 40주</td><td>1주 간격 40개 시점(약 9개월)의 산업 평균 RS를 이은 작은 선(붉은색: 40주 전보다 높음, 파란색: 낮음). 4주 변화 숫자만으로는 알 수 없는 <b>방향과 가속</b>(계속 오르는지, 꼭대기를 찍고 꺾이는지, 바닥에서 돌아서는지)을 봅니다. 세로 폭은 최소 20점으로 고정해 작은 흔들림이 과장되지 않게 했습니다.</td></tr>
 <tr><td>평균 RS (4주)</td><td>그 산업 종목들의 RS(아래 "RS 계산법") 평균과 4주 전 대비 변화(예: 76 <span class="chg-up">▲23</span>). 높을수록 지수보다 강한 산업, ▲면 산업 자체가 강해지는 중.</td></tr>
 <tr><td>10주선 위 (4주)</td><td>그 산업에서 주가가 10주선 위인 종목 수 / 전체와 4주 전 대비 변화(예: 5/6 <span class="chg-up">▲3</span>). 상승이 산업 전체로 퍼지는지(폭)를 봅니다. 평균 RS는 1년 성과라 느리고, 이 숫자는 지금 추세라 빠르게 바뀝니다.</td></tr>
 <tr><td>흐름</td><td>위 두 변화를 묶은 결론. <b>10주선 위 종목 수(빠른 지표)가 방향을 먼저 알려 주고, 평균 RS(느린 지표)가 따라와 확인</b>해 줍니다. 평균 RS가 같은 방향으로 ${FLOW_RS}점 넘게 움직이면 '본격', 아직이면 '초기'.<br>
@@ -2123,22 +2101,16 @@ function buildHelp() {
 
 <h3 id="h-changes">3층 · 종목 이동 <small>4주 동안 누가 들어오고 누가 빠졌나, 추세는 어떻게 바뀌나</small></h3>
 <p>늘 <b>20거래일(4주) 전 마감</b>과 지금을 비교합니다. 같은 데이터를 그 시점까지 잘라서 다시 계산한 뒤 지금과 비교합니다. 2층이 산업 단위로 "돈이 지금 어디에 있고 4주 동안 어디로 흐르나"를 본다면, 3층은 같은 질문을 <b>종목 단위</b>로 봅니다. 대시보드의 다른 숫자(RS 변화, 등락률, QQQ 영향)도 모두 같은 4주 기준입니다.</p>
-<p><b>보는 법</b>: 위쪽이 <b>들어온 쪽</b>, 아래쪽이 <b>빠진 쪽</b>입니다. 종목을 산업별로 묶고(산업 이름 옆 "4종목 중 3종목"은 그 산업 전체 종목 수 중 4주 동안 이쪽으로 바뀐 종목 수), 산업 순서는 <b>2층 흐름 꼬리표를 따릅니다</b>. 들어온 쪽은 유입이 센 산업부터, 빠진 쪽은 유출이 센 산업부터이고, 산업 이름 옆에 2층의 흐름 꼬리표가 같은 색으로 붙습니다. 산업의 흐름과 그 안의 종목 움직임이 같은 방향인지 거스르는지 한눈에 보입니다. 산업 안에서는 RS 변화가 큰 종목이 위입니다. 한 산업이 양쪽에 다 나올 수도 있습니다(한 산업 안에서 엇갈림).</p>
+<p><b>보는 법</b>: 왼쪽이 <b>들어온 쪽</b>, 오른쪽이 <b>빠진 쪽</b>입니다(좁은 화면에서는 위아래). 종목을 산업별로 묶고(산업 이름 옆 "4종목 중 3종목"은 그 산업 전체 종목 수 중 4주 동안 이쪽으로 바뀐 종목 수), 산업 순서는 <b>2층 흐름 꼬리표를 따릅니다</b>. 들어온 쪽은 유입이 센 산업부터, 빠진 쪽은 유출이 센 산업부터이고, 산업 이름 옆에 2층의 흐름 꼬리표가 같은 색으로 붙습니다. 산업의 흐름과 그 안의 종목 움직임이 같은 방향인지 거스르는지 한눈에 보입니다. 산업 안에서는 RS 변화가 큰 종목이 위입니다. 한 산업이 양쪽에 다 나올 수도 있습니다(한 산업 안에서 엇갈림).</p>
 <table>
-<tr><td><b>진입 · 단계</b></td><td>들어옴. RS가 ${RS_LEADER} 이상으로 새로 올라옴. 뒤의 단어는 지금 단계(돌파면 바로 볼 만한 후보).</td></tr>
-<tr><td><b>베이스 → 돌파</b> 등</td><td>들어옴. 베이스에서 돌파로 가거나, 훼손에서 벗어남(훼손 → 베이스·돌파·상승).</td></tr>
-<tr><td><b>○○ → 훼손</b></td><td>빠짐. 어느 단계에서든 훼손으로 감.</td></tr>
-<tr><td><b>탈락</b></td><td>빠짐. RS가 ${RS_LEADER} 아래로 내려감.</td></tr>
+<tr><td><b>들어온 쪽</b></td><td>RS가 ${RS_LEADER} 이상으로 새로 올라온 종목, 또는 베이스 → 돌파처럼 단계가 좋아진 종목(훼손에서 벗어남 포함).</td></tr>
+<tr><td><b>빠진 쪽</b></td><td>RS가 ${RS_LEADER} 아래로 내려간 종목, 또는 어느 단계에서든 훼손으로 간 종목.</td></tr>
 <tr><td><b>중립</b></td><td>정상적인 순환이라 돈의 이동으로 보지 않음. 돌파 → 상승, 상승 → 베이스(오른 뒤 쉼), 베이스 → 상승. 맨 아래 한 줄로만 적습니다.</td></tr>
 </table>
-<p>RS 칸의 "67→85 ▲18"은 4주 전 → 지금 RS와 변화 폭입니다. 단계만 바뀐 종목은 지금 RS만 적습니다.</p>
+<p>RS 칸의 "67→85 ▲18"은 4주 전 → 지금 RS와 변화 폭입니다. 단계만 바뀐 종목은 지금 RS만 적습니다. 중립 줄에는 단계가 어떻게 바뀌었는지 함께 적습니다.</p>
 <table>
-<tr><td><b>RS 12주</b></td><td>1주 간격 12개 시점의 RS를 이은 작은 선. 2층 "평균 RS 12주"와 같은 모양과 색입니다(붉은색: 12주 전보다 높음, 파란색: 낮음). 두 점만 비교해서는 안 보이는 <b>방향과 속도</b>(계속 오르는지, 꼭대기를 찍고 꺾이는지, 바닥에서 돌아서는지)를 봅니다.</td></tr>
+<tr><td><b>RS 40주</b></td><td>1주 간격 40개 시점(약 9개월)의 RS를 이은 작은 선. 2층 "평균 RS 40주"와 같은 모양과 색입니다(붉은색: 40주 전보다 높음, 파란색: 낮음). 두 점만 비교해서는 안 보이는 <b>방향과 속도</b>(계속 오르는지, 꼭대기를 찍고 꺾이는지, 바닥에서 돌아서는지)를 봅니다.</td></tr>
 <tr><td><b>4주 등락</b></td><td>20거래일 전 종가 대비 지금 등락률.</td></tr>
-<tr><td><b>거래량</b></td><td>최근 20거래일 평균 거래량 ÷ 그 전 50거래일 평균. ${VOL_HEAVY}배 이상은 굵게 표시합니다. 거래량을 실어 움직였다면 기관이 실제로 사고판 흔적(오닐), 거래량이 조용하면 아직 확인되지 않은 움직임으로 읽습니다.</td></tr>
-<tr><td><b>추세</b></td><td>최근 4주 RS 변화와 그 전 4주(8주 전에서 4주 전) RS 변화를 비교한 꼬리표입니다. 꼬리표에 마우스를 올리면 두 숫자가 보입니다. RS ${TREND_RS} 넘게 달라질 때만 표시합니다.<br>
-<b>가속</b>: 같은 방향으로 변화가 더 커짐 · <b>유지</b>: 같은 방향으로 비슷하게 계속됨 · <b>둔화</b>: 그 전 4주에는 움직였는데 최근 4주는 멈춤 · <b>반전 ▲</b>: 하락에서 상승으로 방향이 바뀜 · <b>반전 ▼</b>: 상승에서 하락으로 바뀜.<br>
-예: 그 전 4주 +10, 최근 4주 +20이면 상승 가속. 그 전 4주 −8, 최근 4주 +12이면 반전 ▲. RS는 1년 성과를 섞은 순위라 느린 값이고, 이 꼬리표는 그 느린 값이 빨라지는지 꺾이는지를 봅니다.</td></tr>
 </table>
 <p>산업 이름을 누르면 4층·6층이 그 산업만 보여 주고 다시 누르면 풀립니다. 종목 줄을 누르면 차트를 크게 봅니다. 보유·관심 종목은 5층에서 따로 봅니다.</p>
 
@@ -2164,6 +2136,7 @@ function buildHelp() {
 <p>차트 없이 <b>표 하나</b>에 모든 단계를 담아 한 화면에 봅니다. 맨 위 줄은 4단계의 종목 수(누르면 그 단계로 이동, 0종목 단계는 흐리게). 표는 가격 위치 순서인 <b>상승 → 돌파 → 베이스 → 훼손</b>으로 놓아, 피벗 대비 숫자가 위에서 아래로 줄어드는 사다리처럼 읽힙니다(단계가 바뀌는 곳에 굵은 선), 한 종목 한 줄입니다. 단계 칸에 마우스를 올리면 그 단계 설명이 보입니다. 줄을 누르면 주봉·일봉 차트가 크게 뜨고, 마우스를 올리면 종목명과 단계 판정 근거가 보입니다. 칸 순서: 티커 · 산업 · RS(4주) · 26주 주봉 · 단계 · 피벗 대비 · 다음 할 일 · 꼬리표.</p>
 <table>
 <tr><td>26주 주봉</td><td>최근 26주 주봉 종가 선(붉은색: 10주선 위, 파란색: 아래), 초록 10주선, 보라 40주선, 주황 점선 피벗(베이스 상단, 없으면 마지막 돌파 피벗). 베이스 모양과 피벗과의 위치를 한눈에 봅니다. 40주선이 주가에서 너무 멀면(그림을 25% 넘게 넓혀야 하면) 베이스 모양이 눌리지 않도록 선 대신 바닥에 보라 점선과 "40주 −32%"(40주선이 지금 주가보다 32% 아래)만 적습니다. 상장한 지 얼마 안 돼 40주 데이터가 없으면 그리지 않습니다.</td></tr>
+<tr><td>4주 등락 · QQQ 비중</td><td>4주 등락은 20거래일 전 종가 대비 지금 등락률, QQQ 비중은 나스닥100 안에서 그 종목이 차지하는 비중(%)입니다. 5층·6층도 같은 순서(RS → 4주 등락 → QQQ 비중 → QQQ 영향)로 적습니다.</td></tr>
 <tr><td>QQQ 영향 (4주)</td><td>이 종목이 지난 4주 동안 QQQ를 몇 %p 움직였나 = 나스닥100 안 비중 × 4주 등락률. QQQ는 시가총액 가중이라 같은 −5%라도 비중 8%인 종목은 −0.4%p, 비중 0.3%인 종목은 −0.015%p입니다. ${QI_BOLD}%p 이상은 굵게. 맨 위 "합계"는 이 표에 있는 종목들의 영향을 더한 값으로, 주도주가 지수를 받치는 중인지(순환매) 함께 끌어내리는 중인지(위험 신호) 봅니다. 비중은 나스닥100 실제 지수 비중을 ${QQQ_W_AT}에 받아 둔 값입니다(출처 slickcharts). 계산할 때는 각 종목 주가로 4주 전 시점의 비중으로 되돌려서 씁니다(그 기간에 많이 내린 종목은 처음에 비중이 더 컸으므로). 이렇게 하면 전체 종목 기여도 합이 QQQ 실제 4주 등락률과 거의 맞습니다(11/12 기준 −5.99%p 대 실제 −5.47%). QQQ가 분기마다 재조정하면 새 비중으로 바꿉니다. 칸에 함께 적는 "비중"은 받아 둔 날의 비중입니다. 나스닥100에 없는 종목은 "비편입". GOOGL은 GOOG(같은 회사의 다른 주식, 비중 따로)를 뺀 몫입니다.</td></tr>
 <tr><td><span class="ttk">정렬</span></td><td>단계 옆 표시. <b>추세 정렬</b>(미너비니 추세 조건): 주가 &gt; 10주선 &gt; 40주선이고, 40주선이 4주 전보다 높음(한 달 넘게 상승 중). 2단계 상승 추세에 있다는 뜻으로, 돌파 매수는 이 조건을 갖춘 종목에서 고릅니다. 5층·6층의 단계 칸에도 같은 표시가 붙습니다.</td></tr>
 <tr><td>단계 · 피벗 대비</td><td>단계와 위치를 한 칸에: <b>[단계] ±n% · 보조 정보</b>. 앞 숫자는 언제나 <b>피벗 대비</b>입니다(− 피벗 아래, + 피벗 위). 피벗은 베이스 상단이고, 베이스가 아직 완성 전이면 최근 고점(완성되면 그대로 피벗이 됨), 상승 단계는 마지막으로 돌파한 피벗입니다. 숫자에 마우스를 올리면 피벗 가격이 보입니다.<br>
@@ -2192,6 +2165,7 @@ function buildHelp() {
 <table>
 <tr><td>순위 · RS (4주)</td><td>RS 높은 순 순위, RS 값과 4주 전 대비 RS 변화(<span class="chg-up">▲</span> 상대강도가 좋아지는 중). 다른 층과 같은 표기입니다. 기본 정렬은 RS 높은 순이고, 주황 구분선 위가 4층 주도주입니다.</td></tr>
 <tr><td>4주 등락</td><td>4주 전(20거래일 전) 종가 대비 지금 등락률. 칸 제목을 누르면 4주 동안 많이 오른·내린 순으로 정렬됩니다.</td></tr>
+<tr><td>QQQ 비중</td><td>나스닥100 안에서 그 종목이 차지하는 비중(%). 4층과 같은 값입니다. 칸 제목을 누르면 비중이 큰 순으로 정렬됩니다.</td></tr>
 <tr><td>QQQ 영향</td><td>4층과 같은 계산(나스닥100 비중 × 4주 등락률). 칸 제목을 누르면 지난 4주 동안 QQQ를 가장 끌어올린·끌어내린 종목 순으로 정렬됩니다. 주도주가 아닌 큰 종목이 지수를 끄는 경우는 여기서만 보입니다.</td></tr>
 <tr><td>6개월</td><td>6개월 종가 선(붉은색: 50일선 위, 파란색: 50일선 아래)과 초록 50일선, 보라 200일선(주봉 40주선과 같은 뜻). 200일선이 너무 멀면 바닥에 보라 점선과 "200일 −32%"만 적습니다. 단계 칸의 <span class="ttk">정렬</span>은 추세 정렬(주가 &gt; 10주선 &gt; 40주선, 40주선 상승)입니다.</td></tr>
 <tr><td>단계</td><td>4층과 같은 단계 판정을 모든 종목에 적용. 마우스를 올리면 판정 근거가 보입니다. 칸 제목을 누르면 가격 위치 순서(상승 → 돌파 → 베이스 → 훼손)로 정렬합니다.</td></tr>
