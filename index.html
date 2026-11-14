@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-14 23:35</title>
+<title>추세 대시보드 v2026-11-15 00:25</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -375,7 +375,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-14 23:35</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-15 00:25</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -497,7 +497,8 @@ const SHOW_DAYS_STOCK = 252;        // 종목 일봉 차트 표시: 1년
 const CORRECTION_PCT = 0.08;        // QQQ가 고점 대비 이만큼 빠지면 '조정'으로 봄
 const FTD_GAIN = 0.0125;            // 팔로스루 데이: 랠리 4일차 이후 +1.25% 이상, 전일보다 거래량 증가
 const DD_DROP = -0.002;             // 분산일: -0.2% 이상 하락, 전일보다 거래량 증가
-const DD_LIMIT = 5;                 // 최근 25거래일 분산일이 이 이상이면 신규 매수 중지
+const DD_LIMIT = 5;                 // 최근 25거래일 분산일이 QQQ와 QQQE 모두 이 이상이면 신규 매수 중지 (2020-2026 백테스트: QQQ만 볼 때보다 수익·낙폭 모두 나음)
+const GATE_50 = false, GATE_CORR = false;   // 50일선 아래·8% 조정(팔로스루 전)을 신규 매수 중지 사유로 쓸지 (백테스트에서 수익만 깎아 꺼 둠. 참고로만 표시)
 const BASE_MIN_DAYS = 15;           // 베이스 최소 기간: 3주(미너비니 VCP 최소)
 const BASE_LOOKBACK_D = 130, BASE_MAX_DEPTH = 0.35;   // 고점을 찾는 기간 26주 · 베이스 깊이 상한
 const SWING_PCT = 0.05;             // 스윙 인정 기준: 고점에서 5% 이상 내려갔다 5% 이상 반등해야 눌림(T) 하나
@@ -673,10 +674,9 @@ function smaArr(vals, n) {
 const pctf = (x) => (x >= 0 ? "+" : "") + (x * 100).toFixed(1) + "%";
 
 // 시장 판정: 분산일, 조정·랠리·팔로스루 데이
-function analyzeMarket(d) {
-  const n = d.length, cl = d.map((r) => r.c);
-  const ma50 = smaArr(cl, 50), ma200 = smaArr(cl, 200);
-  const dd = [];
+// 분산일(효력이 남아 있는 것): 종가 -0.2% 이상 하락 + 전날보다 거래량 증가, 그 뒤 종가가 5% 오르면 소멸, 25거래일 안만 셈
+function distDays(d) {
+  const n = d.length, cl = d.map((r) => r.c), dd = [];
   for (let i = 1; i < n; i++) {
     const pct = cl[i] / cl[i - 1] - 1;
     if (d[i].pv || d[i - 1].pv) continue;          // 거래량 잠정: 판정 보류
@@ -686,7 +686,16 @@ function analyzeMarket(d) {
       dd.push({ i, expired });
     }
   }
-  const dd25 = dd.filter((x) => x.i >= n - 25 && !x.expired);
+  return { dd, dd25: dd.filter((x) => x.i >= n - 25 && !x.expired) };
+}
+function analyzeMarket(d, e) {
+  const n = d.length, cl = d.map((r) => r.c);
+  const ma50 = smaArr(cl, 50), ma200 = smaArr(cl, 200);
+  const { dd, dd25 } = distDays(d);
+  const eq = e && e.length > 60 ? distDays(e) : null;      // QQQE(동일가중): 대형주 쏠림 착시를 거름
+  const nQ = dd25.length, nE = eq ? eq.dd25.length : null;
+  const bothDD = nQ >= DD_LIMIT && (nE == null || nE >= DD_LIMIT);   // QQQE를 못 받았으면 QQQ만으로 판정
+  const oneDD = !bothDD && (nQ >= DD_LIMIT || (nE != null && nE >= DD_LIMIT));
   const s = Math.max(1, n - 300);
   let state = cl[s] > (ma50[s] ?? 0) ? "up" : "corr";
   let peak = cl[s], low = Infinity, rally = 0;
@@ -706,13 +715,15 @@ function analyzeMarket(d) {
   const above50 = c > ma50[last], above200 = c > ma200[last];
   let verdict, cls;
   if (!above200) { verdict = "방어"; cls = "stop"; }
-  else if (state === "corr" || !above50 || dd25.length >= DD_LIMIT) { verdict = "신규 매수 중지"; cls = "wait"; }
+  else if (bothDD || (GATE_CORR && state === "corr") || (GATE_50 && !above50)) { verdict = "신규 매수 중지"; cls = "wait"; }
   else { verdict = "공격 가능"; cls = "go"; }
   const why = [];
-  why.push(above50 ? "50일선 위" : "<b>50일선 아래</b>");
+  why.push(above50 ? "50일선 위" : GATE_50 ? "<b>50일선 아래</b>" : "50일선 아래(참고)");
   why.push(above200 ? "200일선 위" : "<b>200일선 아래</b>");
-  why.push("최근 25거래일 분산일 " + (dd25.length >= DD_LIMIT ? "<b>" + dd25.length + "회</b>" : dd25.length + "회"));
-  if (state === "corr") why.push("<b>조정 중</b> (고점 대비 " + ((c / peak - 1) * 100).toFixed(1) + "%) · " +
+  const fdd = (v) => (v >= DD_LIMIT ? "<b>" + v + "회</b>" : v + "회");
+  why.push("최근 25거래일 분산일 QQQ " + fdd(nQ) + (nE != null ? " · QQQE " + fdd(nE) : "") +
+           (oneDD ? ' <b class="warn">(한쪽만 ' + DD_LIMIT + "회 이상: 주의 · 둘 다면 신규 매수 중지)</b>" : ""));
+  if (state === "corr") why.push((GATE_CORR ? "<b>조정 중</b>" : "조정 중(참고)") + " (고점 대비 " + ((c / peak - 1) * 100).toFixed(1) + "%) · " +
                                  (rally > 0 ? "랠리 " + rally + "일차, 팔로스루 데이 대기" : "랠리 시도 전"));
   else if (ftds.length) why.push("팔로스루 데이 " + d[ftds[ftds.length - 1]].t.slice(5).replace("-", "/"));
   else why.push("최근 1년여 " + Math.round(CORRECTION_PCT * 100) + "% 이상 조정 없음");
@@ -1407,7 +1418,7 @@ function renderMyBox() {
 function renderMarket() {
   if (!DATA.QQQ || DATA.QQQ.length < 210) return;
   ["QQQ", "QQQE"].forEach((s) => markPartial(s, DATA[s]));
-  const m = analyzeMarket(DATA.QQQ);
+  const m = analyzeMarket(DATA.QQQ, DATA.QQQE);
   MARKET_STATE = m;
   const sig = document.getElementById("signal");
   sig.className = m.cls;
@@ -2120,12 +2131,12 @@ function ddftdHtml() {
   return `<div><h4><span style="background:rgba(220,38,38,0.16);padding:0 6px">분산일</span> Distribution Day</h4>
 <b>개념</b>: 기관처럼 큰 자본이 주식을 내다 판 날입니다. 값이 떨어졌는데 거래량이 늘었다면 "파는 쪽이 더 급했다"는 뜻입니다.
 하루는 큰 의미가 없지만, 몇 주 사이에 여러 번 쌓이면 상승장이 꼭지를 만드는 중일 가능성이 커집니다. 오닐이 시장 고점을 알아챈 핵심 신호입니다.
-<br><b>판별 기준</b> (QQQ 기준)
+<br><b>판별 기준</b> (QQQ와 QQQE 각각 같은 방식으로 셈)
 <ol><li>종가가 전날 종가보다 <b>${Math.abs(DD_DROP * 100).toFixed(1)}% 이상 하락</b></li>
 <li>그날 거래량이 <b>전날 거래량보다 많음</b></li>
 <li>분산일마다 따로 지웁니다: ① 25거래일이 지나면 지워지고, ② 그 뒤 QQQ 종가가 <b>그 분산일의 종가</b>보다 5% 이상 오르면 그 분산일만 지워집니다. 나머지 분산일은 그대로 남습니다(한꺼번에 초기화하지 않음).</li>
-<li>차트에는 지금 효력이 남아 있는 분산일만 칠합니다. 신호등이 세는 개수와 칠한 칸 수가 같습니다.</li>
-<li>25거래일 안에 <b>${DD_LIMIT}회 이상</b>이면 신규 매수 중지.</li></ol></div>
+<li>차트에는 QQQ의 분산일만 칠합니다(신호등이 세는 QQQ 개수와 칠한 칸 수가 같습니다). QQQE 개수는 회색 줄에 나옵니다.</li>
+<li>25거래일 안에 <b>QQQ와 QQQE 모두 ${DD_LIMIT}회 이상</b>이면 신규 매수 중지. 한쪽만이면 주의 표시.</li></ol></div>
 <div><h4><span style="background:rgba(22,163,74,0.30);padding:0 6px">팔로스루 데이</span> Follow-Through Day</h4>
 <b>개념</b>: 조정장에서 바닥을 찍은 뒤, 반등이 진짜인지 확인해 주는 날입니다. 큰 자본이 다시 사기 시작했다는 증거입니다.
 모든 팔로스루 데이가 성공하지는 않지만, 팔로스루 데이 없이 시작된 큰 상승장은 거의 없습니다(오닐).
@@ -2160,10 +2171,11 @@ function buildHelp() {
 
 <h3 id="h-signal">신호등 <small>1층 맨 위 큰 상자 · QQQ 일봉 기준</small></h3>
 <table>
-<tr><td>${pill("go", "공격 가능")}</td><td>QQQ가 50일선과 200일선 위에 있고, 조정 중이 아니며, 최근 25거래일 분산일이 ${DD_LIMIT - 1}회 이하. 새로 사도 되는 시장.</td></tr>
-<tr><td>${pill("wait", "신규 매수 중지")}</td><td>다음 중 하나라도 해당: 50일선 아래 · 분산일 ${DD_LIMIT}회 이상 · 조정 중(팔로스루 데이 전). 새로 사지 않고 보유 종목만 관리.</td></tr>
+<tr><td>${pill("go", "공격 가능")}</td><td>QQQ가 200일선 위에 있고, 최근 25거래일 분산일이 QQQ와 QQQE 중 적어도 한쪽은 ${DD_LIMIT - 1}회 이하. 새로 사도 되는 시장. 한쪽만 ${DD_LIMIT}회 이상이면 "주의"가 붙지만 판정은 그대로입니다.</td></tr>
+<tr><td>${pill("wait", "신규 매수 중지")}</td><td><b>QQQ와 QQQE 둘 다</b> 최근 25거래일 분산일이 ${DD_LIMIT}회 이상. 새로 사지 않고 보유 종목만 관리. 50일선 아래와 8% 조정(팔로스루 데이 전)은 회색 줄에 "참고"로만 나오고 판정에는 쓰지 않습니다(설정 <code>GATE_50</code>, <code>GATE_CORR</code>로 되돌릴 수 있음).</td></tr>
 <tr><td>${pill("stop", "방어")}</td><td>QQQ가 200일선 아래. 큰 하락 국면일 수 있으니 현금 비중을 지키는 쪽.</td></tr>
 </table>
+<p><b>왜 QQQE를 같이 보나</b>: QQQ는 시가총액 가중이라 상위 10종목이 47%를 차지해, 소수 대형주가 지수를 정합니다. QQQE(동일가중)는 100종목을 같은 비중으로 담아 "고르게 파는지"를 보여 줍니다. 2020-2026 백테스트(분산일 기준으로 QQQ를 보유/현금 전환)에서 QQQ만 볼 때(수익 +119%, 최대 낙폭 −26%)보다 둘 다 볼 때(+187%, −21%)가 수익과 낙폭 모두 나았고, 50일선·조정 조건을 더하면 수익만 깎였습니다(+102%). 한 번의 6년 경로이고 기준값 5회는 다른 값(4, 6, 7)에서 결과가 매끄럽지 않았으니 참고로 보세요.</p>
 <p>아래 회색 줄은 판정의 근거입니다.</p>
 <table>
 <tr><td>분산일</td><td>QQQ가 ${Math.abs(DD_DROP * 100).toFixed(1)}% 이상 떨어졌는데 거래량은 전날보다 많은 날. 큰 자본이 파는 흔적입니다. 25거래일이 지나거나, 그 뒤 종가가 그날 종가보다 5% 이상 오르면 그 분산일만 지워집니다.</td></tr>
@@ -2178,7 +2190,7 @@ function buildHelp() {
 <h3 id="h-market">1층 · 시장 <small>QQQ 일봉 6개월</small></h3>
 <p>신호등이 왜 그렇게 나왔는지 눈으로 확인하는 차트입니다.</p>
 <table>
-<tr><td style="color:#16a34a">━ 50일선</td><td>중기 추세. 가격이 이 선 아래로 내려가면 신규 매수 중지.</td></tr>
+<tr><td style="color:#16a34a">━ 50일선</td><td>중기 추세. 가격이 이 선 아래로 내려가면 회색 줄에 "참고"로 표시합니다(신호등 판정에는 쓰지 않음).</td></tr>
 <tr><td style="color:#7c3aed">━ 200일선</td><td>장기 추세. 가격이 이 선 아래면 방어. 선의 기울기로 1년 흐름을 읽습니다.</td></tr>
 <tr><td><span style="background:rgba(220,38,38,0.16);padding:0 8px">옅은 붉은 배경</span></td><td>지금 효력이 남아 있는 분산일(최근 25거래일 안, 5% 상승으로 지워지지 않은 것)만 칠합니다. 그래서 붉은 칸은 늘 최근 한 달 남짓 안에만 있습니다. 붉은 칸이 몰리면 큰 자본이 빠져나가는 중입니다.</td></tr>
 <tr><td><span style="background:rgba(22,163,74,0.30);padding:0 8px">초록 배경</span></td><td>팔로스루 데이. 조정 뒤 상승 전환 확인.</td></tr>
