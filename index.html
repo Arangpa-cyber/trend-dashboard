@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-14 01:21</title>
+<title>추세 대시보드 v2026-11-14 23:05</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -359,7 +359,7 @@
   #modal .mhead .name { font-size: 16px; flex: 0 1 auto; }
   #modal .mhead .reason { white-space: normal; font-size: 13px; }
   #modal .close { margin-left: auto; border: 0; background: transparent; color: var(--sub); font-size: 20px; line-height: 1; }
-  #modal .mcharts { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 12px 12px; min-height: 0; }
+  #modal .mcharts { flex: 1; display: grid; grid-template-columns: 1fr; gap: 12px; padding: 0 12px 12px; min-height: 0; }
   #modal .mcharts > div { display: flex; flex-direction: column; min-height: 0; }
   #modal .mcharts .cap { font-size: 12px; color: var(--sub); padding: 2px 2px 4px; }
   #modal .mcharts .mc { flex: 1; position: relative; min-height: 200px; }
@@ -371,7 +371,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-14 01:21</span></h1>
+    <h1>추세 대시보드<span class="ver">v2026-11-14 23:05</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -444,10 +444,8 @@
   <div class="mhead"><div class="name" id="mName"></div><span class="tag" id="mTag"></span><button class="close" id="mClose" title="닫기 (Esc)">✕</button>
     <div class="reason" id="mReason"></div></div>
   <div class="mcharts">
-    <div><div class="cap">주봉 1년 · 10주선 · 40주선 · 베이스 · 노란 배경은 실적 발표 주</div><div class="mc" id="mWeekly"></div></div>
-    <div><div class="cap">일봉 6개월 · 50일선 · 200일선 · 주황 점선은 베이스 상단(돌파 기준) · 노란 배경은 실적 발표일</div><div class="mc" id="mDaily"></div></div>
-  </div>
-</div></div>
+    <div><div class="cap"><span>일봉 1년 · 50일선 · 200일선 · 주황 선 = 베이스 상단·하단 (글자: 기간 · 폭) · 노란 배경은 실적 발표일</span> <b id="mVcp"></b></div><div class="mc" id="mDaily"></div></div>
+  </div></div>
 
 <footer>
   데이터 <a href="https://twelvedata.com/" target="_blank" rel="noopener">Twelve Data</a> · 실적 일정 Nasdaq(서버 모드에서만) · 차트 <a href="https://www.tradingview.com/lightweight-charts/" target="_blank" rel="noopener">TradingView Lightweight Charts</a><br>
@@ -488,7 +486,8 @@ const RS_LEADER = 80;               // 주도주 기준 RS
 const DAYS_MARKET = 400;            // QQQ 일봉 개수 (200일선 + 6개월 표시)
 const DAYS_STOCK = 470;             // 종목 일봉 개수 (주봉 52주 + 40주선 + RS 12개월)
 const SHOW_DAYS = 126;              // 일봉 차트 표시: 6개월
-const SHOW_WEEKS = 52;              // 주봉 차트 표시: 1년
+const SHOW_WEEKS = 52;              // 베이스 찾는 기간: 1년
+const SHOW_DAYS_STOCK = 252;        // 종목 일봉 차트 표시: 1년
 const CORRECTION_PCT = 0.08;        // QQQ가 고점 대비 이만큼 빠지면 '조정'으로 봄
 const FTD_GAIN = 0.0125;            // 팔로스루 데이: 랠리 4일차 이후 +1.25% 이상, 전일보다 거래량 증가
 const DD_DROP = -0.002;             // 분산일: -0.2% 이상 하락, 전일보다 거래량 증가
@@ -1041,30 +1040,32 @@ function drawRatio(elId, txtId, a, b, upWord, downWord) {
   document.getElementById(txtId).innerHTML = up ? '<b class="chg-up">▲ ' + upWord + "</b>"
     : down ? '<b class="chg-down">▼ ' + downWord + "</b>" : '<span class="muted">방향 없음 (50일 평균 근처)</span>';
 }
-function drawStock(el, w, cls, t) {
-  const chart = baseChart(el, 0.24);
-  const n = w.length, from = Math.max(0, n - SHOW_WEEKS);
-  const ew = new Set([...earnDates(t)].map(mondayOf));
-  if (ew.size) addBg(chart, w, from, (r) => (ew.has(r.t) ? C.earnBg : null));
-  const bars = addBars(chart, w, from);
-  const cl = w.map((x) => x.c);
-  addLine(chart, w, smaArr(cl, 10), from, C.ma10, 3);
-  addLine(chart, w, smaArr(cl, 40), from, C.ma40, 3);
-  addVolume(chart, w, from);
-  const hi = Math.max(...w.slice(from).map((x) => x.h));      // 52주 고점 (저점 선은 베이스 하단으로 대신)
-  bars.createPriceLine({ price: hi, color: C.high, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "" });
-  if (cls && cls.box && cls.state !== "basefail") {
-    const span = w.filter((x) => x.t >= cls.box.from);
-    [cls.box.top, cls.box.bottom].forEach((v) => {
-      const s = chart.addLineSeries({ color: C.box, lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
-      s.setData(span.map((x) => ({ time: x.t, value: v })));
-    });
+// 최근 1년 주봉에서 베이스를 모두 찾음: 고점에서 시작해 옆으로 움직이다 주봉 종가로 상단을 넘으면 그 베이스는 끝(돌파).
+// 조건은 classify와 같음(깊이에 따른 최소 기간, 깊이 35% 이내). 마지막은 지금 판정된 베이스(cls.box)를 그대로 씀
+function findBases(w, cls) {
+  const n = w.length, out = [], firstShown = n - 1 - SHOW_WEEKS;
+  let s = Math.max(0, firstShown - BASE_LOOKBACK);
+  for (let j = s + 1; j < n; j++) {
+    while (j - s > BASE_LOOKBACK) { let k = s + 1; for (let q = s + 1; q < j; q++) if (w[q].h >= w[k].h) k = q; s = k; }
+    const top = w[s].h;
+    if (w[j].h <= top) continue;
+    let b = -1;
+    for (let q = j; q <= Math.min(n - 1, j + 2); q++) if (w[q].c > top) { b = q; break; }
+    const seg = w.slice(s, j), bottom = Math.min(...seg.map((x) => x.l)), depth = (top - bottom) / top;
+    if (b >= 0 && b >= firstShown && seg.length >= minWeeks(depth) && depth <= BASE_MAX_DEPTH)
+      out.push({ from: w[s].t, breakT: w[b].t, top, bottom, depth, weeks: seg.length });
+    s = j;
   }
-  chart.timeScale().fitContent();
+  const bx = cls && cls.box && cls.state !== "basefail" ? cls.box : null;
+  if (bx && !out.some((o) => o.from === bx.from)) {
+    const seg = w.filter((x) => x.t >= bx.from);
+    out.push({ from: bx.from, breakT: null, top: bx.top, bottom: bx.bottom, depth: (bx.top - bx.bottom) / bx.top, weeks: cls.weeks || seg.length - 1 });
+  }
+  return out;
 }
-function drawDaily(el, d, cls, t) {
+function drawDaily(el, d, w, cls, t) {
   const chart = baseChart(el, 0.24);
-  const from = Math.max(0, d.length - SHOW_DAYS);
+  const from = Math.max(0, d.length - SHOW_DAYS_STOCK);
   const ed = earnDates(t);
   if (ed.size) addBg(chart, d, from, (r) => (ed.has(r.t) ? C.earnBg : null));
   const bars = addBars(chart, d, from);
@@ -1072,7 +1073,28 @@ function drawDaily(el, d, cls, t) {
   addLine(chart, d, smaArr(cl, 50), from, C.ma10, 2);
   addLine(chart, d, smaArr(cl, 200), from, C.ma40, 2);
   addVolume(chart, d, from);
-  if (cls && cls.box) bars.createPriceLine({ price: cls.box.top, color: C.box, lineWidth: 2, lineStyle: 2, axisLabelVisible: true, title: "" });
+  const bases = findBases(w, cls);
+  bases.forEach((b) => {
+    const span = d.filter((r, i) => i >= from && r.t >= b.from && (!b.breakT || mondayOf(r.t) <= b.breakT));
+    if (span.length < 2) return;
+    const mk = (v, style) => {
+      const s = chart.addLineSeries({ color: C.box, lineWidth: 2, lineStyle: style, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+      s.setData(span.map((x) => ({ time: x.t, value: v })));
+      return s;
+    };
+    const top = mk(b.top, 0); mk(b.bottom, 2);
+    top.setMarkers([{ time: span[Math.floor(span.length / 2)].t, position: "aboveBar", shape: "square", size: 0, color: DARK ? "#fbbf24" : "#b45309",
+      text: b.weeks + "주 · 폭 " + (b.depth * 100).toFixed(0) + "%" + (b.breakT ? "" : " · 진행") }]);
+  });
+  // VCP: 베이스 폭이 차례로 줄어드는가
+  const v = document.getElementById("mVcp");
+  if (v) {
+    if (bases.length >= 2) {
+      const shrink = bases.every((b, i) => i === 0 || b.depth < bases[i - 1].depth);
+      v.className = shrink ? "chg-up" : "muted";
+      v.textContent = "폭 " + bases.map((b) => (b.depth * 100).toFixed(0) + "%").join(" → ") + (shrink ? " · 계속 줄어듦 (VCP 모양)" : " · 줄어드는 모양 아님");
+    } else { v.className = "muted"; v.textContent = bases.length ? "베이스 1개 · 폭 " + (bases[0].depth * 100).toFixed(0) + "%" : "감지된 베이스 없음"; }
+  }
   chart.timeScale().fitContent();
 }
 
@@ -1476,8 +1498,7 @@ function renderChanges() {
         '<td class="sp">' + (x.hist ? flowSpark(x.hist, 84) : "") + "</td></tr>").join("") + "</tbody></table>" : '<div class="none">없음</div>';
     return '<div class="side ' + cls + '"><div class="sh ' + cls + '">' + lbl + " " + xs.length + "</div>" + body + "</div>";
   };
-  el.innerHTML = '<span class="muted">4주 전(' + md(PREV_ASOF) + " 마감) → 지금(" + md(VIEW.asOf) + " 마감) · 산업별 개수는 2층 '주도주' 칸</span>" +
-    '<div class="mv2">' + side("in", "편입", "in") + side("mid", "중립", "mid") + side("out", "편출", "out") + "</div>";
+  el.innerHTML = '<div class="mv2">' + side("in", "편입", "in") + side("mid", "중립", "mid") + side("out", "편출", "out") + "</div>";
   el.querySelectorAll("[data-t]").forEach((tr) => tr.addEventListener("click", () => { if (VIEW.info[tr.dataset.t]) openModal(tr.dataset.t); }));
 }
 
@@ -1788,8 +1809,7 @@ function openModal(t) {
   document.getElementById("mReason").innerHTML = x.cls ? reasonOf(x) : cls.reason;
   document.getElementById("modal").classList.add("open");
   requestAnimationFrame(() => {
-    drawStock(document.getElementById("mWeekly"), x.w, cls, t);
-    drawDaily(document.getElementById("mDaily"), x.d, cls, t);
+    drawDaily(document.getElementById("mDaily"), x.d, x.w, cls, t);
   });
 }
 function closeModal() { const m = document.getElementById("modal"); m.classList.remove("open"); disposeCharts(m); }
@@ -2016,7 +2036,7 @@ function buildHelp() {
 <b>⑥ 아직 주도주는 아니지만 올라오는 종목은?</b> → 6층 전체 종목</div>
 <p>신호등이 <b>신규 매수 중지</b>나 <b>방어</b>면 4층에 좋은 차트가 있어도 새로 사지 않는다는 뜻입니다. 시장이 내 편일 때만 싸웁니다.</p>
 <p>매일 아침 할 일: ① 신호등과 고정 바의 <b>★★ 보유 경고 수</b> 확인 → ② 3층 종목 이동에서 4주 동안 옮겨 간 산업과 종목, 추세 변화(가속·둔화·반전) 확인 → ③ 4층 <b>돌파</b>, 베이스 중 <b>준비·임박</b> 종목과 5층 ★ 관심 종목의 차트 확인.</p>
-<p>제목 옆 <b>?</b> 버튼을 누르면 그 층의 설명으로 바로 옵니다. 카드나 종목 줄을 누르면 주봉·일봉 차트를 크게 봅니다.</p>
+<p>제목 옆 <b>?</b> 버튼을 누르면 그 층의 설명으로 바로 옵니다. 카드나 종목 줄을 누르면 일봉 차트를 크게 봅니다.</p>
 
 <h3 id="h-signal">신호등 <small>1층 맨 위 큰 상자 · QQQ 일봉 기준</small></h3>
 <table>
@@ -2114,8 +2134,8 @@ function buildHelp() {
 ④ 주가만 봄(실적·거래량 미반영). 실적 발표 같은 하루짜리 큰 갭 하나가 점수를 크게 움직일 수 있음.</td></tr>
 <tr><td>RS선과의 차이</td><td>RS 등급은 "지금 몇 등인가", RS선(종목 ÷ QQQ)은 "상대강도가 어느 방향으로 가는가". RS선이 52주 신고가면 꼬리표로 따로 알려 줍니다.</td></tr>
 </table>
-<p>줄을 누르면 주봉·일봉 차트를 크게 봅니다. 맨 오른쪽 꼬리표(RS선 신고가 · 실적 D-n · 10주선 근접 · NEW)의 뜻은 <a href="#h-tags">꼬리표</a> 항목에 있습니다.</p>
-<p>차트 없이 <b>표 하나</b>에 모든 단계를 담아 한 화면에 봅니다. 맨 위 줄은 4단계의 종목 수(누르면 그 단계로 이동, 0종목 단계는 흐리게). 표는 가격 위치 순서인 <b>상승 → 돌파 → 베이스 → 훼손</b>으로 놓아, 피벗 대비 숫자가 위에서 아래로 줄어드는 사다리처럼 읽힙니다(단계가 바뀌는 곳에 굵은 선), 한 종목 한 줄입니다. 단계 칸에 마우스를 올리면 그 단계 설명이 보입니다. 줄을 누르면 주봉·일봉 차트가 크게 뜨고, 마우스를 올리면 종목명과 단계 판정 근거가 보입니다. 칸 순서: 티커 · 산업 · RS(4주) · 26주 주봉 · 단계 · 피벗 대비 · 다음 할 일 · 꼬리표.</p>
+<p>줄을 누르면 일봉 차트를 크게 봅니다. 맨 오른쪽 꼬리표(RS선 신고가 · 실적 D-n · 10주선 근접 · NEW)의 뜻은 <a href="#h-tags">꼬리표</a> 항목에 있습니다.</p>
+<p>차트 없이 <b>표 하나</b>에 모든 단계를 담아 한 화면에 봅니다. 맨 위 줄은 4단계의 종목 수(누르면 그 단계로 이동, 0종목 단계는 흐리게). 표는 가격 위치 순서인 <b>상승 → 돌파 → 베이스 → 훼손</b>으로 놓아, 피벗 대비 숫자가 위에서 아래로 줄어드는 사다리처럼 읽힙니다(단계가 바뀌는 곳에 굵은 선), 한 종목 한 줄입니다. 단계 칸에 마우스를 올리면 그 단계 설명이 보입니다. 줄을 누르면 일봉 차트가 크게 뜨고, 마우스를 올리면 종목명과 단계 판정 근거가 보입니다. 칸 순서: 티커 · 산업 · RS(4주) · 26주 주봉 · 단계 · 피벗 대비 · 다음 할 일 · 꼬리표.</p>
 <table>
 <tr><td>26주 주봉</td><td>최근 26주 주봉 종가 선(붉은색: 10주선 위, 파란색: 아래), 초록 10주선, 보라 40주선, 주황 점선 피벗(베이스 상단, 없으면 마지막 돌파 피벗). 베이스 모양과 피벗과의 위치를 한눈에 봅니다. 40주선이 주가에서 너무 멀면(그림을 25% 넘게 넓혀야 하면) 베이스 모양이 눌리지 않도록 선 대신 바닥에 보라 점선과 "40주 −32%"(40주선이 지금 주가보다 32% 아래)만 적습니다. 상장한 지 얼마 안 돼 40주 데이터가 없으면 그리지 않습니다.</td></tr>
 <tr><td>4주 등락 · QQQ 비중</td><td>4주 등락은 20거래일 전 종가 대비 지금 등락률, QQQ 비중은 나스닥100 안에서 그 종목이 차지하는 비중(%)입니다. 5층·6층도 같은 순서(RS → 4주 등락 → QQQ 비중 → QQQ 영향)로 적습니다.</td></tr>
@@ -2195,12 +2215,12 @@ function buildHelp() {
 <table>
 <tr><td>바 차트</td><td>오닐·미너비니식. 세로선은 고가-저가, 오른쪽 짧은 눈금이 종가(시가 눈금 없음).</td></tr>
 <tr><td><span style="color:#dc2626">붉은</span> / <span style="color:#1d4ed8">파란</span> 바</td><td>전일(주봉은 전주) 종가보다 올랐으면 붉은색, 내렸으면 파란색. 아래 거래량 막대도 같은 기준.</td></tr>
-<tr><td style="color:#16a34a">━ 10주선</td><td>주봉 차트의 중기 추세선(일봉 50일선과 비슷). 추세 종목은 이 선을 타고 오릅니다.</td></tr>
-<tr><td style="color:#7c3aed">━ 40주선</td><td>주봉 차트의 장기 추세선(일봉 200일선과 비슷).</td></tr>
-<tr><td style="color:#f59e0b">━ 주황 선 2개</td><td>감지된 베이스의 상단과 하단. 상단이 돌파 기준입니다.</td></tr>
-<tr><td><span style="background:rgba(250,204,21,0.38);padding:0 8px">노란 배경</span></td><td>실적 발표일. 일봉은 그날, 주봉은 그 주 전체를 칠합니다. 지난 1년 발표일과 다가오는 발표일이 나옵니다. 실적 전후로 갭이 생기기 쉬우니 베이스와 돌파를 볼 때 함께 확인하세요. 장 마감 뒤 발표는 주가 반응이 다음 날 바에 나타납니다.</td></tr>
+<tr><td style="color:#16a34a">━ 50일선</td><td>중기 추세선(주봉 10주선과 비슷). 추세 종목은 이 선을 타고 오릅니다.</td></tr>
+<tr><td style="color:#7c3aed">━ 200일선</td><td>장기 추세선(주봉 40주선과 비슷).</td></tr>
+<tr><td style="color:#f59e0b">━ 주황 선</td><td>최근 1년에 감지된 베이스마다 위(실선)는 상단=돌파 기준, 아래(점선)는 하단. 선 위 글자는 베이스 기간(주)과 <b>폭</b>(상단에서 하단까지 몇 % 내려갔나)입니다. 돌파한 베이스는 돌파한 주까지, 지금 만드는 베이스는 "진행"으로 오른쪽 끝까지 그립니다. <b>VCP</b>: 차트 위 줄에 폭을 차례로 적습니다(예 25% → 14% → 8%). 폭이 계속 줄면 매물이 마르며 조여지는 VCP 모양입니다. 베이스 안의 작은 눌림 폭까지는 재지 않고, 베이스 단위로만 봅니다.</td></tr>
+<tr><td><span style="background:rgba(250,204,21,0.38);padding:0 8px">노란 배경</span></td><td>실적 발표일. 그날을 칠합니다. 지난 1년 발표일과 다가오는 발표일이 나옵니다. 실적 전후로 갭이 생기기 쉬우니 베이스와 돌파를 볼 때 함께 확인하세요. 장 마감 뒤 발표는 주가 반응이 다음 날 바에 나타납니다.</td></tr>
 <tr><td style="color:#b91c1c">┄ 붉은 점선</td><td>최근 52주 고점. 오른쪽 가격 축에 값이 나옵니다.</td></tr>
-<tr><td>크게 보기</td><td>왼쪽 주봉 1년, 오른쪽 일봉 6개월(50일선·200일선). 일봉의 주황 점선이 베이스 상단(돌파 기준)이라 돌파일 거래량을 확인하기 좋습니다.</td></tr>
+<tr><td>크게 보기</td><td>일봉 1년(50일선·200일선) 한 장. 베이스 상단·하단과 폭이 함께 나와 돌파일 거래량과 VCP 여부를 한 번에 봅니다.</td></tr>
 </table>
 
 <h3 id="h-data">데이터와 갱신</h3>
