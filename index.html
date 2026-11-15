@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 21:37</title>
+<title>추세 대시보드 v2026-11-15 21:50</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -224,9 +224,9 @@
   .star.lv0 { color: var(--sub); opacity: 0.4; letter-spacing: 0; }
   .star:hover { opacity: 1; }
   .card-head .star, #mName .star { min-width: 0; padding: 0 6px 0 0; }
-  .mycard { margin-top: 10px; border-radius: 10px; padding: 10px 14px; border: 1px solid var(--line); background: var(--card); font-size: 13px; scroll-margin-top: 60px; }
+  .mycard { margin-top: 10px; border-radius: 10px; padding: 10px 14px; border: 1px solid var(--line); background: var(--card); font-size: 13px; scroll-margin-top: 60px; overflow: hidden; }
   .mycard .mh { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
-  .mycard .tblwrap { margin-top: 8px; border-top: 1px solid var(--line); }
+  .mycard .tblwrap { margin: 8px -14px -10px; border-top: 1px solid var(--line); }   /* 카드 여백을 넘어 테두리까지: 3층 표와 폭·칸 위치가 같게 */
   .enote { font-size: 11px; white-space: nowrap; }
   #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none; z-index: 300;
            background: #222; color: #fff; border-radius: 10px; padding: 9px 14px; font-size: 13px; transition: opacity .2s, transform .2s; white-space: nowrap; }
@@ -270,7 +270,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 21:37</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 21:50</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1789,7 +1789,7 @@ function stockTable(id, list, o) {
     rerenderTable(id);
   }));
   wrap.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t)));
-  fitCols(wrap);
+  fitCols();
 }
 const rerenderTable = (id) => (id === "tb-stock" ? renderStocks() : renderMine());
 // 칸 폭: 숫자·짧은 칸은 고정(내용 폭 + 여백), 단계·위치 · 다음 할 일 · 꼬리표는 지금 보이는 글에 맞춤.
@@ -1797,9 +1797,12 @@ const rerenderTable = (id) => (id === "tb-stock" ? renderStocks() : renderMine()
 // 모자라면 단계·위치(가장 긴 글이 드묾) → 다음 할 일 → 꼬리표 순서로 줄임(넘치는 글은 말줄임·마우스를 올리면 전체, 꼬리표는 두 줄)
 const COL_W = { my: 34, t: 58, grp: 136, rs: 60, pc: 64, qw: 52, qi: 74, sp: 82 };
 const COL_MIN = { pos: 150, todo: 130, bd: 84 };
-function fitCols(wrap) {
-  const tb = wrap.querySelector("table"), rows = [...wrap.querySelectorAll("tbody tr[data-t]")];
-  if (!tb || !rows.length) return;
+// 3층·4층 표(보유·관심)는 모두 같은 칸 폭을 씀: 세 표의 글을 함께 재서 한 번에 정하므로 칸 위치가 정확히 맞음
+const TABLE_IDS = ["tb-stock", "tb-hold", "tb-watch"];
+function fitCols() {
+  const wraps = TABLE_IDS.map((id) => document.getElementById(id)).filter((w) => w && w.querySelector("tbody tr[data-t]"));
+  if (!wraps.length) return;
+  const rows = wraps.flatMap((w) => [...w.querySelectorAll("tbody tr[data-t]")]);
   const idx = (k) => ST_COLS.findIndex((c) => c[0] === k);
   const m = (fitCols.m = fitCols.m || Object.assign(document.createElement("div"), { style: "position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap" }));
   if (!m.isConnected) document.body.appendChild(m);
@@ -1814,13 +1817,13 @@ function fitCols(wrap) {
     return Math.ceil(w + (cs ? parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) : 8) + 4);
   };
   const fixed = Object.values(COL_W).reduce((a, v) => a + v, 0);
-  const room = Math.max(wrap.clientWidth, 900) - fixed;   // 표가 아니라 감싼 상자 폭 기준(표는 앞선 폭 때문에 넓어져 있을 수 있음)
+  const room = Math.max(Math.min(...wraps.map((w) => w.clientWidth)), 900) - fixed;   // 표가 아니라 감싼 상자 폭 기준(세 상자 폭은 같음)
   const w = { pos: Math.max(COL_MIN.pos, need("pos")), todo: Math.max(COL_MIN.todo, need("todo")), bd: Math.max(COL_MIN.bd, need("bd")) };
   let over = w.pos + w.todo + w.bd - room;
   if (over <= 0) w.bd -= over;
   else ["pos", "todo", "bd"].forEach((k) => { const c = Math.min(over, w[k] - COL_MIN[k]); if (c > 0) { w[k] -= c; over -= c; } });
   Object.assign(w, COL_W);
-  wrap.querySelectorAll("col").forEach((c) => { const k = c.className.slice(2); if (w[k]) c.style.width = w[k] + "px"; });
+  wraps.forEach((wrap) => wrap.querySelectorAll("col").forEach((c) => { const k = c.className.slice(2); if (w[k]) c.style.width = w[k] + "px"; }));
 }
 
 // ═════════════ 3층: 종목 — 보기 4개 ═════════════
