@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 17:15</title>
+<title>추세 대시보드 v2026-11-15 17:22</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -379,7 +379,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 17:15</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 17:22</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -455,7 +455,7 @@
   <div class="mhead"><div class="name" id="mName"></div><span class="tag" id="mTag"></span><button class="close" id="mClose" title="닫기 (Esc)">✕</button>
     <div class="reason" id="mReason"></div><div id="mTT"></div></div>
   <div class="mcharts">
-    <div><div class="cap"><span>일봉 1년 · 50일선 · 200일선 · 주황 선 = 베이스 상단·하단 (글자: 기간 · 폭) · 노란 배경은 실적 발표일</span> <b id="mVcp"></b></div><div class="mc" id="mDaily"></div></div>
+    <div><div class="cap"><span>일봉 1년 · 50일선 · 200일선 · 21일 EMA(짙은 노랑) · 주황 선 = 베이스 상단·하단 (글자: 기간 · 폭) · 노란 배경은 실적 발표일</span> <b id="mVcp"></b></div><div class="mc" id="mDaily"></div></div>
   </div></div>
 
 <footer>
@@ -1242,6 +1242,7 @@ function drawDaily(el, d, cls, t, x) {
   const cl = d.map((y) => y.c);
   addLine(chart, d, smaArr(cl, 50), from, C.ma10, 2);
   addLine(chart, d, smaArr(cl, 200), from, C.ma40, 2);
+  addLine(chart, d, emaArr(cl, 21), from, C.ema21, 2);
   addVolume(chart, d, from);
   addVolProfile(chart, bars, el, d, from);
   const mkLine = (span, v, style) => {
