@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 22:19</title>
+<title>추세 대시보드 v2026-11-15 22:26</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -174,6 +174,8 @@
   table.flow .gt { font-weight: 700; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
   .chg-up { color: var(--up); font-weight: 700; } .chg-down { color: var(--down); font-weight: 700; }
   .muted { color: var(--sub); }
+  .buyf { font-size: 12px; } .buyf input { font: inherit; width: 96px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); } .buyf input[type=date] { width: 130px; }
+  .buyf button { font: inherit; font-size: 12px; padding: 2px 10px; border: 1px solid var(--accent); border-radius: 6px; background: transparent; color: var(--accent); }
   .stoptip { position: absolute; z-index: 6; max-width: 360px; background: var(--card); border: 1px solid var(--warn); border-radius: 8px; padding: 7px 10px; font-size: 12px; line-height: 1.55; box-shadow: 0 4px 14px rgba(0,0,0,0.15); pointer-events: none; }
   .placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 13px; text-align: center; padding: 0 16px; }
 
@@ -271,7 +273,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 22:19</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 22:26</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -430,13 +432,18 @@ function starHtml(t) {
   const lv = myLevel(t);
   return '<span class="star lv' + lv + '" data-star="' + t + '" title="' + LV_NAME[lv] + ' · 누를 때마다 ☆ → ★ 관심 → ★★ 보유">' + STAR_TXT[lv] + "</span>";
 }
+// 매수가·매수일: {티커: {p: 매수가, d: "YYYY-MM-DD"}} · 이 브라우저에만(공개 저장소로 보내지 않음), 설정 링크의 # 뒤에 함께 실림
+let BUY = {};
+const buySave = () => { try { localStorage.setItem("td2_buy", JSON.stringify(BUY)); localStorage.setItem("td2_myDirty", "1"); } catch (_) {} };
 function myLoad() {
   try { const j = JSON.parse(localStorage.getItem("td2_my") || "null"); if (j) MY = { hold: j.hold || [], watch: j.watch || [] }; } catch (_) {}
+  try { BUY = JSON.parse(localStorage.getItem("td2_buy") || "{}") || {}; } catch (_) { BUY = {}; }
   const m = location.hash.match(/my=([^&]*)/);    // 다른 기기에서 보낸 설정 링크
   if (m) {
-    const [h, w] = decodeURIComponent(m[1]).split(";");
+    const [h, w, bs] = decodeURIComponent(m[1]).split(";");
     const ok = (s) => (s || "").split(",").map((x) => x.trim().toUpperCase()).filter((x) => TICKERS[x]);
     MY = { hold: ok(h), watch: ok(w).filter((x) => !ok(h).includes(x)) };
+    if (bs != null) { BUY = {}; bs.split(",").forEach((z) => { const [t, pr, dt] = z.split("@"); if (TICKERS[t] && +pr > 0) BUY[t] = { p: +pr, d: /^\d{4}-\d\d-\d\d$/.test(dt || "") ? dt : "" }; }); buySave(); }
     mySave(false);
     history.replaceState(null, "", location.pathname + location.search);
     setTimeout(() => toast("다른 기기의 내 종목을 불러왔어요: ★★ 보유 " + MY.hold.length + " · ★ 관심 " + MY.watch.length), 800);
@@ -451,7 +458,8 @@ function mySet(t, lv) {
   mySave();
 }
 function myLink() {
-  return location.origin + location.pathname + "#my=" + encodeURIComponent(MY.hold.join(",") + ";" + MY.watch.join(","));
+  const bs = Object.entries(BUY).filter(([t]) => MY.hold.includes(t)).map(([t, b]) => t + "@" + b.p + "@" + (b.d || "")).join(",");
+  return location.origin + location.pathname + "#my=" + encodeURIComponent(MY.hold.join(",") + ";" + MY.watch.join(",") + ";" + bs);
 }
 let toastTimer = null;
 function toast(html, undo) {
@@ -1234,26 +1242,51 @@ function drawDaily(el, d, cls, t, x) {
     marks.push({ time: span[Math.floor(span.length / 2)].t, position: "aboveBar", shape: "square", size: 0, color: txtColor,
       text: (ch.kind === "low" ? "로우치트" : "치트") + " " + ch.k + "일 · 폭 " + (ch.range * 100).toFixed(0) + "%" });
   }
-  // ★★ 보유 종목: 손절선(가격축까지 점선) · 선 근처에 마우스를 올리면 근거
-  const hs = x && myLevel(t) === 2 ? holdStopOf(x) : null;
-  if (hs) {
-    const price = d[d.length - 1].c, below = price < hs.stop;
-    bars.createPriceLine({ price: hs.stop, color: "#c2410c", lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: "손절" });
-    marks.push({ time: hs.t, position: "belowBar", shape: "arrowUp", color: "#c2410c", text: "손절 기준 저점" });
-    const tip = document.createElement("div");
-    tip.className = "stoptip"; tip.hidden = true;
-    tip.innerHTML = "<b>손절선 " + hs.stop.toFixed(2) + "</b> · 지금 가격 대비 " + (below ? '<b class="warn">' + pctf(hs.stop / price - 1) + " (이미 아래)</b>" : pctf(hs.stop / price - 1)) +
-      "<br><b>근거</b> " + hs.src + "의 " + hs.kind + " " + hs.low.toFixed(2) + "(" + md(hs.t) + ") 바로 아래 1%" +
-      '<br><span class="muted">마지막 수축의 저점이 깨지면 베이스 구조가 무너진 것으로 봄(미너비니). 진행 중인 하락의 저점은 쓰지 않아 손절선이 주가를 따라 내려가지 않습니다. 매수가를 모르므로 구조 기준이고, 매수가에서 ' + P0(STOP_MAX) + " 넘게 멀면 " + P0(STOP_MAX) + "에서 끊으세요.</span>";
-    el.appendChild(tip);
-    chart.subscribeCrosshairMove((pm) => {
-      const ys = bars.priceToCoordinate(hs.stop);
-      if (!pm.point || ys == null || Math.abs(pm.point.y - ys) > 8) { tip.hidden = true; return; }
-      tip.hidden = false;
-      tip.style.left = Math.max(4, Math.min(pm.point.x + 14, el.clientWidth - tip.offsetWidth - 70)) + "px";
-      tip.style.top = (ys + 12 + tip.offsetHeight > el.clientHeight ? ys - tip.offsetHeight - 12 : ys + 12) + "px";
-    });
+  // 선 근처에 마우스를 올리면 근거 상자(여러 선이면 가까운 것)
+  const tips = [];
+  const tip = document.createElement("div"); tip.className = "stoptip"; tip.hidden = true; el.appendChild(tip);
+  chart.subscribeCrosshairMove((pm) => {
+    let best = null;
+    if (pm.point) tips.forEach((z) => { const ys = bars.priceToCoordinate(z.p); if (ys != null && Math.abs(pm.point.y - ys) <= 8 && (!best || Math.abs(pm.point.y - ys) < best.dy)) best = { z, ys, dy: Math.abs(pm.point.y - ys) }; });
+    if (!best) { tip.hidden = true; return; }
+    tip.innerHTML = best.z.html; tip.hidden = false;
+    tip.style.left = Math.max(4, Math.min(pm.point.x + 14, el.clientWidth - tip.offsetWidth - 70)) + "px";
+    tip.style.top = (best.ys + 12 + tip.offsetHeight > el.clientHeight ? best.ys - tip.offsetHeight - 12 : best.ys + 12) + "px";
+  });
+  const extraP = [];   // 계획 선은 그림 범위 밖이어도 보이게 가격 눈금을 넓힘
+  const pline = (p, color, style, title, width) => { extraP.push(p); return bars.createPriceLine({ price: p, color, lineWidth: width || 2, lineStyle: style, axisLabelVisible: true, title }); };
+  const LS = LightweightCharts.LineStyle;
+  // ★★ 보유: 손절선 · 매수가 · 다음 올릴 자리(+2R)
+  const hp = x && myLevel(t) === 2 ? holdPlan(x) : null;
+  if (hp) {
+    const html = holdPlanHtml(hp);
+    pline(hp.stop, "#c2410c", LS.Dashed, hp.by === "be" ? "손절(본전)" : "손절");
+    tips.push({ p: hp.stop, html });
+    if (hp.by === "struct" && hp.hs) marks.push({ time: hp.hs.t, position: "belowBar", shape: "arrowUp", color: "#c2410c", text: "손절 기준 저점" });
+    if (hp.buy != null) {
+      pline(hp.buy, DARK ? "#d1d5db" : "#374151", LS.Solid, "매수", 1);
+      tips.push({ p: hp.buy, html });
+      if (hp.date) marks.push({ time: d[Math.max(0, d.findIndex((r) => r.t >= hp.date))].t, position: "belowBar", shape: "arrowUp", color: DARK ? "#d1d5db" : "#374151", text: "매수" });
+      if (!hp.beHit) { pline(hp.beAt, "#9ca3af", LS.Dotted, "+" + BE_R + "R → 본전", 1); tips.push({ p: hp.beAt, html }); }
+    }
   }
+  // ★ 관심: 계획 손절선(사면 어디서 끊나) · 형성 중 치트가 있으면 치트 기준
+  if (x && cls && myLevel(t) === 1 && (!cls.rg || cls.rg.r === 2) && cls.pos !== "out") {
+    const ch = x.cheat && cls.pos === "form" && !cls.near ? x.cheat : null;
+    const entry = ch ? ch.pivot : cls.risk && cls.risk.entry, stop = ch ? ch.stop : cls.risk && cls.risk.stop;
+    if (entry && stop && stop < entry) {
+      const v = cls.vcp, why = ch ? (ch.kind === "low" ? "로우치트" : "치트") + " 평평한 구간(" + ch.k + "일) 저점 바로 아래 1%"
+        : cls.risk.wide ? "구조 손절선 " + cls.stopLine.toFixed(2) + "(마지막 수축 저점 아래)이 진입가에서 " + P0(STOP_MAX) + "보다 멀어 " + P0(STOP_MAX) + " 상한 적용"
+        : (v && v.tightAdded ? "마지막 수축(최근 10일 조용한 구간)의 저점" : v && v.swingLow != null ? "마지막 눌림의 저점" : "베이스 저점") + " 바로 아래 1%";
+      pline(stop, "#c2410c", LS.Dotted, "계획 손절");
+      tips.push({ p: stop, html: "<b>계획 손절선 " + stop.toFixed(2) + "</b> · 진입가 대비 −" + ((1 - stop / entry) * 100).toFixed(1) + "%" +
+        "<br><b>진입</b> " + entry.toFixed(2) + (ch ? " (치트 피벗 돌파 시)" : cls.pos === "break" && !cls.chase ? " (지금 가격, 돌파 매수 범위)" : " (피벗 돌파 시)") +
+        "<br><b>근거</b> " + why + '<br><span class="muted">사기 전에 어디서 끊을지 정해 두는 선입니다. 손절 거리가 ' + P0(STOP_MAX) + "에 가까우면 불리한 자리입니다.</span>" });
+    }
+  }
+  if (extraP.length) bars.applyOptions({ autoscaleInfoProvider: (orig) => {
+    const r = orig(); if (!r || !r.priceRange) return r;
+    r.priceRange.minValue = Math.min(r.priceRange.minValue, ...extraP); r.priceRange.maxValue = Math.max(r.priceRange.maxValue, ...extraP); return r; } });
   marks.sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
   if (marks.length) bars.setMarkers(marks);
   chart.timeScale().fitContent();
@@ -1321,14 +1354,54 @@ function holdStopOf(x) {
   if (r) r.stop = r.low * 0.99;
   return (x._hs = r);
 }
+// 보유 손절 계획(holdPlan): 매수가가 있으면
+//   처음 손절 = 매수일 시점의 구조 손절선과 매수가 −10% 중 높은 쪽(매수가 위면 −10%만)  · R = 매수가 − 처음 손절
+//   올리기: ① 매수 뒤 종가가 +2R에 닿은 적 있으면 본전(매수가)  ② 매수 뒤 생긴 확정 저점의 구조 손절선이 더 높으면 그것
+//   손절선 = 셋 중 가장 높은 값(내려가지 않음) · 손익 %와 R 배수
+// 매수가가 없으면 지금 구조 손절선(holdStopOf)만
+const BE_R = 2;   // 이익이 손절 거리의 2배가 되면 손절선을 본전으로(미너비니: 2-3배)
+function holdPlan(x) {
+  if (!x || !x.cls) return null;
+  if (x._hp !== undefined) return x._hp;
+  const hs = holdStopOf(x), b = BUY[x.t], d = x.d, price = d[d.length - 1].c;
+  if (!b || !(b.p > 0)) return (x._hp = hs ? { stop: hs.stop, by: "struct", hs, price } : null);
+  let bi = d.length - 1;
+  if (b.d) { const k = d.findIndex((r) => r.t >= b.d); bi = k < 0 ? d.length - 1 : k; }
+  let hs0 = null;
+  if (bi >= 60) {
+    const dd = d.slice(0, bi + 1), c0 = classify(dd, x.rs), lp0 = lastPivot(dd, findBasesD(dd, c0.rg && c0.rg.hist));
+    hs0 = holdStopOf({ d: dd, cls: c0, lp: lp0, t: x.t });
+  }
+  const cap = b.p * (1 - STOP_MAX), s0 = hs0 && hs0.stop < b.p ? Math.max(hs0.stop, cap) : cap;
+  const R = b.p - s0;
+  let mx = -Infinity; for (let i = bi; i < d.length; i++) mx = Math.max(mx, d[i].c);
+  const beHit = mx >= b.p + BE_R * R;
+  const structOk = hs && (!b.d || hs.t >= b.d) && hs.stop > s0;
+  const cands = [[s0, "init"], [beHit ? b.p : -Infinity, "be"], [structOk ? hs.stop : -Infinity, "struct"]];
+  const [stop, by] = cands.reduce((a, c) => (c[0] > a[0] ? c : a));
+  return (x._hp = { stop, by, hs, hs0, s0, capped: !(hs0 && hs0.stop < b.p && hs0.stop >= cap), buy: b.p, date: b.d, R, beHit, beAt: b.p + BE_R * R,
+                     pnl: price / b.p - 1, rMul: (price - b.p) / R, price });
+}
+// 보유 손절선 근거 글(차트 상자 · 툴팁)
+function holdPlanHtml(pl) {
+  const pr = pl.price, below = pr < pl.stop, f = (v) => v.toFixed(2);
+  const hsTxt = (h) => h.src + "의 " + h.kind + " " + f(h.low) + "(" + md(h.t) + ") 바로 아래 1%";
+  let h = "<b>손절선 " + f(pl.stop) + "</b> · 지금 가격 대비 " + (below ? '<b class="warn">' + pctf(pl.stop / pr - 1) + " (이미 아래)</b>" : pctf(pl.stop / pr - 1));
+  if (pl.buy == null) return h + "<br><b>근거</b> " + hsTxt(pl.hs) + '<br><span class="muted">마지막 수축의 저점이 깨지면 베이스 구조가 무너진 것으로 봄(미너비니). 진행 중인 하락의 저점은 쓰지 않습니다. 매수가를 넣으면(크게 보기 위 칸) 매수가 −' + P0(STOP_MAX) + " 상한, 본전 올리기, 손익·R이 함께 나옵니다.</span>";
+  h += "<br>매수 " + f(pl.buy) + (pl.date ? " (" + md(pl.date) + ")" : "") + " · 손익 <b class=\"" + (pl.pnl >= 0 ? "chg-up" : "chg-down") + "\">" + pctf(pl.pnl) + "</b> · " + (pl.rMul >= 0 ? "+" : "") + pl.rMul.toFixed(1) + "R (1R = " + f(pl.R) + ")";
+  h += "<br><b>지금 손절선</b> = " + (pl.by === "be" ? "본전(매수가): 종가가 +" + BE_R + "R(" + f(pl.beAt) + ")에 닿은 적 있음" : pl.by === "struct" ? "매수 뒤 생긴 " + hsTxt(pl.hs) : "처음 손절선") ;
+  h += "<br><b>처음 손절선</b> " + f(pl.s0) + " = " + (pl.capped ? "매수가 −" + P0(STOP_MAX) + (pl.hs0 ? " (구조 손절선 " + f(pl.hs0.stop) + "이 더 멀어서 상한 적용)" : "") : "매수일 기준 " + hsTxt(pl.hs0));
+  if (!pl.beHit) h += "<br><b>다음 올릴 자리</b> 종가 " + f(pl.beAt) + "(+" + BE_R + "R) 이상이면 손절선을 본전으로";
+  return h + '<br><span class="muted">손절선은 처음 손절선 · 본전 · 매수 뒤 구조 손절선 중 가장 높은 값이라 내려가지 않습니다.</span>';
+}
 function holdWarns(t) {
   const x = VIEW && VIEW.info[t], w = [];
   if (!x || !x.cls) return w;
   const c = x.cls, price = x.d[x.d.length - 1].c;
   if (c.rg && c.rg.r !== 2) w.push(c.rg.r + "단계 " + RG_NAME[c.rg.r]);
   else if (c.pos === "out") w.push(c.state === "deep" ? "이탈 (베이스 깊음)" : "이탈 (저점 아래)");
-  const hs = holdStopOf(x);
-  if (hs && price < hs.stop) w.push("손절선 아래");
+  const hp = holdPlan(x);
+  if (hp && price < hp.stop) w.push("손절선 아래");
   if (x.dist50 != null && x.dist50 < 0) w.push("50일선 아래");
   if (x.rs < RS_LEADER) w.push("RS " + RS_LEADER + " 아래");
   if (x.lp && price < x.lp.top && c.pos !== "out") w.push("돌파 피벗 아래");
@@ -1370,9 +1443,9 @@ function holdTodo(x) {
   if (c.rg && c.rg.r === 4) return "<b>정리 검토</b> · 4단계 하락기";
   if (c.rg && c.rg.r === 3) return "<b>비중 줄이기 검토</b> · 3단계 천장기";
   if (c.pos === "out") return "<b>정리 검토</b> · 베이스 이탈";
-  const hs = holdStopOf(x);
-  if (hs && price < hs.stop) return "<b>손절선 아래</b> · " + hs.stop.toFixed(2) + " · 정리 검토";
-  const sl = hs ? "손절선 " + hs.stop.toFixed(2) + " (" + pctf(hs.stop / price - 1) + ")" : "";
+  const hp = holdPlan(x);
+  if (hp && price < hp.stop) return "<b>손절선 아래</b> · " + hp.stop.toFixed(2) + " · 정리 검토";
+  const sl = hp ? "손절 " + hp.stop.toFixed(2) + " (" + pctf(hp.stop / price - 1) + ")" + (hp.by === "be" ? " 본전" : "") + (hp.buy != null ? " · " + pctf(hp.pnl) + " " + (hp.rMul >= 0 ? "+" : "") + hp.rMul.toFixed(1) + "R" : "") : "";
   const w = holdWarns(x.t).filter((z) => !z.startsWith("실적") && !z.startsWith("RS"));
   if (w.length) return "<b>경고 확인</b>" + (sl ? " · " + sl : "");
   return mu("보유 유지" + (sl ? " · " + sl : ""));
@@ -1410,7 +1483,7 @@ function renderMyBox() {
   const el = document.getElementById("myBox");
   if (!el) return;
   let dirty = false; try { dirty = localStorage.getItem("td2_myDirty") === "1"; } catch (_) {}
-  const lst = (arr, lv) => arr.length ? arr.map((t) => '<span class="it">' + STAR_TXT[lv] + " <b>" + t + '</b> <span class="muted">' + TICKERS[t].name +
+  const lst = (arr, lv) => arr.length ? arr.map((t) => '<span class="it">' + STAR_TXT[lv] + " <b>" + t + '</b> <span class="muted">' + TICKERS[t].name + (lv === 2 && BUY[t] ? " · 매수 " + BUY[t].p + (BUY[t].d ? " (" + BUY[t].d.slice(2).replace(/-/g, ".") + ")" : "") : "") +
     '</span><button data-rm="' + t + '" title="빼기">✕</button></span>').join("") : '<span class="muted">없음</span>';
   el.innerHTML = '<div class="row"><b>내 종목</b><span class="muted">보유 ★★ · 관심 ★ · 나스닥100 종목만 · 이 브라우저에만 저장됩니다</span></div>' +
     '<div class="row"><input id="myIn" list="tickerList" placeholder="티커 (예: NVDA)" autocomplete="off">' +
@@ -1795,7 +1868,7 @@ const ST_COLS = [   // [키, 제목, 정렬값(없으면 정렬 안 함), 첫 �
   ["qw", "비중", (x) => NDXW[x.t] ?? -1, -1, "나스닥100(QQQ) 안 비중(%)"],
   ["qi", "영향", (x) => { const q = qqqImpact(x.t); return q && q.c != null ? q.c : -999; }, -1, "QQQ 영향: 비중 × 4주 등락률 = 이 종목이 지난 4주 동안 QQQ를 몇 %p 움직였나"],
   ["sp", "6개월", null, 0, "종가 · 50일선(청록) · 200일선(보라) · 피벗(주황 점선)"],
-  ["todo", "다음 할 일", null, 0, ""],
+  ["todo", "다음 할 일", (x) => { const hp = myLevel(x.t) === 2 ? holdPlan(x) : null; return hp ? x.d[x.d.length - 1].c / hp.stop - 1 : 9 + orderOf(x.cls); }, 1, "누르면 ★★ 보유는 손절선에 가까운 순(이미 아래면 맨 위), 나머지는 할 일 순서"],
   ["bd", "꼬리표", null, 0, ""],
 ];
 const TABLE_SORT = {}, SEC_OPEN = {};
@@ -1976,6 +2049,22 @@ function openModal(t) {
   document.getElementById("mReason").innerHTML = x.cls ? reasonOf(x) : cls.reason;
   const tel = document.getElementById("mTT");
   tel.innerHTML = "";
+  if (myLevel(t) === 2) {
+    const b = BUY[t] || {};
+    tel.innerHTML += '<span class="buyf">매수가 <input id="bP" type="number" step="0.01" min="0" value="' + (b.p || "") + '"> 매수일 <input id="bD" type="date" value="' + (b.d || "") + '">' +
+      ' <button id="bSave">저장</button>' + (b.p ? ' <button id="bDel">지우기</button>' : "") + ' <span class="muted">이 브라우저에만 저장</span></span>';
+    setTimeout(() => {
+      const save = (del) => {
+        const pv = +document.getElementById("bP").value, dv = document.getElementById("bD").value;
+        if (del) delete BUY[t]; else if (pv > 0) BUY[t] = { p: pv, d: dv || "" }; else return;
+        buySave(); Object.values(VIEW.info).forEach((y) => { delete y._hp; });
+        closeModal(); openModal(t); renderMine(); renderSticky(); renderMyBox();
+        toast(t + (del ? " 매수가를 지웠어요" : " 매수가 " + pv + " 저장"));
+      };
+      document.getElementById("bSave").onclick = () => save(false);
+      const del = document.getElementById("bDel"); if (del) del.onclick = () => save(true);
+    }, 0);
+  }
   const ch = x.cheat;
   if (ch) tel.innerHTML += '<b style="color:var(--wait)">' + (ch.kind === "low" ? "로우치트" : "치트") + "</b> 피벗 " + ch.pivot.toFixed(2) + " (" + pctf(ch.dist) + ") · 손절 −" + (ch.risk * 100).toFixed(1) + "% · 조정 −" + (ch.corr * 100).toFixed(0) + "% · 되오름 " + (ch.rec * 100).toFixed(0) + "% · 평평한 구간 " + ch.k + "일(폭 " + (ch.range * 100).toFixed(0) + "%)";
   document.getElementById("modal").classList.add("open");
@@ -2334,7 +2423,10 @@ function buildHelp() {
 <p>모든 표 맨 앞의 별을 누를 때마다 <b>☆ → ★ 관심 → ★★ 보유 → ☆</b> 순서로 바뀝니다. 잘못 눌렀으면 아래에 잠깐 뜨는 '되돌리기'를 누르세요. 표는 3층과 같은 칸이고, 다른 것은 "다음 할 일"과 경고뿐입니다.</p>
 <table>
 <tr><td>★★ 보유 점검</td><td><b>언제 파나.</b> 경고가 많은 종목부터 놓습니다. 다음 할 일: 4단계 → 정리 검토 · 3단계 → 비중 줄이기 검토 · 이탈 → 정리 검토 · 손절선 아래 → 정리 검토 · 경고가 있으면 경고 확인 · 아니면 보유 유지. 손절선과 거리도 함께 적습니다.</td></tr>
-<tr><td>보유 손절선</td><td><b>마지막으로 확정된 수축의 저점 바로 아래 1%</b>. 확정 = 눌림 뒤 5% 넘게 반등까지 끝남. 진행 중인 하락의 저점은 쓰지 않아서 손절선이 주가를 따라 내려가지 않습니다. 기준 베이스는 지금 베이스(3주 이상) → 없으면 마지막으로 돌파한 베이스(돌파 전날까지) → 둘 다 없으면 최근 26주. 그 안에서 최근 10일 조용한 구간(폭 5% 미만)이 있으면 그 저점, 아니면 마지막 확정 눌림 저점입니다. 크게 보기 차트에 주황 점선("손절")과 기준 저점 화살표로 그리고, 선 근처에 마우스를 올리면 근거가 보입니다. 매수가를 모르므로 구조 기준이며, 매수가에서 ${P(STOP_MAX)} 넘게 멀면 ${P(STOP_MAX)}에서 끊으세요.</td></tr>
+<tr><td>보유 손절선</td><td><b>구조 손절선</b>: 마지막으로 확정된 수축의 저점 바로 아래 1%(확정 = 눌림 뒤 5% 넘게 반등까지 끝남, 진행 중인 하락의 저점은 쓰지 않음). 기준 베이스는 지금 베이스(3주 이상) → 마지막으로 돌파한 베이스(돌파 전날까지) → 최근 26주. 그 안에 최근 10일 조용한 구간(폭 5% 미만)이 있으면 그 저점.<br>
+<b>매수가·매수일을 넣으면</b>(크게 보기 위 칸, 이 브라우저에만 저장, 설정 링크로 다른 기기에 함께 옮겨짐): 처음 손절선 = 매수일 시점의 구조 손절선과 매수가 −${P(STOP_MAX)} 중 높은 쪽 · 1R = 매수가 − 처음 손절선. 그 뒤 ① 종가가 +${BE_R}R에 닿은 적 있으면 본전(매수가)으로 ② 매수 뒤 생긴 확정 저점의 구조 손절선이 더 높으면 그것으로 올립니다. 손절선은 셋 중 가장 높은 값이라 내려가지 않습니다. 다음 할 일에 손익 %와 R 배수가 붙습니다.<br>
+크게 보기 차트에 주황 점선 "손절"(본전이면 "손절(본전)"), 회색 "매수", 점선 "+${BE_R}R → 본전"(다음 올릴 자리)을 그리고, 선 근처에 마우스를 올리면 근거가 보입니다. "다음 할 일" 칸 제목을 누르면 손절선에 가까운 보유 종목부터 놓습니다(이미 아래면 맨 위).</td></tr>
+<tr><td>관심 계획 손절선</td><td>★ 관심 종목의 크게 보기 차트에는 "계획 손절" 점선을 그립니다. 피벗 돌파 때 사면(돌파 매수 범위면 지금 가격, 치트면 치트 피벗) 어디서 끊을지 미리 보는 선이고, 근거는 마우스를 올리면 보입니다.</td></tr>
 <tr><td>경고</td><td>꼬리표 칸 앞에 주황으로: <span class="wtag">손절선 아래</span> 종가가 보유 손절선 아래 · <span class="wtag">50일선 아래</span> · <span class="wtag">RS ${RS_LEADER} 아래</span> · <span class="wtag">돌파 피벗 아래</span> 마지막 돌파 피벗 아래로 되돌아옴(돌파 실패 신호) · <span class="wtag">20일선 아래</span> 돌파한 지 20거래일 안인데 종가가 20일선 아래(미너비니: 부정적 신호, 그것만으로 팔지는 않음) · <span class="wtag">실적 D-n</span> ${EARN_WARN_DAYS}일 안 발표. 1·3·4단계와 이탈은 단계·위치 칸과 다음 할 일에 나옵니다. 경고가 하나라도 있으면 줄 왼쪽에 주황 띠가 생기고, 고정 바에 경고 수가 나옵니다.</td></tr>
 <tr><td>★ 관심 점검</td><td><b>언제 사나.</b> 3층과 같은 할 일 순서(돌파·매수 범위 → 형성·임박 → 형성 → 돌파·추격 금지 → 이탈 → 1·3·4단계)로 놓습니다.</td></tr>
 <tr><td>⚙ 설정 › 내 종목</td><td>티커로 넣고 빼기(나스닥100 종목만), 전체 지우기, <b>설정 링크 복사</b>.</td></tr>
