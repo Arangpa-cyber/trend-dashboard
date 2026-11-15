@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 21:17</title>
+<title>추세 대시보드 v2026-11-15 21:37</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -187,17 +187,18 @@
   table.ntable tr:last-child td { border-bottom: 0; }
   table.ntable tbody tr[data-t] { cursor: zoom-in; }
   table.ntable tbody tr[data-t]:hover td { background: linear-gradient(rgba(127,127,127,0.07), rgba(127,127,127,0.07)), var(--card); }
-  table.ntable col.c-my { width: 36px; } table.ntable col.c-t { width: 56px; } table.ntable col.c-grp { width: 154px; }
-  table.ntable col.c-pos { width: auto; } table.ntable col.c-rs { width: 58px; } table.ntable col.c-pc { width: 64px; } table.ntable col.c-qw { width: 50px; }
-  table.ntable col.c-qi { width: 74px; } table.ntable col.c-sp { width: 80px; } table.ntable col.c-todo { width: 240px; } table.ntable col.c-bd { width: 84px; }
-  /* 산업 이름은 한 줄로 끝까지: 가장 긴 "전자상거래·소비자 서비스"(12px 약 139px)에 맞춘 폭 */
+  /* 칸 폭은 fitCols가 정함(고정 칸 COL_W · 글에 맞추는 칸: 단계·위치 · 다음 할 일 · 꼬리표). 아래는 그리기 전 기본값 */
+  table.ntable col.c-my { width: 34px; } table.ntable col.c-t { width: 58px; } table.ntable col.c-grp { width: 136px; }
+  table.ntable col.c-pos { width: 190px; } table.ntable col.c-rs { width: 60px; } table.ntable col.c-pc { width: 64px; } table.ntable col.c-qw { width: 52px; }
+  table.ntable col.c-qi { width: 74px; } table.ntable col.c-sp { width: 82px; } table.ntable col.c-todo { width: 220px; } table.ntable col.c-bd { width: auto; }
+  /* 산업 이름은 한 줄로 끝까지: 가장 긴 "전자상거래·소비자 서비스"(12px 약 121px) + 여백 = 136px */
   table.ntable td.grp { overflow: visible; text-overflow: clip; font-size: 12px; }
   table.ntable td.todo { font-size: 12px; }
   table.ntable td.bd { white-space: normal; line-height: 1.5; } table.ntable td.bd .badge:first-child { margin-left: 0; }
   table.ntable td.sp .spark { display: block; }
   /* ★·티커는 가로로 밀어도 왼쪽에 고정 */
   table.ntable .stc { position: sticky; left: 0; z-index: 1; background: var(--card); text-align: center; padding-left: 2px; padding-right: 2px; }
-  table.ntable .tkc { position: sticky; left: 36px; z-index: 1; background: var(--card); }
+  table.ntable .tkc { position: sticky; left: 34px; z-index: 1; background: var(--card); }
   table.ntable tr.mwarn td.tkc { box-shadow: inset 3px 0 0 var(--warn); }
   table.ntable tr.sg td { padding: 9px 8px 4px; font-size: 12px; border-bottom: 2px solid var(--line); background: var(--bg); overflow: visible; }
   table.ntable tr.sg .sgl { position: sticky; left: 8px; } table.ntable tr.sg.fold { cursor: pointer; }
@@ -269,7 +270,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 21:17</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 21:37</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -941,9 +942,8 @@ function computeView(k) {
     const d = D[t], cl = d.map((r) => r.c), m50 = smaArr(cl, 50), nn = d.length;
     const x = info[t] = { t, d, rs: rn[t], rsThen: rt[t], above50: m50[nn - 1] != null && cl[nn - 1] > m50[nn - 1] };
     if (!k && nn > 80) x.above50Then = m50[nn - 21] != null && cl[nn - 21] > m50[nn - 21];   // 2층용: 4주(20거래일) 전 50일선 위였나
-    if (x.rs >= RS_LEADER) { x.cls = classify(d, x.rs); x.rsHigh = q ? rsLineHigh(d, q) : false; }
+    x.cls = classify(d, x.rs);                  // 모든 종목(4주 전 시점도): 단계별 종목 수 4주 변화에 씀
     if (!k) {                                   // 2·3·4층용: 지금 시점만 계산
-      if (!x.cls) { x.cls = classify(d, x.rs); x.rsHigh = q ? rsLineHigh(d, q) : false; }
       const c = cl[nn - 1], y1 = d.slice(-252), m200 = smaArr(cl, 200)[nn - 1], m20 = smaArr(cl, 20)[nn - 1];
       x.above200 = m200 != null ? c > m200 : null;
       x.dist50 = m50[nn - 1] ? c / m50[nn - 1] - 1 : null;
@@ -1432,7 +1432,10 @@ function renderSticky() {
                           : '<span class="pill">시장 판정 대기 중</span>';
   if (VIEW) {
     const all = Object.values(VIEW.info).filter((x) => x.cls && x.cls.rg), n2 = all.filter((x) => x.cls.rg.r === 2).length;
-    if (all.length) html += sep + '<a class="chip" href="#sec-market" title="나스닥100 종목 중 2단계 상승기 비율">2단계 <b>' + Math.round((n2 / all.length) * 100) + "%</b></a>";
+    const s0 = PREV_VIEW ? stageCounts(PREV_VIEW) : null, p0 = s0 && s0[1] + s0[2] + s0[3] + s0[4] ? Math.round((s0[2] / (s0[1] + s0[2] + s0[3] + s0[4])) * 100) : null;
+    const p2 = all.length ? Math.round((n2 / all.length) * 100) : null;
+    if (all.length) html += sep + '<a class="chip" href="#sec-market" title="나스닥100 종목 중 2단계 상승기 비율 · 4주 전 ' + (p0 ?? "-") + '%">2단계 <b>' + p2 + "%</b>" +
+      (p0 != null ? " <small>" + chgSpan(p2 - p0, "±0") + "%p</small>" : "") + "</a>";
     const nB = viewList("buy").length, nT = viewList("turn").length;
     html += sep + '<a class="chip' + (nB ? " hot" : "") + '" href="#sec-stocks" data-view="buy">매수 후보 <b>' + nB + "</b></a>" +
             ' · <a class="chip" href="#sec-stocks" data-view="turn">전환 후보 <b>' + nT + "</b></a>";
@@ -1598,6 +1601,9 @@ function renderPhase() {
   el.title = "2층 흐름 꼬리표(유출 본격 산업 → 유입 본격 산업, 4주 기준)와 XLY/XLP 방향으로 자동으로 만든 요약";
   el.hidden = false;
 }
+// 단계별 종목 수 [판단 불가, 1, 2, 3, 4] (g를 주면 그 산업만). 4주 전 비교는 PREV_VIEW로
+const stageCounts = (v, g) => { const st = [0, 0, 0, 0, 0]; if (v) Object.values(v.info).forEach((x) => { if (!g || TICKERS[x.t].group === g) st[x.cls && x.cls.rg ? x.cls.rg.r : 0]++; }); return st; };
+const stageOfT = (v, t) => (v && v.info[t] && v.info[t].cls && v.info[t].cls.rg ? v.info[t].cls.rg.r : null);
 // 산업 안 종목의 단계 분포 막대 (1 회색 · 2 초록 · 3 주황 · 4 회청색)
 const stageBar = (st, W) => '<span class="sbar" style="width:' + W + 'px">' + [1, 2, 3, 4].map((r) => (st[r] ? '<i class="s' + r + '" style="flex:' + st[r] + '"></i>' : "")).join("") + "</span>";
 // 2층 산업 행을 누르면 펼쳐지는 줄: 단계별 종목 · 4주 주도주 편입·편출 · 위치가 바뀐 주도주
@@ -1613,7 +1619,9 @@ function groupDetail(x) {
   const mvTxt = (ins.length ? '<span class="chg-up">편입 ▲</span> ' + ins.map((m) => tk(m.t, "RS " + m.rs0 + "→" + m.rs1)).join(", ") : "") +
     (outs.length ? (ins.length ? " · " : "") + '<span class="chg-down">편출 ▼</span> ' + outs.map((m) => tk(m.t, "RS " + m.rs0 + "→" + m.rs1)).join(", ") : "") +
     (mids.length ? (ins.length || outs.length ? " · " : "") + "위치 바뀜 " + mids.map((m) => tk(m.t, m.what)).join(", ") : "");
-  return rows + '<div class="muted">4주 주도주(RS ' + RS_LEADER + "+) 변화: " + (mvTxt ? "</div><div>" + mvTxt : "없음") + "</div>" +
+  const sm = members.map((y) => [y.t, stageOfT(PREV_VIEW, y.t), stageOfT(VIEW, y.t)]).filter(([, a, b]) => a && b && a !== b);
+  const smTxt = sm.length ? "<div>" + '<span class="muted">4주 전 대비 단계 바뀜:</span> ' + sm.map(([t, a, b]) => tk(t, a + "→" + b + "단계")).join(", ") + "</div>" : "";
+  return rows + smTxt + '<div class="muted">4주 주도주(RS ' + RS_LEADER + "+) 변화: " + (mvTxt ? "</div><div>" + mvTxt : "없음") + "</div>" +
     '<div class="muted">아래 3층 종목 표가 이 산업만 보여 줍니다 · 행을 다시 누르면 해제</div>';
 }
 function renderFlow() {
@@ -1632,12 +1640,14 @@ function renderFlow() {
   });
   body.innerHTML = list.map((x) => {
     const rc = Math.round(x.rs - x.rsThen), bc = x.above - x.aboveThen, small = x.n <= 2, sel = selectedGroup === x.g;
+    const s0 = PREV_VIEW ? stageCounts(PREV_VIEW, x.g) : null;   // 4주 전 단계별 종목 수
     return '<tr class="row' + (sel ? " sel" : "") + '" data-g="' + x.g + '"' +
       (small ? ' title="종목이 ' + x.n + '개뿐이라 한 종목 변화로 숫자가 크게 흔들림"' : "") + ">" +
       "<td>" + x.rank + "</td><td><b>" + x.g + '</b> <span class="muted">' + x.n + "</span> " + (sel ? "▾" : '<span class="muted">▸</span>') + "</td>" +
       "<td>" + flowSpark(x.hist, 120) + "</td>" +
       "<td><b>" + Math.round(x.rs) + "</b> " + chgSpan(rc, "0") + "</td>" +
-      '<td title="1단계 ' + x.st[1] + " · 2단계 " + x.st[2] + " · 3단계 " + x.st[3] + " · 4단계 " + x.st[4] + '">' + stageBar(x.st, 56) + " " + x.st[2] + '<span class="muted">/' + x.n + "</span></td>" +
+      '<td title="' + [1, 2, 3, 4].map((r) => r + "단계 " + x.st[r] + (s0 ? "(" + (x.st[r] - s0[r] > 0 ? "+" : "") + (x.st[r] - s0[r]) + ")" : "")).join(" · ") + (s0 ? " · 괄호는 4주 전 대비" : "") + '">' +
+        stageBar(x.st, 56) + " " + x.st[2] + '<span class="muted">/' + x.n + "</span>" + (s0 ? " " + chgSpan(x.st[2] - s0[2], "") : "") + "</td>" +
       "<td>" + x.above + '<span class="muted">/' + x.n + "</span> " + chgSpan(bc, "0") + "</td>" +
       "<td>" + x.leaders.length + '<span class="muted">/' + x.n + "</span> " + lcCell(LCNT[x.g]) + "</td>" +
       "<td>" + (x.leaders.length ? x.leaders.join(", ") : '<span class="muted">-</span>') + "</td></tr>" +
@@ -1698,10 +1708,10 @@ function breadthHtml() {
   if (!VIEW) return "";
   const all = Object.values(VIEW.info);
   if (!all.length) return "";
-  const st = [0, 0, 0, 0, 0]; all.forEach((x) => st[x.cls && x.cls.rg ? x.cls.rg.r : 0]++);
+  const st = stageCounts(VIEW), st0 = PREV_VIEW ? stageCounts(PREV_VIEW) : null;
   const nh = all.filter((x) => x.newHigh).length, nl = all.filter((x) => x.newLow).length;
-  return "<b>100종목 단계</b> " + stageBar(st, 140) + " " + [1, 2, 3, 4].map((r) => stageDot(r) + r + "단계 " + RG_NAME[r] + " <b>" + st[r] + "</b>").join(" · ") +
-    (st[0] ? ' · <span class="muted">판단 불가 ' + st[0] + "</span>" : "") + ' <span class="muted">· 52주 신고가 ' + nh + " · 신저가 " + nl + "</span>";
+  return "<b>100종목 단계</b> " + stageBar(st, 140) + " " + [1, 2, 3, 4].map((r) => stageDot(r) + r + "단계 " + RG_NAME[r] + " <b>" + st[r] + "</b>" + (st0 ? " " + chgSpan(st[r] - st0[r], "±0") : "")).join(" · ") +
+    (st0 ? ' <span class="muted">(4주 전 대비)</span>' : "") + (st[0] ? ' · <span class="muted">판단 불가 ' + st[0] + "</span>" : "") + ' <span class="muted">· 52주 신고가 ' + nh + " · 신저가 " + nl + "</span>";
 }
 function updateBreadth() { const el = document.getElementById("breadth"); if (el) el.innerHTML = breadthHtml(); }
 
@@ -1779,20 +1789,38 @@ function stockTable(id, list, o) {
     rerenderTable(id);
   }));
   wrap.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t)));
-  fitTodo(wrap);
+  fitCols(wrap);
 }
 const rerenderTable = (id) => (id === "tb-stock" ? renderStocks() : renderMine());
-// '다음 할 일'은 한 줄로: 보이는 글 중 가장 긴 것에 칸 폭을 맞추고, 남는 폭은 '단계·위치'가 씀
-function fitTodo(wrap) {
-  const tds = [...wrap.querySelectorAll("td.todo")], tb = wrap.querySelector("table");
-  if (!tds.length || !tb) return;
-  const cs = getComputedStyle(tds[0]), cv = (fitTodo.cv = fitTodo.cv || document.createElement("canvas")).getContext("2d");
-  cv.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
-  const wMax = Math.max(...tds.map((td) => cv.measureText(td.textContent).width));
-  const need = Math.ceil(wMax + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 2);
-  const cols = [...wrap.querySelectorAll("col")].filter((c) => !/c-(todo|pos)$/.test(c.className));
-  const room = tb.clientWidth - cols.reduce((a, c) => a + parseFloat(getComputedStyle(c).width), 0) - 160;
-  wrap.querySelector("col.c-todo").style.width = Math.max(150, Math.min(need, room)) + "px";
+// 칸 폭: 숫자·짧은 칸은 고정(내용 폭 + 여백), 단계·위치 · 다음 할 일 · 꼬리표는 지금 보이는 글에 맞춤.
+// 다 들어가면 남는 폭은 맨 오른쪽 꼬리표가 가져가 줄 끝만 비고 칸 사이는 벌어지지 않음.
+// 모자라면 단계·위치(가장 긴 글이 드묾) → 다음 할 일 → 꼬리표 순서로 줄임(넘치는 글은 말줄임·마우스를 올리면 전체, 꼬리표는 두 줄)
+const COL_W = { my: 34, t: 58, grp: 136, rs: 60, pc: 64, qw: 52, qi: 74, sp: 82 };
+const COL_MIN = { pos: 150, todo: 130, bd: 84 };
+function fitCols(wrap) {
+  const tb = wrap.querySelector("table"), rows = [...wrap.querySelectorAll("tbody tr[data-t]")];
+  if (!tb || !rows.length) return;
+  const idx = (k) => ST_COLS.findIndex((c) => c[0] === k);
+  const m = (fitCols.m = fitCols.m || Object.assign(document.createElement("div"), { style: "position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap" }));
+  if (!m.isConnected) document.body.appendChild(m);
+  const need = (k) => {
+    const i = idx(k); let w = 0, cs = null;
+    rows.forEach((tr) => {
+      const td = tr.children[i]; if (!td) return;
+      cs = cs || getComputedStyle(td);
+      m.style.font = cs.font; m.innerHTML = td.innerHTML;
+      w = Math.max(w, m.getBoundingClientRect().width);
+    });
+    return Math.ceil(w + (cs ? parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) : 8) + 4);
+  };
+  const fixed = Object.values(COL_W).reduce((a, v) => a + v, 0);
+  const room = Math.max(wrap.clientWidth, 900) - fixed;   // 표가 아니라 감싼 상자 폭 기준(표는 앞선 폭 때문에 넓어져 있을 수 있음)
+  const w = { pos: Math.max(COL_MIN.pos, need("pos")), todo: Math.max(COL_MIN.todo, need("todo")), bd: Math.max(COL_MIN.bd, need("bd")) };
+  let over = w.pos + w.todo + w.bd - room;
+  if (over <= 0) w.bd -= over;
+  else ["pos", "todo", "bd"].forEach((k) => { const c = Math.min(over, w[k] - COL_MIN[k]); if (c > 0) { w[k] -= c; over -= c; } });
+  Object.assign(w, COL_W);
+  wrap.querySelectorAll("col").forEach((c) => { const k = c.className.slice(2); if (w[k]) c.style.width = w[k] + "px"; });
 }
 
 // ═════════════ 3층: 종목 — 보기 4개 ═════════════
@@ -2126,10 +2154,10 @@ function buildHelp() {
 </table>
 
 <h3 id="h-sticky">고정 바 <small>스크롤해도 위에 붙어 있는 줄</small></h3>
-<p>층 순서대로 한 줄에 보여 줍니다: <b>QQQ 판정(계절 단계)</b> → <b>2단계 비율</b>(나스닥100 중 2단계 상승기 종목 비율) → <b>매수 후보 수 · 전환 후보 수</b>(누르면 3층 그 보기로) → 산업을 고른 경우 그 산업 → <b>★★ 보유 수 · 경고 수 · ★ 관심 수</b>. 주황 숫자는 지금 눈여겨볼 항목입니다. 휴대폰에서는 한 줄로 줄어들고, 옆으로 밀면 나머지가 보입니다.</p>
+<p>층 순서대로 한 줄에 보여 줍니다: <b>QQQ 판정(계절 단계)</b> → <b>2단계 비율</b>(나스닥100 중 2단계 상승기 종목 비율과 4주 전 대비 %p 변화) → <b>매수 후보 수 · 전환 후보 수</b>(누르면 3층 그 보기로) → 산업을 고른 경우 그 산업 → <b>★★ 보유 수 · 경고 수 · ★ 관심 수</b>. 주황 숫자는 지금 눈여겨볼 항목입니다. 휴대폰에서는 한 줄로 줄어들고, 옆으로 밀면 나머지가 보입니다.</p>
 
 <h3 id="h-market">1층 · 시장 <small>지금 사도 되나</small></h3>
-<p>신호등 상자에 세 줄이 있습니다. ① <b>날씨</b>: 신호등 판정과 근거(위 "신호등"). ② <b>계절</b>: QQQ·QQQE의 장세 단계(아래 "단계와 위치"의 200일선 판정). 표시만 하고 판정에는 쓰지 않습니다. 둘이 다르면 "계절과 날씨가 다름"과 이유가 붙습니다(예: 200일선 바로 아래지만 선은 아직 오름). ③ <b>100종목 단계</b>: 나스닥100 종목의 1-4단계 분포 막대와 52주 신고가·신저가 수. 2단계 비율이 시장 폭입니다.</p>
+<p>신호등 상자에 세 줄이 있습니다. ① <b>날씨</b>: 신호등 판정과 근거(위 "신호등"). ② <b>계절</b>: QQQ·QQQE의 장세 단계(아래 "단계와 위치"의 200일선 판정). 표시만 하고 판정에는 쓰지 않습니다. 둘이 다르면 "계절과 날씨가 다름"과 이유가 붙습니다(예: 200일선 바로 아래지만 선은 아직 오름). ③ <b>100종목 단계</b>: 나스닥100 종목의 1-4단계 분포 막대, 단계별 종목 수와 4주 전 대비 변화(<span class="chg-up">▲</span>/<span class="chg-down">▼</span>), 52주 신고가·신저가 수. 2단계 비율이 시장 폭이고, 2단계가 줄고 3단계가 늘면 시장이 천장을 다지는 중일 수 있습니다.</p>
 <p>아래 QQQ 일봉 1년 차트는 신호등이 왜 그렇게 나왔는지 눈으로 확인하는 그림입니다.</p>
 <table>
 <tr><td style="color:#0d9488">━ 50일선</td><td>중기 추세(청록). 가격이 이 선 아래로 내려가면 회색 줄에 "참고"로 표시합니다(신호등 판정에는 쓰지 않음).</td></tr>
@@ -2156,7 +2184,7 @@ function buildHelp() {
 <tr><td>순위 · 산업</td><td>평균 RS 순위와 산업 이름(옆 숫자는 종목 수). 종목이 적은 산업은 한두 종목 변화로 숫자가 크게 흔들리니 종목 수를 함께 보세요(2개 이하면 마우스를 올렸을 때 알려 줍니다).</td></tr>
 <tr><td>평균 RS 40주</td><td>1주 간격 40개 시점(약 9개월)의 산업 평균 RS를 이은 작은 선(붉은색: 40주 전보다 높음, 파란색: 낮음). 4주 변화 숫자만으로는 알 수 없는 <b>방향과 가속</b>(계속 오르는지, 꼭대기를 찍고 꺾이는지, 바닥에서 돌아서는지)을 봅니다. 세로 폭은 최소 20점으로 고정해 작은 흔들림이 과장되지 않게 했습니다.</td></tr>
 <tr><td>평균 RS (4주)</td><td>그 산업 종목들의 RS(아래 "RS 계산법") 평균과 4주 전 대비 변화(예: 76 <span class="chg-up">▲23</span>). 높을수록 지수보다 강한 산업, ▲면 산업 자체가 강해지는 중.</td></tr>
-<tr><td>2단계</td><td>산업 안 종목의 단계 분포 막대(1 회색 · 2 초록 · 3 주황 · 4 회청색)와 2단계 상승기 종목 수 / 전체. 마우스를 올리면 단계별 수가 보입니다.</td></tr>
+<tr><td>2단계</td><td>산업 안 종목의 단계 분포 막대(1 회색 · 2 초록 · 3 주황 · 4 회청색)와 2단계 상승기 종목 수 / 전체, 4주 전 대비 변화(<span class="chg-up">▲</span> 늘어남 · <span class="chg-down">▼</span> 줄어듦). 마우스를 올리면 단계별 수와 4주 변화가 보입니다. 행을 펼치면 4주 동안 단계가 바뀐 종목(예: 2→3단계)도 나옵니다.</td></tr>
 <tr><td>50일선 위 (4주)</td><td>그 산업에서 주가가 50일선 위인 종목 수 / 전체와 4주 전 대비 변화(예: 5/6 <span class="chg-up">▲3</span>). 상승이 산업 전체로 퍼지는지(폭)를 봅니다. 평균 RS는 1년 성과라 느리고, 이 숫자는 지금 추세라 빠르게 바뀝니다.</td></tr>
 <tr><td>주도주 (4주)</td><td>그 산업의 주도주(RS ${RS_LEADER} 이상) 종목 수 / 전체와, 4주 전과 비교한 <b>편입(▲)</b>·<b>편출(▼)</b> 종목 수(예: 3/6 <span class="chg-up">▲2</span> <span class="chg-down">▼1</span>). 종목 이름은 행을 펼치면 보입니다. 주도주 그대로 위치만 바뀐 종목은 세지 않습니다. 칸 제목을 누르면 주도주가 많은 순으로 정렬됩니다.</td></tr>
 <tr><td>주도주</td><td>그 산업에서 RS ${RS_LEADER} 이상인 종목.</td></tr>
@@ -2187,7 +2215,7 @@ function buildHelp() {
 <tr><td>전환 후보</td><td>2단계로 넘어가는 종목: ① 최근 20거래일 안에 베이스를 돌파해 2단계가 된 종목 ② 1·3단계에서 2단계 조건이 이어지는 중인 종목(${RG_HOLD}거래일을 채우는 중) ③ 예비 주도주(RS ${PRE_RS_MIN}-${RS_LEADER - 1}, 4주 사이 RS +${PRE_RS_GAIN} 이상, 50일선 위, 이탈 아님, 4단계 제외).</td></tr>
 <tr><td>전체 100</td><td>나스닥100 전부, RS 높은 순. 주황 구분선 위가 주도주(RS ${RS_LEADER} 이상)입니다.</td></tr>
 </table>
-<p><b>칸</b>: ★ · 티커 · 산업 · 단계·위치 · RS(4주) · 4주 등락 · 비중 · 영향 · 6개월 · 다음 할 일 · 꼬리표. 4층 내 종목도 같은 칸입니다. 칸 제목을 누르면 큰 순(글자 칸은 가나다순), 한 번 더 누르면 반대, 한 번 더 누르면 보기의 기본 순서로 돌아갑니다. 줄을 누르면 일봉 차트를 크게 보고, 마우스를 올리면 판정 근거가 보입니다.</p>
+<p><b>칸</b>: ★ · 티커 · 산업 · 단계·위치 · RS(4주) · 4주 등락 · 비중 · 영향 · 6개월 · 다음 할 일 · 꼬리표. 4층 내 종목도 같은 칸입니다. 숫자 칸은 내용에 맞춘 고정 폭이고, 단계·위치 · 다음 할 일 · 꼬리표는 지금 보이는 글에 맞춰 폭이 바뀝니다(남는 폭은 맨 오른쪽 꼬리표 칸으로, 화면이 좁으면 넘치는 글은 말줄임). 칸 제목을 누르면 큰 순(글자 칸은 가나다순), 한 번 더 누르면 반대, 한 번 더 누르면 보기의 기본 순서로 돌아갑니다. 줄을 누르면 일봉 차트를 크게 보고, 마우스를 올리면 판정 근거가 보입니다.</p>
 <table>
 <tr><td>단계·위치</td><td>단계 점(1 회색 · 2 초록 · 3 주황 · 4 회청색) + 위치(형성·돌파·이탈) + 매수 범위·추격 금지·임박 + <b>피벗 대비 %</b>(마우스를 올리면 피벗 가격). 1·3·4단계는 위치 대신 단계 이름만 적습니다(200일선 대비는 마우스를 올리면). 돌파일 거래량이 50일 평균의 ${BREAKOUT_VOL}배에 못 미치면 "거래량 n배"가 주황으로 붙습니다.</td></tr>
 <tr><td>RS (4주)</td><td>RS 순위와 4주 전 대비 변화(<span class="chg-up">▲</span> 상대강도가 좋아지는 중).</td></tr>
