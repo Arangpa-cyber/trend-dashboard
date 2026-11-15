@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 21:10</title>
+<title>추세 대시보드 v2026-11-15 21:17</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -269,7 +269,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 21:10</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 21:17</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1098,7 +1098,7 @@ function addVolProfile(chart, series, el, d, from) {
             vp.ratio.forEach((v, i) => {
               const y1 = y(vp.lo + vp.st * (i + 1)), y2 = y(vp.lo + vp.st * i);
               if (y1 == null || y2 == null) return;
-              g.globalAlpha = 0.2 + v * 0.45;
+              g.globalAlpha = 0.08 + v * 0.22;   // 50칸: 옅게(가장 큰 곳도 0.3), 주가 바가 위에 잘 보이게
               g.fillRect(right - v * maxLen, y1 * vr, v * maxLen, (y2 - y1) * vr);
             });
           } else {
@@ -1106,7 +1106,7 @@ function addVolProfile(chart, series, el, d, from) {
               const y1 = y(vp.lo + vp.st * (z.i + 1)), y2 = y(vp.lo + vp.st * z.i);
               if (y1 == null || y2 == null) return;
               const L = z.v * maxLen;
-              g.globalAlpha = z.strong ? 0.6 : 0.3;
+              g.globalAlpha = z.strong ? 0.3 : 0.15;   // 핵심 5: 진한 3개 0.3 · 옅은 2개 0.15
               g.fillRect(right - L, y1 * vr, L, (y2 - y1) * vr);
             });
           }
