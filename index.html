@@ -1065,7 +1065,8 @@ function earnDates(t) {
 // 하루 거래량을 그날 저가-고가 사이 칸에 똑같이 나눠 담는 근사입니다(일봉 기준).
 let VP_MODE = "B";
 try { const m = localStorage.getItem("td2_vp"); if (["A", "B", "off"].includes(m)) VP_MODE = m; } catch (e) {}
-const VP_LABEL = { B: "매물대: 핵심 5", A: "매물대: 50칸", off: "매물대: 끔" };
+const VP_LABEL = { B: "매물대: 핵심", A: "매물대: 50칸", off: "매물대: 끔" };
+const VP_BAND = 0.6, VP_MAX_BANDS = 3;   // 핵심 구간: 앞뒤 칸과 평균 낸 거래량이 가장 많은 곳의 60% 이상인 칸이 이어진 곳(이 대시보드의 값), 최대 3개
 function volProfile(d, from) {
   const N = 50, rows = d.slice(from).filter((r) => !r.pv);
   if (rows.length < 30) return null;
@@ -1077,14 +1078,18 @@ function volProfile(d, from) {
     for (let i = i0; i <= i1; i++) b[i] += r.v / (i1 - i0 + 1);
   });
   const mx = Math.max(...b), ratio = b.map((v) => v / mx);
-  const sm = ratio.map((v, i) => (ratio[Math.max(0, i - 1)] + v + ratio[Math.min(N - 1, i + 1)]) / 3);
-  const peaks = [];
-  for (let i = 0; i < N; i++) if (sm[i] >= sm[Math.max(0, i - 1)] && sm[i] >= sm[Math.min(N - 1, i + 1)]) peaks.push(i);
-  peaks.sort((a, c) => sm[c] - sm[a]);
-  const zones = [];
-  for (const i of peaks) { if (zones.every((z) => Math.abs(z.i - i) >= 5)) zones.push({ i, v: ratio[i] }); if (zones.length === 5) break; }
-  zones.forEach((z, k) => (z.strong = k < 3));
-  return { lo, st, N, ratio, zones };
+  // 핵심 구간(띠): 3칸 평균이 가장 큰 3칸 평균의 VP_BAND 이상인 칸이 이어진 곳. 띠 안에서 원래 값이 가장 큰 칸이 중심, 몫 = 1년 거래량 중 그 띠의 비율
+  const sm = ratio.map((v, i) => (ratio[Math.max(0, i - 1)] + v + ratio[Math.min(N - 1, i + 1)]) / 3), smx = Math.max(...sm);
+  const tot = b.reduce((a, v) => a + v, 0), bands = [];
+  let cur = null;
+  sm.forEach((v, i) => {
+    if (v >= smx * VP_BAND) { if (!cur) cur = { a: i, b: i, pk: i, m: 0 }; cur.b = i; cur.m += b[i]; if (ratio[i] > ratio[cur.pk]) cur.pk = i; }
+    else if (cur) { bands.push(cur); cur = null; }
+  });
+  if (cur) bands.push(cur);
+  bands.forEach((z) => { z.share = z.m / tot; z.v = ratio[z.pk]; });
+  bands.sort((x, y) => y.m - x.m);
+  return { lo, st, N, ratio, bands: bands.slice(0, VP_MAX_BANDS) };
 }
 function addVolProfile(chart, series, el, d, from) {
   const vp = volProfile(d, from);
@@ -1107,12 +1112,15 @@ function addVolProfile(chart, series, el, d, from) {
               g.fillRect(right - v * maxLen, y1 * vr, v * maxLen, (y2 - y1) * vr);
             });
           } else {
-            vp.zones.forEach((z) => {                       // 핵심 매물대: 50칸 중 한 칸 두께의 막대, 길이 = 가장 큰 곳 대비
-              const y1 = y(vp.lo + vp.st * (z.i + 1)), y2 = y(vp.lo + vp.st * z.i);
-              if (y1 == null || y2 == null) return;
+            g.font = "bold " + 11 * hr + "px sans-serif"; g.textAlign = "right"; g.textBaseline = "middle";
+            vp.bands.forEach((z) => {                       // 핵심 구간: 띠(가격 범위) + 중심 칸 진하게 + 몫(%)
+              const yTop = y(vp.lo + vp.st * (z.b + 1)), yBot = y(vp.lo + vp.st * z.a);
+              const yc1 = y(vp.lo + vp.st * (z.pk + 1)), yc2 = y(vp.lo + vp.st * z.pk);
+              if (yTop == null || yBot == null) return;
               const L = z.v * maxLen;
-              g.globalAlpha = z.strong ? 0.3 : 0.15;   // 핵심 5: 진한 3개 0.3 · 옅은 2개 0.15
-              g.fillRect(right - L, y1 * vr, L, (y2 - y1) * vr);
+              g.globalAlpha = 0.14; g.fillRect(right - L, yTop * vr, L, (yBot - yTop) * vr);
+              if (yc1 != null && yc2 != null) { g.globalAlpha = 0.32; g.fillRect(right - L, yc1 * vr, L, (yc2 - yc1) * vr); }
+              g.globalAlpha = 0.9; g.fillText(Math.round(z.share * 100) + "%", right - L - 4 * hr, ((yTop + yBot) / 2) * vr);
             });
           }
           g.globalAlpha = 1;
