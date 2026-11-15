@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 17:26</title>
+<title>추세 대시보드 v2026-11-15 17:29</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -177,7 +177,7 @@
   .legend i { font-style: normal; font-weight: 700; }
 
   /* 1층 */
-  #marketChart { height: calc(100vh - 270px); min-height: 320px; position: relative; }
+  #marketChart { height: 42vh; min-height: 280px; position: relative; }
   .vpbtn { position: absolute; left: 8px; top: 6px; z-index: 5; font-size: 11px; padding: 2px 8px; border: 1px solid var(--line, #ccc); border-radius: 6px; background: var(--card, #fff); color: var(--sub, #666); cursor: pointer; }
 
   /* 2층 */
@@ -379,7 +379,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 17:26</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 17:29</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1507,6 +1507,17 @@ function renderMyBox() {
   });
 }
 
+// 1층이 맨 위 화면에 통째로 들어오도록 차트 높이를 창 높이에 맞춤 (차트 위쪽 실제 위치 + 범례 높이를 재서 계산)
+function fitMarketChart() {
+  const el = document.getElementById("marketChart"), lg = el.nextElementSibling;
+  const top = el.getBoundingClientRect().top - document.documentElement.getBoundingClientRect().top;   // 스크롤 위치와 관계없이 문서 맨 위부터의 위치
+  const h = window.innerHeight - top - (lg ? lg.offsetHeight : 26) - 24;
+  const nh = Math.max(280, Math.round(h)) + "px";
+  if (el.style.height !== nh) el.style.height = nh;
+}
+let _fitT;
+{ let k = 0; const iv = setInterval(() => { fitMarketChart(); if (++k > 40) clearInterval(iv); }, 250); }   // 머리글·고정 바·신호등이 나중에 채워져 위치가 밀려도 처음 10초 동안 다시 맞춤
+window.addEventListener("resize", () => { clearTimeout(_fitT); _fitT = setTimeout(fitMarketChart, 150); });
 function renderMarket() {
   if (!DATA.QQQ || DATA.QQQ.length < 210) return;
   ["QQQ", "QQQE"].forEach((s) => markPartial(s, DATA[s]));
@@ -1516,10 +1527,12 @@ function renderMarket() {
   sig.className = m.cls;
   sig.innerHTML = '<div class="verdict">QQQ · ' + m.verdict + '</div><div class="why">' + m.why + '</div><div class="why" id="breadth" style="margin-top:4px"></div>';
   updateBreadth();
+  fitMarketChart();
   drawMarket(DATA.QQQ, m);
   if (DATA.QQQE) drawRatio("r1", "r1txt", DATA.QQQE, DATA.QQQ, "상승이 넓게 퍼지는 중", "소수 대형주에 몰리는 중");
   if (DATA.XLY && DATA.XLP) drawRatio("r2", "r2txt", DATA.XLY, DATA.XLP, "공격 쪽으로 돈이 감", "방어 쪽으로 숨는 중");
   renderSticky();
+  fitMarketChart();
 }
 
 function leaderList() {
