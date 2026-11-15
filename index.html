@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>추세 대시보드 v2026-11-15 00:25</title>
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>추세 대시보드 v2026-11-15 13:45</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -28,6 +30,7 @@
   header { padding-top: 18px; }
   .topline { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   h1 { font-size: 20px; margin: 0; }
+  h1 .logo { width: 22px; height: 22px; vertical-align: -4px; margin-right: 6px; }
   h1 .ver { font-size: 12px; font-weight: 400; color: var(--sub); margin-left: 6px; }
   .topbtns { display: flex; gap: 6px; flex-shrink: 0; } .topbtns button { white-space: nowrap; }
   @media (max-width: 520px) { .topbtns button { padding-left: 7px; padding-right: 7px; } }
@@ -375,7 +378,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1>추세 대시보드<span class="ver">v2026-11-15 00:25</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 13:45</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
