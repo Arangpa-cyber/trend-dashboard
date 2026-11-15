@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 19:31</title>
+<title>추세 대시보드 v2026-11-15 19:50</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -380,7 +380,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 19:31</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 19:50</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -915,9 +915,9 @@ function breakoutOf(d, top, box) {
 
 // 종목 단계 판정 (일봉 기준: 50일선·200일선, 일봉 스윙 베이스, VCP, 트렌드 템플릿)
 // ═════ 장세 1-4단계 (와인스타인·미너비니의 4단계, 200일선 기준) ═════
-// 1 바닥 다지기 → 2 상승 → 3 천장권 → 4 하락 → 다시 1. 선 기울기 = 200일선의 20거래일 변화율, ±2% 안은 평평.
-// 단계는 새 조건이 10거래일 연속 이어져야 바뀜(4단계로 내려가는 것만 바로). 과거를 처음부터 되짚어 계산하므로 순환 순서를 지킴.
-const RG_MA = 200, RG_FLAT = 0.02, RG_HOLD = 10;
+// 1 바닥 다지기 → 2 상승 → 3 천장권 → 4 하락 → 다시 1. 선 기울기 = 200일선의 20거래일 변화율, ±1% 안은 평평.
+// 단계는 새 조건이 10거래일 연속 이어져야 바뀜(4단계로 내려가는 것, 그리고 3단계에서 베이스를 돌파해 2단계로 돌아오는 것만 바로). 과거를 처음부터 되짚어 계산하므로 순환 순서를 지킴.
+const RG_MA = 200, RG_FLAT = 0.01, RG_HOLD = 10;
 const RG_NAME = { 1: "바닥 다지기", 2: "상승", 3: "천장권", 4: "하락" };
 function regimeOf(d) {
   const n = d.length, cl = d.map((r) => r.c), ma = smaArr(cl, RG_MA), F = RG_FLAT, i0 = RG_MA + 59;
@@ -947,7 +947,7 @@ function regimeOf(d) {
   for (let i = Math.max(0, n - 252); i < n; i++) if (d[i].l < lo) { lo = d[i].l; loI = i; }
   return { r: st, cand, days, cross, s: f.s, dist: cl[last] / ma[last] - 1, lo, loT: d[loI].t, rise: cl[last] / lo - 1 };
 }
-const rgNote = (g) => !g ? "" : (g.cand ? " · " + g.cand + "단계(" + RG_NAME[g.cand] + ") 후보 " + g.days + "/" + RG_HOLD + "일" : "") +
+const rgNote = (g) => !g ? "" : (g.byBreakout ? " · 베이스 돌파로 2단계 복귀" : "") + (g.cand ? " · " + g.cand + "단계(" + RG_NAME[g.cand] + ") 후보 " + g.days + "/" + RG_HOLD + "일" : "") +
   (g.cross >= 1 ? " · 최근 60일 200일선 교차 " + g.cross + "번" : "");
 function regimeReason(c) {
   const g = c.rg, md2 = (t) => t.slice(5).replace("-", "/");
@@ -980,7 +980,9 @@ function classify(d, rs) {
   const M = (o) => {
     const entry = o.state === "breakout" ? price : top;
     const cap = entry * (1 - STOP_MAX), stop = Math.max(stopStruct, cap);
-    return Object.assign({ hi: top, weeks, days: L, need: BASE_MIN_DAYS / 5, depth, vcp, rg, runup, bottom,
+    const g2 = rg && rg.r === 3 && rg.dist > 0 && rg.s > 0 && (o.state === "breakout" || (o.state === "extended" && price > top))
+      ? Object.assign({}, rg, { r: 2, byBreakout: true, cand: null, days: 0 }) : rg;   // 3단계에서 베이스를 돌파하면 날짜를 기다리지 않고 2단계 복귀(와인스타인: 저항 구간 돌파 = 2단계 시작)
+    return Object.assign({ hi: top, weeks, days: L, need: BASE_MIN_DAYS / 5, depth, vcp, rg: g2, runup, bottom,
                            stopLine: stopStruct, risk: { entry, stop, pct: (entry - stop) / entry, wide: stopStruct < cap } }, o);
   };
 
@@ -2453,13 +2455,13 @@ function buildHelp() {
 </table>
 
 <h3 id="h-states">장세 1-4단계와 2단계 안의 상태 <small>와인스타인·미너비니의 4단계, 200일선 기준</small></h3>
-<p>종목마다 먼저 <b>장세(1-4단계)</b>를 정합니다. 4단계 → 1단계 → 2단계 → 3단계 → 4단계로 돌고, 베이스·돌파는 <b>2단계 안에서만</b> 판정합니다(오닐·미너비니의 베이스는 상승 추세 안의 휴식입니다). 기준선은 <b>200일선</b>, 선의 기울기는 20거래일 변화율이고 ±2% 안은 평평으로 봅니다.</p>
+<p>종목마다 먼저 <b>장세(1-4단계)</b>를 정합니다. 4단계 → 1단계 → 2단계 → 3단계 → 4단계로 돌고, 베이스·돌파는 <b>2단계 안에서만</b> 판정합니다(오닐·미너비니의 베이스는 상승 추세 안의 휴식입니다). 기준선은 <b>200일선</b>, 선의 기울기는 20거래일 변화율이고 ±1% 안은 평평으로 봅니다(1년으로 환산해 약 13%).</p>
 <table>
 <tr><td><span class="stg r1">1단계 바닥 다지기</span></td><td>하락 뒤 바닥을 다지는 구간(와인스타인: basing area, 미너비니: neglect phase). 주가가 200일선 둘레를 오가고 선이 평평해지거나 아직 내려가는 중입니다. 베이스 상자는 그리지 않고, 저점(지지선)과 저점 대비 상승률, 200일선 대비 위치를 보여 줍니다. <b>할 일: 사지 않음.</b> 200일선이 상승으로 돌아서고 돌파가 확인되면 2단계입니다(미너비니: 52주 저점에서 25-30% 이상 오른 뒤).</td></tr>
 <tr><td>2단계 상승</td><td>주가가 200일선 위이고 선이 상승 중. 아래 상태(돌파·상승·형성·이탈·훼손)로 나눕니다.</td></tr>
 <tr><td><span class="stg r3">3단계 천장권</span></td><td>상승이 힘을 잃고 200일선이 평평해지거나 주가가 선 아래로 내려옴(거래량 많은 옆걸음). <b>할 일: 신규 매수 안 함, 보유 중이면 비중 줄이기 검토.</b> 와인스타인은 이때 보유분의 절반을 정리하라고 합니다.</td></tr>
-<tr><td><span class="stg r4">4단계 하락</span></td><td>주가가 200일선 아래이고 선이 하락 중. <b>할 일: 사지 않음.</b> 이 단계로 내려가는 것만 날짜를 기다리지 않고 바로 반영합니다.</td></tr>
-<tr><td>단계가 바뀌는 때</td><td>새 단계 조건이 <b>10거래일 연속</b> 이어져야 바뀝니다(4단계로 내려가는 것은 바로). 아직 안 바뀐 상태에서 다른 단계 조건이 이어지는 중이면 "3단계 후보 6/10일"처럼 툴팁에 보여 줍니다. 주가가 200일선을 자주 넘나들면 "최근 60일 200일선 교차 n번"이 붙고, 4번 이상이면 단계 옆에 <span class="stg2 brk">흔들림</span>이 붙습니다.</td></tr>
+<tr><td><span class="stg r4">4단계 하락</span></td><td>주가가 200일선 아래이고 선이 하락 중. <b>할 일: 사지 않음.</b> 이 단계로 내려가는 것은 날짜를 기다리지 않고 바로 반영합니다.</td></tr>
+<tr><td>단계가 바뀌는 때</td><td>새 단계 조건이 <b>10거래일 연속</b> 이어져야 바뀝니다(4단계로 내려가는 것, 그리고 3단계에서 베이스를 돌파해 2단계로 돌아오는 것은 바로. 와인스타인: 저항 구간 돌파가 2단계의 시작). 아직 안 바뀐 상태에서 다른 단계 조건이 이어지는 중이면 "3단계 후보 6/10일"처럼 툴팁에 보여 줍니다. 주가가 200일선을 자주 넘나들면 "최근 60일 200일선 교차 n번"이 붙고, 4번 이상이면 단계 옆에 <span class="stg2 brk">흔들림</span>이 붙습니다.</td></tr>
 </table>
 <h4>2단계 안의 상태</h4>
 <p>상태는 <b>일봉</b> 기준으로 판정합니다. 베이스는 최근 ${BASE_LOOKBACK_D}거래일(26주) 안의 최고점부터 지금까지 옆으로 움직인 구간이고, 베이스 상단이 돌파 기준(피벗)입니다. <b>3주(${BASE_MIN_DAYS}거래일) 이상</b>이면 베이스로 인정합니다. 깊이가 ${P(BASE_MAX_DEPTH)}를 넘으면 실패하기 쉬운 베이스로 봅니다. 베이스 줄 끝에 <b>앞선 상승</b>(베이스 상단 이전 120거래일 최저가에서 상단까지)이 붙고, 30%보다 작으면 붉게 표시합니다(오닐: 베이스 앞에 30% 이상 상승이 있어야 함). 판단은 사용자가 합니다.</p>
