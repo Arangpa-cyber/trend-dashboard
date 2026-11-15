@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 17:13</title>
+<title>추세 대시보드 v2026-11-15 17:15</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -379,7 +379,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 17:13</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 17:15</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1160,7 +1160,7 @@ function addVolProfile(chart, series, el, d, from) {
       return [{ zOrder: () => "bottom", renderer: () => ({ draw(target) {
         if (VP_MODE === "off") return;
         target.useBitmapCoordinateSpace(({ context: g, horizontalPixelRatio: hr, verticalPixelRatio: vr, mediaSize }) => {
-          const right = mediaSize.width * hr, maxLen = right * 0.25;   // 가격축 바로 옆(그림 영역 오른쪽 끝)에 붙임
+          const right = mediaSize.width * hr, maxLen = right;   // 가격축 바로 옆에 붙이고, 가장 큰 곳이 왼쪽 끝까지 닿게 함
           g.fillStyle = blue;
           if (VP_MODE === "A") {
             vp.ratio.forEach((v, i) => {
