@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 22:31</title>
+<title>추세 대시보드 v2026-11-15 23:13</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -273,7 +273,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 22:31</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 23:13</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1280,14 +1280,26 @@ function drawDaily(el, d, cls, t, x) {
   if (x && cls && myLevel(t) === 1 && (!cls.rg || cls.rg.r === 2) && cls.pos !== "out") {
     const ch = x.cheat && cls.pos === "form" && !cls.near ? x.cheat : null;
     const entry = ch ? ch.pivot : cls.risk && cls.risk.entry, stop = ch ? ch.stop : cls.risk && cls.risk.stop;
-    if (entry && stop && stop < entry) {
-      const v = cls.vcp, why = ch ? (ch.kind === "low" ? "로우치트" : "치트") + " 평평한 구간(" + ch.k + "일) 저점 바로 아래 1%"
+    const px = d[d.length - 1].c, v = cls.vcp;
+    // 돌파 매수 계획: 손절선이 현재가 아래이고, 돌파가 가까울 때(돌파 범위 · 임박 · 치트)만 그림
+    const planOk = entry && stop && stop < entry && stop < px && (ch || cls.pos !== "form" || cls.near);
+    if (planOk) {
+      const why = ch ? (ch.kind === "low" ? "로우치트" : "치트") + " 평평한 구간(" + ch.k + "일) 저점 바로 아래 1%"
         : cls.risk.wide ? "구조 손절선 " + cls.stopLine.toFixed(2) + "(마지막 수축 저점 아래)이 진입가에서 " + P0(STOP_MAX) + "보다 멀어 " + P0(STOP_MAX) + " 상한 적용"
         : (v && v.tightAdded ? "마지막 수축(최근 10일 조용한 구간)의 저점" : v && v.swingLow != null ? "마지막 눌림의 저점" : "베이스 저점") + " 바로 아래 1%";
       pline(stop, "#c2410c", LS.Dotted, "계획 손절");
       tips.push({ p: stop, html: "<b>계획 손절선 " + stop.toFixed(2) + "</b> · 진입가 대비 −" + ((1 - stop / entry) * 100).toFixed(1) + "%" +
         "<br><b>진입</b> " + entry.toFixed(2) + (ch ? " (치트 피벗 돌파 시)" : cls.pos === "break" && !cls.chase ? " (지금 가격, 돌파 매수 범위)" : " (피벗 돌파 시)") +
         "<br><b>근거</b> " + why + '<br><span class="muted">사기 전에 어디서 끊을지 정해 두는 선입니다. 손절 거리가 ' + P0(STOP_MAX) + "에 가까우면 불리한 자리입니다.</span>" });
+    } else if (entry && cls.stopLine != null && cls.stopLine < px) {
+      // 돌파 계획을 못 쓰는 자리(손절선이 현재가 위이거나 피벗이 멀음): 지금 사면 어디서 끊는지(구조 손절선)만 보여 줌
+      const sl = cls.stopLine, gap = 1 - sl / px;
+      const why = stop && stop >= px ? "돌파 매수 계획 손절선 " + stop.toFixed(2) + "이 현재가 위라 계획으로 쓸 수 없음"
+        : "피벗까지 " + pctf(entry / px - 1) + " 멀어 돌파 계획은 아직 이름";
+      pline(sl, "#c2410c", LS.Dotted, "구조 손절");
+      tips.push({ p: sl, html: "<b>지금 사면 구조 손절선 " + sl.toFixed(2) + "</b> · 현재가 대비 −" + (gap * 100).toFixed(1) + "%" +
+        "<br><b>근거</b> " + (v && v.tightAdded ? "마지막 수축(최근 10일 조용한 구간)의 저점" : v && v.swingLow != null ? "마지막 눌림의 저점" : "베이스 저점") + " 바로 아래 1%" +
+        "<br><b>계획</b> " + why + '<br><span class="muted">' + (gap > STOP_MAX ? "손절 거리가 " + P0(STOP_MAX) + "보다 멀어 불리한 자리입니다." : "이 선 아래로 종가가 내려가면 구조가 깨집니다.") + "</span>" });
     }
   }
   if (extraP.length) bars.applyOptions({ autoscaleInfoProvider: (orig) => {
@@ -2432,7 +2444,7 @@ function buildHelp() {
 <tr><td>보유 손절선</td><td><b>구조 손절선</b>: 마지막으로 확정된 수축의 저점 바로 아래 1%(확정 = 눌림 뒤 5% 넘게 반등까지 끝남, 진행 중인 하락의 저점은 쓰지 않음). 기준 베이스는 지금 베이스(3주 이상) → 마지막으로 돌파한 베이스(돌파 전날까지) → 최근 26주. 그 안에 최근 10일 조용한 구간(폭 5% 미만)이 있으면 그 저점.<br>
 <b>매수가·매수일을 넣으면</b>(크게 보기 위 칸, 이 브라우저에만 저장, 설정 링크로 다른 기기에 함께 옮겨짐): 처음 손절선 = 매수일 시점의 구조 손절선과 매수가 −${P(STOP_MAX)} 중 높은 쪽 · 1R = 매수가 − 처음 손절선. 그 뒤 ① 종가가 +${BE_R}R에 닿은 적 있으면 본전(매수가)으로 ② 매수 뒤 생긴 확정 저점의 구조 손절선이 더 높으면 그것으로 올립니다. 손절선은 셋 중 가장 높은 값이라 내려가지 않습니다. 다음 할 일에 손익 %와 R 배수가 붙습니다.<br>
 크게 보기 차트에 주황 점선 "손절"(본전이면 "손절(본전)"), 회색 "매수", 점선 "+${BE_R}R → 본전"(다음 올릴 자리)을 그리고, 선 근처에 마우스를 올리면 근거가 보입니다. "다음 할 일" 칸 제목을 누르면 손절선에 가까운 보유 종목부터 놓습니다(이미 아래면 맨 위).</td></tr>
-<tr><td>관심 계획 손절선</td><td>★ 관심 종목의 크게 보기 차트에는 "계획 손절" 점선을 그립니다. 피벗 돌파 때 사면(돌파 매수 범위면 지금 가격, 치트면 치트 피벗) 어디서 끊을지 미리 보는 선이고, 근거는 마우스를 올리면 보입니다.</td></tr>
+<tr><td>관심 계획 손절선</td><td>★ 관심 종목의 크게 보기 차트에는 "계획 손절" 점선을 그립니다. 피벗 돌파 때 사면(돌파 매수 범위면 지금 가격, 치트면 치트 피벗) 어디서 끊을지 미리 보는 선이고, 근거는 마우스를 올리면 보입니다. 손절선이 현재가 위이거나 피벗이 임박하지 않고 멀면 계획선은 그리지 않고, 지금 사면 어디서 끊는지 "구조 손절" 선만 보여 줍니다.</td></tr>
 <tr><td>경고</td><td>꼬리표 칸 앞에 주황으로: <span class="wtag">손절선 아래</span> 종가가 보유 손절선 아래 · <span class="wtag">50일선 아래</span> · <span class="wtag">RS ${RS_LEADER} 아래</span> · <span class="wtag">돌파 피벗 아래</span> 마지막 돌파 피벗 아래로 되돌아옴(돌파 실패 신호) · <span class="wtag">20일선 아래</span> 돌파한 지 20거래일 안인데 종가가 20일선 아래(미너비니: 부정적 신호, 그것만으로 팔지는 않음) · <span class="wtag">실적 D-n</span> ${EARN_WARN_DAYS}일 안 발표. 1·3·4단계와 이탈은 단계·위치 칸과 다음 할 일에 나옵니다. 경고가 하나라도 있으면 줄 왼쪽에 주황 띠가 생기고, 고정 바에 경고 수가 나옵니다.</td></tr>
 <tr><td>★ 관심 점검</td><td><b>언제 사나.</b> 3층과 같은 할 일 순서(돌파·매수 범위 → 형성·임박 → 형성 → 돌파·추격 금지 → 이탈 → 1·3·4단계)로 놓습니다.</td></tr>
 <tr><td>⚙ 설정 › 내 종목</td><td>티커로 넣고 빼기(나스닥100 종목만), 전체 지우기, <b>설정 링크 복사</b>.</td></tr>
