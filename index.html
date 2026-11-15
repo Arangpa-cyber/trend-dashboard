@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 22:26</title>
+<title>추세 대시보드 v2026-11-15 22:31</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -273,7 +273,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 22:26</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 22:31</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1027,11 +1027,17 @@ function baseChart(el, bottomMargin) {
   let lastW = 0;
   const ro = new ResizeObserver(() => {
     const w = el.clientWidth;
-    if (w && w !== lastW) { lastW = w; requestAnimationFrame(() => chart.timeScale().fitContent()); }
+    if (w && w !== lastW) { lastW = w; requestAnimationFrame(() => fitChart(chart)); }
   });
   ro.observe(el);
   el._chart = chart; el._ro = ro;
   return chart;
+}
+// 일봉 차트는 오른쪽 끝에 RIGHT_PAD일만큼 빈 칸을 둠: 마지막 봉이 가격축 라벨·매물대 막대에 가리지 않게
+const RIGHT_PAD = 10;
+function fitChart(chart) {
+  if (!chart._n) { chart.timeScale().fitContent(); return; }
+  chart.timeScale().setVisibleLogicalRange({ from: -0.5, to: chart._n - 0.5 + RIGHT_PAD });
 }
 function disposeCharts(root) {
   root.querySelectorAll("*").forEach((el) => { if (el._chart) { el._chart.remove(); el._ro.disconnect(); el._chart = null; } });
@@ -1167,7 +1173,7 @@ function drawMarket(d, m) {
   const vma = smaArr(d.map((r) => r.v), 50);
   vm.setData(d.map((r, i) => ({ time: r.t, value: vma[i] })).filter((p, i) => i >= from && p.value != null));
   addVolProfile(chart, mbars, document.getElementById("marketChart"), d, from);
-  chart.timeScale().fitContent();
+  chart._n = d.length - from; fitChart(chart);
 }
 let RATIO_DIR = {};                 // r1: QQQE/QQQ(폭), r2: XLY/XLP(리스크 선호 ▲ / 회피 ▼)
 function drawRatio(elId, txtId, a, b, upWord, downWord) {
@@ -1289,7 +1295,7 @@ function drawDaily(el, d, cls, t, x) {
     r.priceRange.minValue = Math.min(r.priceRange.minValue, ...extraP); r.priceRange.maxValue = Math.max(r.priceRange.maxValue, ...extraP); return r; } });
   marks.sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
   if (marks.length) bars.setMarkers(marks);
-  chart.timeScale().fitContent();
+  chart._n = d.length - from; fitChart(chart);
 }
 
 // ═════════════ 7. 화면 구성 ═════════════
