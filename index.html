@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 17:08</title>
+<title>추세 대시보드 v2026-11-15 17:11</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -379,7 +379,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 17:08</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 17:11</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -403,7 +403,7 @@
   <div id="signal"><div class="verdict">시장 판정 대기 중</div><div class="why">QQQ 데이터를 받으면 표시됩니다.</div></div>
   <div class="card">
     <div id="marketChart"><div class="placeholder">QQQ 데이터를 기다리는 중</div></div>
-    <div class="legend"><i style="color:#16a34a">━</i> 50일선 &nbsp; <i style="color:#7c3aed">━</i> 200일선 &nbsp; <i style="color:#f59e0b">━</i> 21일 EMA &nbsp; <i>━</i> 거래량 50일 &nbsp;
+    <div class="legend"><i style="color:#16a34a">━</i> 50일선 &nbsp; <i style="color:#7c3aed">━</i> 200일선 &nbsp; <i style="color:#ca8a04">━</i> 21일 EMA &nbsp; <i>━</i> 거래량 50일 &nbsp;
       <i style="background:rgba(220,38,38,0.16);color:transparent;padding:0 5px">■</i> 분산일(신호등이 세는 것) &nbsp; <i style="background:rgba(22,163,74,0.30);color:transparent;padding:0 5px">■</i> 팔로스루 데이</div>
   </div>
 
@@ -529,7 +529,7 @@ const C = {
   ma10: "#16a34a", ma40: "#7c3aed", barUp: "#dc2626", barDown: "#1d4ed8",
   volUp: "rgba(220, 38, 38, 0.35)", volDown: "rgba(21, 101, 192, 0.35)",
   high: "#b91c1c", box: "#f59e0b", dd: "#b91c1c", ftd: "#15803d",
-  ddBg: "rgba(220, 38, 38, 0.16)", ema21: "#f59e0b", volMa: "#0f172a", ftdBg: "rgba(22, 163, 74, 0.30)",   // 1층 배경색: 분산일, 팔로스루 데이
+  ddBg: "rgba(220, 38, 38, 0.16)", ema21: "#ca8a04", volMa: "#0f172a", ftdBg: "rgba(22, 163, 74, 0.30)",   // 1층 배경색: 분산일, 팔로스루 데이
   earnBg: "rgba(250, 204, 21, 0.38)",                                  // 종목 차트 배경색: 실적 발표일
 };
 const DARK = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -1205,7 +1205,7 @@ function drawMarket(d, m) {
   const mbars = addBars(chart, d, from);
   addLine(chart, d, m.ma50, from, C.ma10, 2);
   addLine(chart, d, m.ma200, from, C.ma40, 2);
-  addLine(chart, d, emaArr(d.map((r) => r.c), 21), from, C.ema21, 1);
+  addLine(chart, d, emaArr(d.map((r) => r.c), 21), from, C.ema21, 2);
   addVolume(chart, d, from);
   // 거래량 50일 평균선 (거래량 막대와 같은 눈금)
   const vm = chart.addLineSeries({ priceScaleId: "vol", color: DARK ? "#e2e8f0" : C.volMa, lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
@@ -2283,7 +2283,7 @@ function buildHelp() {
 <table>
 <tr><td style="color:#16a34a">━ 50일선</td><td>중기 추세. 가격이 이 선 아래로 내려가면 회색 줄에 "참고"로 표시합니다(신호등 판정에는 쓰지 않음).</td></tr>
 <tr><td style="color:#7c3aed">━ 200일선</td><td>장기 추세. 가격이 이 선 아래면 방어. 선의 기울기로 1년 흐름을 읽습니다.</td></tr>
-<tr><td style="color:#f59e0b">━ 21일 EMA</td><td>단기 추세선(가는 주황). 강한 주도 구간에서는 가격이 이 선 근처에서 받쳐지는지 봅니다.</td></tr>
+<tr><td style="color:#ca8a04">━ 21일 EMA</td><td>단기 추세선(짙은 노랑). 강한 주도 구간에서는 가격이 이 선 근처에서 받쳐지는지 봅니다.</td></tr>
 <tr><td style="color:#0f172a">━ 거래량 50일 평균</td><td>아래 거래량 막대 위의 가는 선. 막대가 이 선보다 높으면 평소보다 많이 거래된 날입니다.</td></tr>
 <tr><td style="color:#2a78d6">▇ 매물대</td><td>1년 동안 거래량이 많이 쌓인 가격대. 가격축 바로 옆에 파란 막대로 그립니다. 왼쪽 위 버튼으로 "핵심 5"(덩어리 5개, 막대 길이 = 가장 큰 매물대 대비 상대 크기, 진한 3개와 옅은 2개) → "50칸"(가격을 50칸으로 나눈 전체 분포) → "끔" 순서로 바뀝니다. 현재가 위의 매물대는 저항, 아래는 지지 후보입니다. 일봉 기준 근사입니다(하루 거래량을 그날 저가-고가에 똑같이 나눠 담음). 종목 크게 보기 차트에도 같은 버튼이 있습니다.</td></tr>
 <tr><td><span style="background:rgba(220,38,38,0.16);padding:0 8px">붉은 배경</span></td><td>지금 효력이 남아 있는 분산일(최근 25거래일 안, 5% 상승으로 지워지지 않은 것)만 칠합니다. 신호등이 세는 것과 같습니다. 붉은 칸이 몰리면 큰 자본이 빠져나가는 중입니다.</td></tr>
