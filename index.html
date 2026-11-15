@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 17:11</title>
+<title>추세 대시보드 v2026-11-15 17:13</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -379,7 +379,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 17:11</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 17:13</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1170,8 +1170,8 @@ function addVolProfile(chart, series, el, d, from) {
               g.fillRect(right - v * maxLen, y1 * vr, v * maxLen, (y2 - y1) * vr);
             });
           } else {
-            vp.zones.forEach((z) => {                       // 핵심 매물대: 위아래 5칸 폭의 덩어리, 길이 = 가장 큰 곳 대비
-              const y1 = y(vp.lo + vp.st * (z.i + 3)), y2 = y(vp.lo + vp.st * (z.i - 2));
+            vp.zones.forEach((z) => {                       // 핵심 매물대: 50칸 중 한 칸 두께의 막대, 길이 = 가장 큰 곳 대비
+              const y1 = y(vp.lo + vp.st * (z.i + 1)), y2 = y(vp.lo + vp.st * z.i);
               if (y1 == null || y2 == null) return;
               const L = z.v * maxLen;
               g.globalAlpha = z.strong ? 0.6 : 0.3;
@@ -2285,7 +2285,7 @@ function buildHelp() {
 <tr><td style="color:#7c3aed">━ 200일선</td><td>장기 추세. 가격이 이 선 아래면 방어. 선의 기울기로 1년 흐름을 읽습니다.</td></tr>
 <tr><td style="color:#ca8a04">━ 21일 EMA</td><td>단기 추세선(짙은 노랑). 강한 주도 구간에서는 가격이 이 선 근처에서 받쳐지는지 봅니다.</td></tr>
 <tr><td style="color:#0f172a">━ 거래량 50일 평균</td><td>아래 거래량 막대 위의 가는 선. 막대가 이 선보다 높으면 평소보다 많이 거래된 날입니다.</td></tr>
-<tr><td style="color:#2a78d6">▇ 매물대</td><td>1년 동안 거래량이 많이 쌓인 가격대. 가격축 바로 옆에 파란 막대로 그립니다. 왼쪽 위 버튼으로 "핵심 5"(덩어리 5개, 막대 길이 = 가장 큰 매물대 대비 상대 크기, 진한 3개와 옅은 2개) → "50칸"(가격을 50칸으로 나눈 전체 분포) → "끔" 순서로 바뀝니다. 현재가 위의 매물대는 저항, 아래는 지지 후보입니다. 일봉 기준 근사입니다(하루 거래량을 그날 저가-고가에 똑같이 나눠 담음). 종목 크게 보기 차트에도 같은 버튼이 있습니다.</td></tr>
+<tr><td style="color:#2a78d6">▇ 매물대</td><td>1년 동안 거래량이 많이 쌓인 가격대. 가격축 바로 옆에 파란 막대로 그립니다. 왼쪽 위 버튼으로 "핵심 5"(막대 5개(50칸 중 한 칸 두께), 막대 길이 = 가장 큰 매물대 대비 상대 크기, 진한 3개와 옅은 2개) → "50칸"(가격을 50칸으로 나눈 전체 분포) → "끔" 순서로 바뀝니다. 현재가 위의 매물대는 저항, 아래는 지지 후보입니다. 일봉 기준 근사입니다(하루 거래량을 그날 저가-고가에 똑같이 나눠 담음). 종목 크게 보기 차트에도 같은 버튼이 있습니다.</td></tr>
 <tr><td><span style="background:rgba(220,38,38,0.16);padding:0 8px">붉은 배경</span></td><td>지금 효력이 남아 있는 분산일(최근 25거래일 안, 5% 상승으로 지워지지 않은 것)만 칠합니다. 신호등이 세는 것과 같습니다. 붉은 칸이 몰리면 큰 자본이 빠져나가는 중입니다.</td></tr>
 <tr><td><span style="background:rgba(22,163,74,0.30);padding:0 8px">초록 배경</span></td><td>팔로스루 데이. 조정 뒤 상승 전환 확인.</td></tr>
 </table>
