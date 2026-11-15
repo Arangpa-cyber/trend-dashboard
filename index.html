@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 16:40</title>
+<title>추세 대시보드 v2026-11-15 16:45</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -378,7 +378,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 16:40</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 16:45</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -494,7 +494,7 @@ const MARKET = ["QQQ", "QQQE", "XLY", "XLP"];
 
 // ═════════════ 2. 설정 ═════════════
 const RS_LEADER = 80;               // 주도주 기준 RS
-const DAYS_MARKET = 400;            // QQQ 일봉 개수 (200일선 + 1년 표시)
+const DAYS_MARKET = 460;            // QQQ 일봉 개수 (1년 표시 252 + 200일선 계산 199 이상)
 const DAYS_STOCK = 470;             // 종목 일봉 개수 (200일선 + 52주 + RS 12개월)
 const SHOW_DAYS = 126;              // 일봉 차트 표시: 6개월
 const SHOW_DAYS_MARKET = 252;       // 1층 QQQ 일봉 차트 표시: 1년
