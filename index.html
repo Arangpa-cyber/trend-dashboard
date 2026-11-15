@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 15:45</title>
+<title>추세 대시보드 v2026-11-15 16:40</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -378,7 +378,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 15:45</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 16:40</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -398,12 +398,12 @@
 
 <main class="wrapw">
   <!-- 1층 -->
-  <h2 id="sec-market">1. 시장 — QQQ 일봉 6개월 <button class="q" data-help="h-market" title="이 층 보는 법">?</button></h2>
+  <h2 id="sec-market">1. 시장 — QQQ 일봉 1년 <button class="q" data-help="h-market" title="이 층 보는 법">?</button></h2>
   <div id="signal"><div class="verdict">시장 판정 대기 중</div><div class="why">QQQ 데이터를 받으면 표시됩니다.</div></div>
   <div class="card">
     <div id="marketChart"><div class="placeholder">QQQ 데이터를 기다리는 중</div></div>
-    <div class="legend"><i style="color:#16a34a">━</i> 50일선 &nbsp; <i style="color:#7c3aed">━</i> 200일선 &nbsp;
-      <i style="background:rgba(220,38,38,0.16);color:transparent;padding:0 5px">■</i> 분산일 &nbsp; <i style="background:rgba(22,163,74,0.30);color:transparent;padding:0 5px">■</i> 팔로스루 데이</div>
+    <div class="legend"><i style="color:#16a34a">━</i> 50일선 &nbsp; <i style="color:#7c3aed">━</i> 200일선 &nbsp; <i style="color:#f59e0b">━</i> 21일 EMA &nbsp; <i>━</i> 거래량 50일 &nbsp;
+      <i style="background:rgba(220,38,38,0.16);color:transparent;padding:0 5px">■</i> 분산일(효력 있음) &nbsp; <i style="background:rgba(220,38,38,0.07);color:transparent;padding:0 5px">■</i> 분산일(지난 것) &nbsp; <i style="background:rgba(22,163,74,0.30);color:transparent;padding:0 5px">■</i> 팔로스루 데이</div>
   </div>
 
   <!-- 2층 -->
@@ -494,9 +494,10 @@ const MARKET = ["QQQ", "QQQE", "XLY", "XLP"];
 
 // ═════════════ 2. 설정 ═════════════
 const RS_LEADER = 80;               // 주도주 기준 RS
-const DAYS_MARKET = 400;            // QQQ 일봉 개수 (200일선 + 6개월 표시)
+const DAYS_MARKET = 400;            // QQQ 일봉 개수 (200일선 + 1년 표시)
 const DAYS_STOCK = 470;             // 종목 일봉 개수 (200일선 + 52주 + RS 12개월)
 const SHOW_DAYS = 126;              // 일봉 차트 표시: 6개월
+const SHOW_DAYS_MARKET = 252;       // 1층 QQQ 일봉 차트 표시: 1년
 const SHOW_DAYS_STOCK = 252;        // 종목 일봉 차트 표시: 1년
 const CORRECTION_PCT = 0.08;        // QQQ가 고점 대비 이만큼 빠지면 '조정'으로 봄
 const FTD_GAIN = 0.0125;            // 팔로스루 데이: 랠리 4일차 이후 +1.25% 이상, 전일보다 거래량 증가
@@ -527,7 +528,7 @@ const C = {
   ma10: "#16a34a", ma40: "#7c3aed", barUp: "#dc2626", barDown: "#1d4ed8",
   volUp: "rgba(220, 38, 38, 0.35)", volDown: "rgba(21, 101, 192, 0.35)",
   high: "#b91c1c", box: "#f59e0b", dd: "#b91c1c", ftd: "#15803d",
-  ddBg: "rgba(220, 38, 38, 0.16)", ftdBg: "rgba(22, 163, 74, 0.30)",   // 1층 배경색: 분산일, 팔로스루 데이
+  ddBg: "rgba(220, 38, 38, 0.16)", ddOld: "rgba(220, 38, 38, 0.07)", ema21: "#f59e0b", volMa: "#0f172a", ftdBg: "rgba(22, 163, 74, 0.30)",   // 1층 배경색: 분산일, 팔로스루 데이
   earnBg: "rgba(250, 204, 21, 0.38)",                                  // 종목 차트 배경색: 실적 발표일
 };
 const DARK = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -673,6 +674,13 @@ function markPartial(sym, rows) {
 function smaArr(vals, n) {
   const out = new Array(vals.length).fill(null); let s = 0;
   for (let i = 0; i < vals.length; i++) { s += vals[i]; if (i >= n) s -= vals[i - n]; if (i >= n - 1) out[i] = s / n; }
+  return out;
+}
+function emaArr(vals, n) {
+  const out = new Array(vals.length).fill(null), k = 2 / (n + 1);
+  if (vals.length < n) return out;
+  let e = 0; for (let i = 0; i < n; i++) e += vals[i]; e /= n; out[n - 1] = e;
+  for (let i = n; i < vals.length; i++) { e = vals[i] * k + e * (1 - k); out[i] = e; }
   return out;
 }
 const pctf = (x) => (x >= 0 ? "+" : "") + (x * 100).toFixed(1) + "%";
@@ -1117,15 +1125,20 @@ function earnDates(t) {
 }
 function drawMarket(d, m) {
   const chart = baseChart(document.getElementById("marketChart"), 0.24);
-  const from = Math.max(0, d.length - SHOW_DAYS);
-  // 분산일·팔로스루 데이: 그날 세로 칸 전체를 배경색으로 칠함 (가장 먼저 추가해서 바 뒤에 깔리게)
-  // 오닐 규칙 그대로: 최근 25거래일 안에 있고, 그 뒤 5% 상승으로 지워지지 않은 분산일만 칠함 (신호등이 세는 것과 같음)
-  const ddSet = new Set(m.dd25.map((x) => x.i)), ftdSet = new Set(m.ftds);
-  addBg(chart, d, from, (r, i) => (ftdSet.has(i) ? C.ftdBg : ddSet.has(i) ? C.ddBg : null));
+  const from = Math.max(0, d.length - SHOW_DAYS_MARKET);
+  // 분산일: 1년 안의 모든 날을 칠함. 지금 효력이 있는 것(최근 25거래일, 5% 상승으로 안 지워진 것)은 진하게, 나머지는 옅게
+  // 팔로스루 데이는 초록. 배경은 가장 먼저 추가해서 바 뒤에 깔리게 함
+  const ddAct = new Set(m.dd25.map((x) => x.i)), ddAll = new Set(m.dd.map((x) => x.i)), ftdSet = new Set(m.ftds);
+  addBg(chart, d, from, (r, i) => (ftdSet.has(i) ? C.ftdBg : ddAct.has(i) ? C.ddBg : ddAll.has(i) ? C.ddOld : null));
   addBars(chart, d, from);
   addLine(chart, d, m.ma50, from, C.ma10, 2);
   addLine(chart, d, m.ma200, from, C.ma40, 2);
+  addLine(chart, d, emaArr(d.map((r) => r.c), 21), from, C.ema21, 1);
   addVolume(chart, d, from);
+  // 거래량 50일 평균선 (거래량 막대와 같은 눈금)
+  const vm = chart.addLineSeries({ priceScaleId: "vol", color: DARK ? "#e2e8f0" : C.volMa, lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+  const vma = smaArr(d.map((r) => r.v), 50);
+  vm.setData(d.map((r, i) => ({ time: r.t, value: vma[i] })).filter((p, i) => i >= from && p.value != null));
   chart.timeScale().fitContent();
 }
 let RATIO_DIR = {};                 // r1: QQQE/QQQ(폭), r2: XLY/XLP(리스크 선호 ▲ / 회피 ▼)
@@ -2191,12 +2204,15 @@ function buildHelp() {
 <h3 id="h-sticky">고정 바 <small>스크롤해도 위에 붙어 있는 줄</small></h3>
 <p>중요한 순서대로 보여 줍니다: 시장 판정 → ★★ 보유·★ 관심 수(보유 경고 수) → 종목 이동 수 → 예비 주도주 수 → 4층 단계별 종목 수. 항목을 누르면 그 위치로 이동합니다. 주황색 숫자는 지금 눈여겨볼 만한 항목입니다. 휴대폰에서는 한 줄로 줄어들고, 옆으로 밀면 나머지 항목이 보입니다.</p>
 
-<h3 id="h-market">1층 · 시장 <small>QQQ 일봉 6개월</small></h3>
+<h3 id="h-market">1층 · 시장 <small>QQQ 일봉 1년</small></h3>
 <p>신호등이 왜 그렇게 나왔는지 눈으로 확인하는 차트입니다.</p>
 <table>
 <tr><td style="color:#16a34a">━ 50일선</td><td>중기 추세. 가격이 이 선 아래로 내려가면 회색 줄에 "참고"로 표시합니다(신호등 판정에는 쓰지 않음).</td></tr>
 <tr><td style="color:#7c3aed">━ 200일선</td><td>장기 추세. 가격이 이 선 아래면 방어. 선의 기울기로 1년 흐름을 읽습니다.</td></tr>
-<tr><td><span style="background:rgba(220,38,38,0.16);padding:0 8px">옅은 붉은 배경</span></td><td>지금 효력이 남아 있는 분산일(최근 25거래일 안, 5% 상승으로 지워지지 않은 것)만 칠합니다. 그래서 붉은 칸은 늘 최근 한 달 남짓 안에만 있습니다. 붉은 칸이 몰리면 큰 자본이 빠져나가는 중입니다.</td></tr>
+<tr><td style="color:#f59e0b">━ 21일 EMA</td><td>단기 추세선(가는 주황). 강한 주도 구간에서는 가격이 이 선 근처에서 받쳐지는지 봅니다.</td></tr>
+<tr><td style="color:#0f172a">━ 거래량 50일 평균</td><td>아래 거래량 막대 위의 가는 선. 막대가 이 선보다 높으면 평소보다 많이 거래된 날입니다.</td></tr>
+<tr><td><span style="background:rgba(220,38,38,0.16);padding:0 8px">붉은 배경</span></td><td>지금 효력이 남아 있는 분산일(최근 25거래일 안, 5% 상승으로 지워지지 않은 것). 신호등은 이것만 셉니다. 붉은 칸이 몰리면 큰 자본이 빠져나가는 중입니다.</td></tr>
+<tr><td><span style="background:rgba(220,38,38,0.07);padding:0 8px">아주 옅은 붉은 배경</span></td><td>1년 안의 나머지 분산일(25거래일이 지났거나 5% 상승으로 지워진 것). 기준(−0.2% 이상 하락 + 전날보다 거래량 증가)만 채우면 모두 표시합니다.</td></tr>
 <tr><td><span style="background:rgba(22,163,74,0.30);padding:0 8px">초록 배경</span></td><td>팔로스루 데이. 조정 뒤 상승 전환 확인.</td></tr>
 </table>
 
