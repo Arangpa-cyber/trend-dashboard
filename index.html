@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 22:08</title>
+<title>추세 대시보드 v2026-11-15 22:19</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -174,6 +174,7 @@
   table.flow .gt { font-weight: 700; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
   .chg-up { color: var(--up); font-weight: 700; } .chg-down { color: var(--down); font-weight: 700; }
   .muted { color: var(--sub); }
+  .stoptip { position: absolute; z-index: 6; max-width: 360px; background: var(--card); border: 1px solid var(--warn); border-radius: 8px; padding: 7px 10px; font-size: 12px; line-height: 1.55; box-shadow: 0 4px 14px rgba(0,0,0,0.15); pointer-events: none; }
   .placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 13px; text-align: center; padding: 0 16px; }
 
   /* 공통 종목 표 (3층 · 4층): 칸 너비를 모두 정해 두고 1000px에서도 가로 스크롤 없이 */
@@ -270,7 +271,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 22:08</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 22:19</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -565,6 +566,7 @@ function emaArr(vals, n) {
   for (let i = n; i < vals.length; i++) { e = vals[i] * k + e * (1 - k); out[i] = e; }
   return out;
 }
+const P0 = (x) => Math.round(x * 100) + "%";
 const pctf = (x) => (x >= 0 ? "+" : "") + (x * 100).toFixed(1) + "%";
 
 // 시장 판정: 분산일, 조정·랠리·팔로스루 데이
@@ -680,7 +682,7 @@ function findBasesD(d, hist) {
 // 마지막 돌파 피벗: 최근 1년 안에서 돌파로 끝난 가장 최근 베이스(또는 2단계를 연 1·3단계 저항선)의 상단. 돌파 뒤 신고가가 이어져 지금 베이스가 안 잡혀도 돌파 지점을 기억함
 function lastPivot(d, bases) {
   const b = bases || findBasesD(d), r = b[b.length - 1];
-  return r ? { top: r.top, bottom: r.bottom, from: r.from, t: r.breakT, ago: r.ago, kind: r.kind } : null;
+  return r ? { top: r.top, bottom: r.bottom, from: r.from, t: r.breakT, ago: r.ago, kind: r.kind, s: r.s, breakIdx: r.breakIdx } : null;
 }
 // 스윙(눌림): 고점에서 SWING_PCT 이상 내려갔다가 저점에서 SWING_PCT 이상 반등하면 눌림 하나(T). 아직 반등 전이면 open
 function swingsOf(d, from) {
@@ -1232,6 +1234,26 @@ function drawDaily(el, d, cls, t, x) {
     marks.push({ time: span[Math.floor(span.length / 2)].t, position: "aboveBar", shape: "square", size: 0, color: txtColor,
       text: (ch.kind === "low" ? "로우치트" : "치트") + " " + ch.k + "일 · 폭 " + (ch.range * 100).toFixed(0) + "%" });
   }
+  // ★★ 보유 종목: 손절선(가격축까지 점선) · 선 근처에 마우스를 올리면 근거
+  const hs = x && myLevel(t) === 2 ? holdStopOf(x) : null;
+  if (hs) {
+    const price = d[d.length - 1].c, below = price < hs.stop;
+    bars.createPriceLine({ price: hs.stop, color: "#c2410c", lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: "손절" });
+    marks.push({ time: hs.t, position: "belowBar", shape: "arrowUp", color: "#c2410c", text: "손절 기준 저점" });
+    const tip = document.createElement("div");
+    tip.className = "stoptip"; tip.hidden = true;
+    tip.innerHTML = "<b>손절선 " + hs.stop.toFixed(2) + "</b> · 지금 가격 대비 " + (below ? '<b class="warn">' + pctf(hs.stop / price - 1) + " (이미 아래)</b>" : pctf(hs.stop / price - 1)) +
+      "<br><b>근거</b> " + hs.src + "의 " + hs.kind + " " + hs.low.toFixed(2) + "(" + md(hs.t) + ") 바로 아래 1%" +
+      '<br><span class="muted">마지막 수축의 저점이 깨지면 베이스 구조가 무너진 것으로 봄(미너비니). 진행 중인 하락의 저점은 쓰지 않아 손절선이 주가를 따라 내려가지 않습니다. 매수가를 모르므로 구조 기준이고, 매수가에서 ' + P0(STOP_MAX) + " 넘게 멀면 " + P0(STOP_MAX) + "에서 끊으세요.</span>";
+    el.appendChild(tip);
+    chart.subscribeCrosshairMove((pm) => {
+      const ys = bars.priceToCoordinate(hs.stop);
+      if (!pm.point || ys == null || Math.abs(pm.point.y - ys) > 8) { tip.hidden = true; return; }
+      tip.hidden = false;
+      tip.style.left = Math.max(4, Math.min(pm.point.x + 14, el.clientWidth - tip.offsetWidth - 70)) + "px";
+      tip.style.top = (ys + 12 + tip.offsetHeight > el.clientHeight ? ys - tip.offsetHeight - 12 : ys + 12) + "px";
+    });
+  }
   marks.sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
   if (marks.length) bars.setMarkers(marks);
   chart.timeScale().fitContent();
@@ -1277,12 +1299,36 @@ function earnNote(t, warn) {
   return warn && dd <= EARN_WARN_DAYS ? ' <span class="wtag"' + tip + ">" + txt + "</span>" : ' <span class="muted enote"' + tip + ">" + txt + "</span>";
 }
 // 보유 종목 경고: 1·3·4단계, 이탈, 50일선 아래, RS 80 아래, 돌파 피벗 아래, 최근 돌파 뒤 20일선 아래, 실적 14일 안
+// 보유 손절선: 마지막으로 '확정된' 수축의 저점 바로 아래(1%). 확정 = 눌림 뒤 5% 넘게 반등까지 끝남(진행 중인 하락의 저점은 쓰지 않아 손절선이 주가를 따라 내려가지 않음)
+// 베이스: 지금 베이스(3주 이상)가 있으면 그것, 없으면(돌파 뒤 오르는 중) 마지막으로 돌파한 베이스(돌파 전날까지), 둘 다 없으면 최근 26주
+// 그 안에서 최근 10일 조용한 구간(폭 5% 미만)이 있으면 그 저점 → 아니면 마지막 확정 눌림 저점 → 아니면 베이스 저점
+function holdStopOf(x) {
+  if (!x || !x.cls) return null;
+  if (x._hs !== undefined) return x._hs;
+  const d = x.d, c = x.cls;
+  const pick = (dd, from, src) => {
+    const v = vcpOf(dd, from), conf = v.ts.filter((z) => !z.open), sw = conf[conf.length - 1], n = dd.length;
+    if (v.tightAdded) { let li = n - TIGHT_DAYS; for (let i = li; i < n; i++) if (dd[i].l < dd[li].l) li = i;
+      return { low: dd[li].l, t: dd[li].t, src, kind: "마지막 수축(최근 10일 조용한 구간, 고저 폭 " + (v.tight * 100).toFixed(1) + "%)의 저점" }; }
+    if (sw) return { low: sw.lo, t: dd[sw.loI].t, src, kind: "마지막 확정 눌림(고점 대비 −" + (sw.depth * 100).toFixed(0) + "%, 그 뒤 5% 넘게 반등)의 저점" };
+    let li = from; for (let i = from; i < n; i++) if (dd[i].l < dd[li].l) li = i;
+    return { low: dd[li].l, t: dd[li].t, src, kind: "베이스 안 최저점(확정된 눌림이 아직 없음)" };
+  };
+  let r = null;
+  if (c.box) { const i0 = d.findIndex((z) => z.t === c.box.from); if (i0 >= 0) r = pick(d, i0, "지금 베이스(" + md(c.box.from) + "부터 " + c.weeks + "주)"); }
+  else if (x.lp && x.lp.s != null && x.lp.breakIdx != null) r = pick(d.slice(0, x.lp.breakIdx), x.lp.s, "마지막으로 돌파한 " + (x.lp.kind === "res" ? "저항 구간" : "베이스") + "(" + md(x.lp.t) + " 돌파)");
+  else r = pick(d, Math.max(0, d.length - 1 - BASE_LOOKBACK_D), "최근 26주 흐름(지금 베이스·돌파한 베이스 없음)");
+  if (r) r.stop = r.low * 0.99;
+  return (x._hs = r);
+}
 function holdWarns(t) {
   const x = VIEW && VIEW.info[t], w = [];
   if (!x || !x.cls) return w;
   const c = x.cls, price = x.d[x.d.length - 1].c;
   if (c.rg && c.rg.r !== 2) w.push(c.rg.r + "단계 " + RG_NAME[c.rg.r]);
   else if (c.pos === "out") w.push(c.state === "deep" ? "이탈 (베이스 깊음)" : "이탈 (저점 아래)");
+  const hs = holdStopOf(x);
+  if (hs && price < hs.stop) w.push("손절선 아래");
   if (x.dist50 != null && x.dist50 < 0) w.push("50일선 아래");
   if (x.rs < RS_LEADER) w.push("RS " + RS_LEADER + " 아래");
   if (x.lp && price < x.lp.top && c.pos !== "out") w.push("돌파 피벗 아래");
@@ -1324,7 +1370,9 @@ function holdTodo(x) {
   if (c.rg && c.rg.r === 4) return "<b>정리 검토</b> · 4단계 하락기";
   if (c.rg && c.rg.r === 3) return "<b>비중 줄이기 검토</b> · 3단계 천장기";
   if (c.pos === "out") return "<b>정리 검토</b> · 베이스 이탈";
-  const sl = c.stopLine && c.stopLine < price ? "손절선 " + c.stopLine.toFixed(2) + " (" + pctf(c.stopLine / price - 1) + ")" : "";
+  const hs = holdStopOf(x);
+  if (hs && price < hs.stop) return "<b>손절선 아래</b> · " + hs.stop.toFixed(2) + " · 정리 검토";
+  const sl = hs ? "손절선 " + hs.stop.toFixed(2) + " (" + pctf(hs.stop / price - 1) + ")" : "";
   const w = holdWarns(x.t).filter((z) => !z.startsWith("실적") && !z.startsWith("RS"));
   if (w.length) return "<b>경고 확인</b>" + (sl ? " · " + sl : "");
   return mu("보유 유지" + (sl ? " · " + sl : ""));
@@ -2285,8 +2333,9 @@ function buildHelp() {
 <h3 id="h-my">4층 · 내 종목 <small>★★ 보유 · ★ 관심</small></h3>
 <p>모든 표 맨 앞의 별을 누를 때마다 <b>☆ → ★ 관심 → ★★ 보유 → ☆</b> 순서로 바뀝니다. 잘못 눌렀으면 아래에 잠깐 뜨는 '되돌리기'를 누르세요. 표는 3층과 같은 칸이고, 다른 것은 "다음 할 일"과 경고뿐입니다.</p>
 <table>
-<tr><td>★★ 보유 점검</td><td><b>언제 파나.</b> 경고가 많은 종목부터 놓습니다. 다음 할 일: 4단계 → 정리 검토 · 3단계 → 비중 줄이기 검토 · 이탈 → 정리 검토 · 경고가 있으면 경고 확인 · 아니면 보유 유지. 손절선(마지막 수축 저점 바로 아래)과 거리도 함께 적습니다.</td></tr>
-<tr><td>경고</td><td>꼬리표 칸 앞에 주황으로: <span class="wtag">50일선 아래</span> · <span class="wtag">RS ${RS_LEADER} 아래</span> · <span class="wtag">돌파 피벗 아래</span> 마지막 돌파 피벗 아래로 되돌아옴(돌파 실패 신호) · <span class="wtag">20일선 아래</span> 돌파한 지 20거래일 안인데 종가가 20일선 아래(미너비니: 부정적 신호, 그것만으로 팔지는 않음) · <span class="wtag">실적 D-n</span> ${EARN_WARN_DAYS}일 안 발표. 1·3·4단계와 이탈은 단계·위치 칸과 다음 할 일에 나옵니다. 경고가 하나라도 있으면 줄 왼쪽에 주황 띠가 생기고, 고정 바에 경고 수가 나옵니다.</td></tr>
+<tr><td>★★ 보유 점검</td><td><b>언제 파나.</b> 경고가 많은 종목부터 놓습니다. 다음 할 일: 4단계 → 정리 검토 · 3단계 → 비중 줄이기 검토 · 이탈 → 정리 검토 · 손절선 아래 → 정리 검토 · 경고가 있으면 경고 확인 · 아니면 보유 유지. 손절선과 거리도 함께 적습니다.</td></tr>
+<tr><td>보유 손절선</td><td><b>마지막으로 확정된 수축의 저점 바로 아래 1%</b>. 확정 = 눌림 뒤 5% 넘게 반등까지 끝남. 진행 중인 하락의 저점은 쓰지 않아서 손절선이 주가를 따라 내려가지 않습니다. 기준 베이스는 지금 베이스(3주 이상) → 없으면 마지막으로 돌파한 베이스(돌파 전날까지) → 둘 다 없으면 최근 26주. 그 안에서 최근 10일 조용한 구간(폭 5% 미만)이 있으면 그 저점, 아니면 마지막 확정 눌림 저점입니다. 크게 보기 차트에 주황 점선("손절")과 기준 저점 화살표로 그리고, 선 근처에 마우스를 올리면 근거가 보입니다. 매수가를 모르므로 구조 기준이며, 매수가에서 ${P(STOP_MAX)} 넘게 멀면 ${P(STOP_MAX)}에서 끊으세요.</td></tr>
+<tr><td>경고</td><td>꼬리표 칸 앞에 주황으로: <span class="wtag">손절선 아래</span> 종가가 보유 손절선 아래 · <span class="wtag">50일선 아래</span> · <span class="wtag">RS ${RS_LEADER} 아래</span> · <span class="wtag">돌파 피벗 아래</span> 마지막 돌파 피벗 아래로 되돌아옴(돌파 실패 신호) · <span class="wtag">20일선 아래</span> 돌파한 지 20거래일 안인데 종가가 20일선 아래(미너비니: 부정적 신호, 그것만으로 팔지는 않음) · <span class="wtag">실적 D-n</span> ${EARN_WARN_DAYS}일 안 발표. 1·3·4단계와 이탈은 단계·위치 칸과 다음 할 일에 나옵니다. 경고가 하나라도 있으면 줄 왼쪽에 주황 띠가 생기고, 고정 바에 경고 수가 나옵니다.</td></tr>
 <tr><td>★ 관심 점검</td><td><b>언제 사나.</b> 3층과 같은 할 일 순서(돌파·매수 범위 → 형성·임박 → 형성 → 돌파·추격 금지 → 이탈 → 1·3·4단계)로 놓습니다.</td></tr>
 <tr><td>⚙ 설정 › 내 종목</td><td>티커로 넣고 빼기(나스닥100 종목만), 전체 지우기, <b>설정 링크 복사</b>.</td></tr>
 <tr><td>저장과 기기 간 이동</td><td>내 종목은 <b>이 브라우저에만</b> 저장되고 GitHub(공개 저장소)로는 보내지 않습니다. 바꾼 뒤 '설정 링크 복사'로 만든 링크를 다른 기기에서 한 번 여세요. 링크의 # 뒤 내용은 서버로 전송되지 않습니다. 링크를 연 기기의 내 종목은 링크 내용으로 바뀝니다.</td></tr>
