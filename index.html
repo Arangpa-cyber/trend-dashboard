@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 21:50</title>
+<title>추세 대시보드 v2026-11-15 22:03</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -270,7 +270,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 21:50</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 22:03</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -336,7 +336,7 @@
   <div class="mcharts">
     <div><div class="mc" id="mDaily"></div>
       <div class="legend"><i style="color:#ca8a04">━</i> 21 EMA &nbsp; <i style="color:#0d9488">━</i> 50 SMA &nbsp; <i style="color:#7c3aed">━</i> 200 SMA &nbsp; <i style="color:#0d9488">━</i> 거래량 50 SMA &nbsp;
-        <i style="color:#f59e0b">━</i> 베이스 상단·하단 &nbsp; <i style="background:rgba(250,204,21,0.38);color:transparent;padding:0 5px">■</i> 실적 발표일</div></div>
+        <i style="color:#f59e0b">━</i> 베이스 상단·하단 · 저항선 &nbsp; <i style="background:rgba(250,204,21,0.38);color:transparent;padding:0 5px">■</i> 실적 발표일</div></div>
   </div></div></div>
 
 <footer>
@@ -656,7 +656,10 @@ function rsLineHigh(d, q) {
 // ═════ 일봉 베이스 · VCP · 트렌드 템플릿 (미너비니) ═════
 // 베이스 찾기: 고점에서 시작해 옆으로 움직이다 일봉 종가로 상단을 넘으면 그 베이스는 끝(돌파). 지금 만드는 베이스는 classify가 따로 판정
 // 조건: 3주(15거래일) 이상, 깊이 35% 이내. 최근 1년 안에 돌파로 끝난 베이스를 모두 돌려줌
-function findBasesD(d) {
+// 베이스는 2단계 안의 쉼이라 시작(고점)한 날의 단계로 나눔(hist = regimeOf().hist):
+//   2단계 → kind "base"(베이스) · 1·3단계 → kind "res"(저항선: 와인스타인의 바닥·천장 구간 상단, 넘으면 2단계 시작) · 4단계 → 버림
+//   단계를 모르면(상장 직후) 베이스로 봄
+function findBasesD(d, hist) {
   const n = d.length, out = [], firstShown = n - 1 - 252;
   let s = Math.max(0, firstShown - BASE_LOOKBACK_D);
   for (let j = s + 1; j < n; j++) {
@@ -666,17 +669,18 @@ function findBasesD(d) {
     if (d[j].c > top) {                                   // 종가로 넘음 = 돌파
       let bottom = Infinity; for (let q = s; q < j; q++) if (d[q].l < bottom) bottom = d[q].l;
       const len = j - s, depth = (top - bottom) / top;
-      if (len >= BASE_MIN_DAYS && depth <= BASE_MAX_DEPTH && j >= firstShown)
-        out.push({ s, from: d[s].t, breakIdx: j, breakT: d[j].t, top, bottom, depth, weeks: Math.floor(len / 5), ago: n - 1 - j });
+      const st = hist ? hist[s] : null;
+      if (len >= BASE_MIN_DAYS && depth <= BASE_MAX_DEPTH && j >= firstShown && st !== 4)
+        out.push({ s, from: d[s].t, breakIdx: j, breakT: d[j].t, top, bottom, depth, weeks: Math.floor(len / 5), ago: n - 1 - j, st, kind: st === 1 || st === 3 ? "res" : "base" });
     }
     s = j;
   }
   return out;
 }
-// 마지막 돌파 피벗: 최근 1년 안에서 돌파로 끝난 가장 최근 베이스의 상단. 돌파 뒤 신고가가 이어져 지금 베이스가 안 잡혀도 돌파 지점을 기억함
+// 마지막 돌파 피벗: 최근 1년 안에서 돌파로 끝난 가장 최근 베이스(또는 2단계를 연 1·3단계 저항선)의 상단. 돌파 뒤 신고가가 이어져 지금 베이스가 안 잡혀도 돌파 지점을 기억함
 function lastPivot(d, bases) {
   const b = bases || findBasesD(d), r = b[b.length - 1];
-  return r ? { top: r.top, bottom: r.bottom, from: r.from, t: r.breakT, ago: r.ago } : null;
+  return r ? { top: r.top, bottom: r.bottom, from: r.from, t: r.breakT, ago: r.ago, kind: r.kind } : null;
 }
 // 스윙(눌림): 고점에서 SWING_PCT 이상 내려갔다가 저점에서 SWING_PCT 이상 반등하면 눌림 하나(T). 아직 반등 전이면 open
 function swingsOf(d, from) {
@@ -800,19 +804,20 @@ function regimeOf(d) {
     return f.up && f.s > F ? 2 : 3;
   };
   let cand = null, days = 0;
+  const hist = new Array(n).fill(null); hist[i0] = st;   // 날짜별 단계(베이스가 2단계에서 시작했는지 볼 때 씀)
   for (let i = i0 + 1; i < n; i++) {
     const ns = step(st, feat(i));
-    if (ns === st) { cand = null; days = 0; continue; }
-    if (ns === 4) { st = 4; cand = null; days = 0; continue; }
-    if (ns === cand) days++; else { cand = ns; days = 1; }
-    if (days >= RG_HOLD) { st = ns; cand = null; days = 0; }
+    if (ns === st) { cand = null; days = 0; }
+    else if (ns === 4) { st = 4; cand = null; days = 0; }
+    else { if (ns === cand) days++; else { cand = ns; days = 1; } if (days >= RG_HOLD) { st = ns; cand = null; days = 0; } }
+    hist[i] = st;
   }
   const last = n - 1, f = feat(last);
   let cross = 0;
   for (let i = last - 59; i <= last; i++) if ((cl[i] > ma[i]) !== (cl[i - 1] > ma[i - 1])) cross++;
   let lo = Infinity, loI = last;
   for (let i = Math.max(0, n - 252); i < n; i++) if (d[i].l < lo) { lo = d[i].l; loI = i; }
-  return { r: st, cand, days, cross, s: f.s, dist: cl[last] / ma[last] - 1, lo, loT: d[loI].t, rise: cl[last] / lo - 1 };
+  return { r: st, cand, days, cross, s: f.s, dist: cl[last] / ma[last] - 1, lo, loT: d[loI].t, rise: cl[last] / lo - 1, hist };
 }
 const rgNote = (g) => !g ? "" : (g.byBreakout ? " · 최근 베이스 돌파로 2단계" : "") + (g.cand ? " · " + g.cand + "단계(" + RG_NAME[g.cand] + ") 후보 " + g.days + "/" + RG_HOLD + "일" : "") +
   (g.cross >= 1 ? " · 최근 60일 200일선 교차 " + g.cross + "번" : "");
@@ -858,7 +863,7 @@ function classify(d, rs) {
   const box = L >= BASE_MIN_DAYS ? { from: base[0].t, top, bottom } : null;
   const vcp = vcpOf(d, pk);
   const rg = regimeOf(d);
-  const lp = lastPivot(d);
+  const lp = lastPivot(d, findBasesD(d, rg && rg.hist));
   const ws = Math.max(0, pk - 120);          // 앞선 상승: 베이스 고점 이전 120거래일 최저 저가에서 고점까지
   let lowW = Infinity; for (let q = ws; q <= pk; q++) if (d[q].l < lowW) lowW = d[q].l;
   const runup = isFinite(lowW) && lowW > 0 ? top / lowW - 1 : null;
@@ -871,7 +876,7 @@ function classify(d, rs) {
     let g2 = rg;   // 1·3단계에서 최근 20거래일 안에 베이스를 돌파했고 그 피벗 위에 있으면 날짜를 기다리지 않고 2단계(와인스타인: 저항 구간 돌파 = 2단계 시작)
     if (rg && (rg.r === 1 || rg.r === 3) && rg.dist > 0 && rg.s > 0 && lp && lp.ago <= 20 && price > lp.top)
       g2 = Object.assign({}, rg, { r: 2, byBreakout: true, cand: null, days: 0 });
-    return Object.assign({ hi: top, weeks, days: L, depth, vcp, rg: g2, runup, bottom, dist50, pivot: null, chase: false, near: false,
+    return Object.assign({ hi: top, hiT: prior[p].t, weeks, days: L, depth, vcp, rg: g2, runup, bottom, dist50, pivot: null, chase: false, near: false,
                            stopLine: stopStruct, risk: { entry, stop, pct: (entry - stop) / entry, wide: stopStruct < cap } }, o);
   };
   // 돌파: 피벗 위. 피벗 +5% 이내면 매수 범위, 넘으면 추격 금지
@@ -948,7 +953,7 @@ function computeView(k) {
       x.above200 = m200 != null ? c > m200 : null;
       x.dist50 = m50[nn - 1] ? c / m50[nn - 1] - 1 : null;
       x.below20 = m20 != null && c < m20;
-      x.bases = findBasesD(d);                  // 최근 1년 돌파로 끝난 베이스들(차트·시장 폭 계산용)
+      x.bases = findBasesD(d, x.cls.rg && x.cls.rg.hist);   // 최근 1년 돌파로 끝난 베이스(2단계)·저항선(1·3단계), 4단계 구간은 뺌
       x.lp = lastPivot(d, x.bases);             // 마지막 돌파 피벗(돌파 위치 · 보유 경고 · 50일선 눌림)
       const hi52 = Math.max(...y1.map((r) => r.h)), lo52 = Math.min(...y1.map((r) => r.l));
       x.fromHi = c / hi52 - 1;
@@ -1186,9 +1191,9 @@ function drawDaily(el, d, cls, t, x) {
     return s;
   };
   const txtColor = DARK ? "#fbbf24" : "#b45309";
-  // 지난 베이스(돌파로 끝난 것): 상단·하단 + 기간·폭
-  const bases = (x && x.bases) || findBasesD(d);
-  const bxs = bases.filter((b) => b.breakIdx >= from).map((b) => ({ from: b.from, to: b.breakT, top: b.top, bottom: b.bottom, depth: b.depth, weeks: b.weeks, open: false }));
+  // 지난 베이스(2단계에서 시작해 돌파로 끝난 것): 상단·하단 + 기간·폭 · 1·3단계 구간은 상자 대신 저항선 하나
+  const bases = (x && x.bases) || findBasesD(d, cls && cls.rg && cls.rg.hist);
+  const bxs = bases.filter((b) => b.breakIdx >= from).map((b) => ({ from: b.from, to: b.breakT, top: b.top, bottom: b.bottom, depth: b.depth, weeks: b.weeks, open: false, res: b.kind === "res" }));
   // 지금 만드는 베이스: 상단·하단
   if (cls && cls.box && cls.state !== "deep" && (!cls.rg || cls.rg.r === 2) && !bxs.some((b) => b.from === cls.box.from))
     bxs.push({ from: cls.box.from, to: null, top: cls.box.top, bottom: cls.box.bottom, depth: (cls.box.top - cls.box.bottom) / cls.box.top, weeks: cls.weeks, open: true });
@@ -1198,10 +1203,16 @@ function drawDaily(el, d, cls, t, x) {
     mkLine(sp, cls.rg.lo, 2);
     marks.push({ time: cls.rg.loT, position: "belowBar", shape: "arrowUp", color: txtColor, text: "저점 " + cls.rg.lo.toFixed(0) + " (현재 " + pctf(cls.rg.rise) + ")" });
   }
+  if (cls && cls.rg && (cls.rg.r === 1 || cls.rg.r === 3) && cls.hi && cls.hiT) {   // 1·3단계: 지금 구간의 저항선(최근 26주 고점) · 넘어서면 2단계 시작
+    const sp = d.filter((r, i) => i >= from && r.t >= cls.hiT);
+    if (sp.length >= 2) mkLine(sp, cls.hi, 0).setMarkers([{ time: sp[0].t, position: "aboveBar", shape: "square", size: 0, color: txtColor, text: "저항 " + cls.hi.toFixed(0) }]);
+  }
   bxs.forEach((b) => {
     const span = d.filter((r, i) => i >= from && r.t >= b.from && (!b.to || r.t <= b.to));
     if (span.length < 2) return;
-    const top = mkLine(span, b.top, 0); mkLine(span, b.bottom, 2);
+    const top = mkLine(span, b.top, 0);
+    if (b.res) { top.setMarkers([{ time: span[Math.floor(span.length / 2)].t, position: "aboveBar", shape: "square", size: 0, color: txtColor, text: "저항 " + b.top.toFixed(0) + " 돌파" }]); return; }
+    mkLine(span, b.bottom, 2);
     top.setMarkers([{ time: span[Math.floor(span.length / 2)].t, position: "aboveBar", shape: "square", size: 0, color: txtColor,
       text: b.weeks + "주 · 폭 " + (b.depth * 100).toFixed(0) + "%" + (b.open ? " · 진행" : "") }]);
   });
@@ -2240,7 +2251,7 @@ function buildHelp() {
 <tr><td>단계가 바뀌는 때</td><td>새 단계 조건이 <b>${RG_HOLD}거래일 연속</b> 이어져야 바뀝니다. 예외: 4단계로 내려가는 것, 그리고 1·3단계에서 최근 20거래일 안에 베이스를 돌파해 그 피벗 위에 있고 200일선이 위·상승 중이면 2단계로 바로 올림(와인스타인: 저항 구간 돌파가 2단계의 시작). 다른 단계 조건이 이어지는 중이면 "3단계 후보 6/10일"처럼 근거에 보여 줍니다. 최근 60거래일에 200일선을 4번 이상 넘나들면 <span class="badge tg">흔들림</span>이 붙습니다.</td></tr>
 </table>
 <h4>2단계 안의 위치 · 형성 → 돌파 → 형성 → 돌파 → … → 이탈 → 형성</h4>
-<p>위치는 <b>베이스만</b>으로 정합니다(이동평균선은 쓰지 않음). 베이스는 최근 ${BASE_LOOKBACK_D}거래일(26주) 안의 최고점부터 지금까지이고, 그 최고점이 <b>피벗</b>입니다. ${BASE_MIN_DAYS}거래일(3주) 이상이면 완성된 베이스로 봅니다. 5%는 VCP 눌림(스윙)과 같은 값을 다시 쓴 이 대시보드의 값입니다.</p>
+<p>위치는 <b>베이스만</b>으로 정합니다(이동평균선은 쓰지 않음). 베이스는 <b>2단계에서 시작한 것만</b> 인정합니다. 1·3단계의 박스권은 저항선으로 보고, 그 위로 올라서면 2단계로 승격하며 그 상단을 돌파 피벗으로 씁니다. 4단계에서 시작한 박스권은 쓰지 않습니다. 베이스는 최근 ${BASE_LOOKBACK_D}거래일(26주) 안의 최고점부터 지금까지이고, 그 최고점이 <b>피벗</b>입니다. ${BASE_MIN_DAYS}거래일(3주) 이상이면 완성된 베이스로 봅니다. 5%는 VCP 눌림(스윙)과 같은 값을 다시 쓴 이 대시보드의 값입니다.</p>
 <table>
 <tr><td>형성</td><td>피벗 아래에서 베이스를 만드는 중. <span class="pq near">임박</span>은 완성된 베이스(3주 이상)의 피벗까지 ${P(NEAR_TOP)} 이내. 3주 전이면 "베이스 완성 기다림 (n/15일)". 베이스 끝에 <b>앞선 상승</b>(피벗 이전 120거래일 최저가에서 피벗까지)이 붙고 30%보다 작으면 주황으로 표시합니다(오닐: 베이스 앞에 30% 이상 상승).</td></tr>
 <tr><td>형성 → 돌파</td><td>종가가 피벗 위.</td></tr>
@@ -2304,7 +2315,7 @@ function buildHelp() {
 <tr><td><span style="color:#dc2626">붉은</span> / <span style="color:#1d4ed8">파란</span> 바</td><td>전일 종가보다 올랐으면 붉은색, 내렸으면 파란색. 아래 거래량 막대도 같은 기준.</td></tr>
 <tr><td style="color:#0d9488">━ 50일선</td><td>중기 추세선(청록). 추세 종목은 이 선을 타고 오릅니다.</td></tr>
 <tr><td style="color:#7c3aed">━ 200일선</td><td>장기 추세선.</td></tr>
-<tr><td style="color:#f59e0b">━ 주황 선</td><td>최근 1년에 감지된 베이스마다 위(실선)는 상단=돌파 기준, 아래(점선)는 하단. 선 위 글자는 베이스 기간(주)과 <b>폭</b>(상단에서 하단까지 몇 % 내려갔나)입니다. 돌파한 베이스는 돌파한 날까지, 지금 만드는 베이스는 "진행"으로 오른쪽 끝까지 그립니다.</td></tr>
+<tr><td style="color:#f59e0b">━ 주황 선</td><td><b>베이스</b>(2단계에서 시작한 것만): 위(실선)는 상단=돌파 기준, 아래(점선)는 하단. 글자는 기간(주)과 <b>폭</b>(상단에서 하단까지 몇 % 내려갔나). 돌파한 베이스는 돌파한 날까지, 지금 만드는 베이스는 "진행"으로 오른쪽 끝까지 그립니다.<br><b>저항선</b>: 1·3단계 구간은 베이스가 아니라서 상자 대신 상단 선 하나만 그립니다. 지난 구간을 넘었으면 "저항 n 돌파"(와인스타인: 이 돌파가 2단계의 시작), 지금 1·3단계면 최근 26주 고점에 "저항 n". 4단계(하락 중)에 시작한 박스권은 그리지 않습니다. 1단계면 저점(점선)과 저점 대비 상승률도 함께 그립니다.</td></tr>
 <tr><td><span style="background:rgba(250,204,21,0.38);padding:0 8px">노란 배경</span></td><td>실적 발표일. 그날을 칠합니다. 지난 1년 발표일과 다가오는 발표일이 나옵니다. 실적 전후로 갭이 생기기 쉬우니 베이스와 돌파를 볼 때 함께 확인하세요. 장 마감 뒤 발표는 주가 반응이 다음 날 바에 나타납니다.</td></tr>
 <tr><td style="color:#b91c1c">┄ 붉은 점선</td><td>최근 52주 고점. 오른쪽 가격 축에 값이 나옵니다.</td></tr>
 <tr><td>크게 보기</td><td>일봉 1년 한 장을 화면 가득 보여 줍니다(21 EMA, 50 SMA, 200 SMA, 거래량 50 SMA, 매물대). 차트에는 베이스 상단·하단·폭과 치트 구간이 함께 나옵니다.</td></tr>
