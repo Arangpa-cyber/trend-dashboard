@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-15 17:03</title>
+<title>추세 대시보드 v2026-11-15 17:08</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -379,7 +379,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 17:03</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-15 17:08</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -404,7 +404,7 @@
   <div class="card">
     <div id="marketChart"><div class="placeholder">QQQ 데이터를 기다리는 중</div></div>
     <div class="legend"><i style="color:#16a34a">━</i> 50일선 &nbsp; <i style="color:#7c3aed">━</i> 200일선 &nbsp; <i style="color:#f59e0b">━</i> 21일 EMA &nbsp; <i>━</i> 거래량 50일 &nbsp;
-      <i style="background:rgba(220,38,38,0.16);color:transparent;padding:0 5px">■</i> 분산일(효력 있음) &nbsp; <i style="background:rgba(220,38,38,0.07);color:transparent;padding:0 5px">■</i> 분산일(지난 것) &nbsp; <i style="background:rgba(22,163,74,0.30);color:transparent;padding:0 5px">■</i> 팔로스루 데이</div>
+      <i style="background:rgba(220,38,38,0.16);color:transparent;padding:0 5px">■</i> 분산일(신호등이 세는 것) &nbsp; <i style="background:rgba(22,163,74,0.30);color:transparent;padding:0 5px">■</i> 팔로스루 데이</div>
   </div>
 
   <!-- 2층 -->
@@ -529,7 +529,7 @@ const C = {
   ma10: "#16a34a", ma40: "#7c3aed", barUp: "#dc2626", barDown: "#1d4ed8",
   volUp: "rgba(220, 38, 38, 0.35)", volDown: "rgba(21, 101, 192, 0.35)",
   high: "#b91c1c", box: "#f59e0b", dd: "#b91c1c", ftd: "#15803d",
-  ddBg: "rgba(220, 38, 38, 0.16)", ddOld: "rgba(220, 38, 38, 0.07)", ema21: "#f59e0b", volMa: "#0f172a", ftdBg: "rgba(22, 163, 74, 0.30)",   // 1층 배경색: 분산일, 팔로스루 데이
+  ddBg: "rgba(220, 38, 38, 0.16)", ema21: "#f59e0b", volMa: "#0f172a", ftdBg: "rgba(22, 163, 74, 0.30)",   // 1층 배경색: 분산일, 팔로스루 데이
   earnBg: "rgba(250, 204, 21, 0.38)",                                  // 종목 차트 배경색: 실적 발표일
 };
 const DARK = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -1152,7 +1152,7 @@ function volProfile(d, from) {
 function addVolProfile(chart, series, el, d, from) {
   const vp = volProfile(d, from);
   if (!vp) return;
-  const orange = "#eb6834", blue = "#2a78d6", ink = DARK ? "#e5e5e5" : "#333";
+  const blue = "#2a78d6";
   const y = (p) => series.priceToCoordinate(p);
   let req = () => {};
   const prim = {
@@ -1160,27 +1160,22 @@ function addVolProfile(chart, series, el, d, from) {
       return [{ zOrder: () => "bottom", renderer: () => ({ draw(target) {
         if (VP_MODE === "off") return;
         target.useBitmapCoordinateSpace(({ context: g, horizontalPixelRatio: hr, verticalPixelRatio: vr, mediaSize }) => {
-          const right = (mediaSize.width - chart.priceScale("right").width()) * hr, maxLen = right * 0.22;
+          const right = mediaSize.width * hr, maxLen = right * 0.25;   // 가격축 바로 옆(그림 영역 오른쪽 끝)에 붙임
+          g.fillStyle = blue;
           if (VP_MODE === "A") {
-            g.fillStyle = blue;
             vp.ratio.forEach((v, i) => {
               const y1 = y(vp.lo + vp.st * (i + 1)), y2 = y(vp.lo + vp.st * i);
               if (y1 == null || y2 == null) return;
-              g.globalAlpha = 0.15 + v * 0.4;
-              g.fillRect(right - v * maxLen, y1 * vr, v * maxLen, Math.max(1, (y2 - y1) * vr - 1));
+              g.globalAlpha = 0.2 + v * 0.45;
+              g.fillRect(right - v * maxLen, y1 * vr, v * maxLen, (y2 - y1) * vr);
             });
           } else {
-            g.font = Math.round(11 * hr) + "px sans-serif"; g.textBaseline = "middle"; g.textAlign = "right";
-            vp.zones.forEach((z) => {
-              const y1 = y(vp.lo + vp.st * (z.i + 2)), y2 = y(vp.lo + vp.st * (z.i - 1));
+            vp.zones.forEach((z) => {                       // 핵심 매물대: 위아래 5칸 폭의 덩어리, 길이 = 가장 큰 곳 대비
+              const y1 = y(vp.lo + vp.st * (z.i + 3)), y2 = y(vp.lo + vp.st * (z.i - 2));
               if (y1 == null || y2 == null) return;
-              const ym = (y1 + y2) / 2 * vr, L = z.v * maxLen, a = z.strong ? 1 : 0.5;
-              g.fillStyle = orange; g.globalAlpha = a * 0.14; g.fillRect(0, y1 * vr, right, (y2 - y1) * vr);
-              g.globalAlpha = a * 0.9; g.strokeStyle = orange; g.lineWidth = (z.strong ? 1.2 : 0.8) * hr; g.setLineDash([4 * hr, 3 * hr]);
-              g.beginPath(); g.moveTo(0, ym); g.lineTo(right, ym); g.stroke(); g.setLineDash([]);
-              g.globalAlpha = a * 0.85; g.fillStyle = orange; g.fillRect(right - L, ym - 6 * vr, L, 12 * vr);
-              g.globalAlpha = 1; g.fillStyle = ink;
-              g.fillText(String(Math.round(vp.lo + vp.st * (z.i + 0.5))), right - L - 4 * hr, ym);
+              const L = z.v * maxLen;
+              g.globalAlpha = z.strong ? 0.6 : 0.3;
+              g.fillRect(right - L, y1 * vr, L, (y2 - y1) * vr);
             });
           }
           g.globalAlpha = 1;
@@ -1203,10 +1198,10 @@ function addVolProfile(chart, series, el, d, from) {
 function drawMarket(d, m) {
   const chart = baseChart(document.getElementById("marketChart"), 0.24);
   const from = Math.max(0, d.length - SHOW_DAYS_MARKET);
-  // 분산일: 1년 안의 모든 날을 칠함. 지금 효력이 있는 것(최근 25거래일, 5% 상승으로 안 지워진 것)은 진하게, 나머지는 옅게
+  // 분산일: 신호등이 세는 것(최근 25거래일, 5% 상승으로 안 지워진 것)만 칠함
   // 팔로스루 데이는 초록. 배경은 가장 먼저 추가해서 바 뒤에 깔리게 함
-  const ddAct = new Set(m.dd25.map((x) => x.i)), ddAll = new Set(m.dd.map((x) => x.i)), ftdSet = new Set(m.ftds);
-  addBg(chart, d, from, (r, i) => (ftdSet.has(i) ? C.ftdBg : ddAct.has(i) ? C.ddBg : ddAll.has(i) ? C.ddOld : null));
+  const ddAct = new Set(m.dd25.map((x) => x.i)), ftdSet = new Set(m.ftds);
+  addBg(chart, d, from, (r, i) => (ftdSet.has(i) ? C.ftdBg : ddAct.has(i) ? C.ddBg : null));
   const mbars = addBars(chart, d, from);
   addLine(chart, d, m.ma50, from, C.ma10, 2);
   addLine(chart, d, m.ma200, from, C.ma40, 2);
@@ -2290,9 +2285,8 @@ function buildHelp() {
 <tr><td style="color:#7c3aed">━ 200일선</td><td>장기 추세. 가격이 이 선 아래면 방어. 선의 기울기로 1년 흐름을 읽습니다.</td></tr>
 <tr><td style="color:#f59e0b">━ 21일 EMA</td><td>단기 추세선(가는 주황). 강한 주도 구간에서는 가격이 이 선 근처에서 받쳐지는지 봅니다.</td></tr>
 <tr><td style="color:#0f172a">━ 거래량 50일 평균</td><td>아래 거래량 막대 위의 가는 선. 막대가 이 선보다 높으면 평소보다 많이 거래된 날입니다.</td></tr>
-<tr><td style="color:#eb6834">▇ 매물대</td><td>1년 동안 거래량이 많이 쌓인 가격대. 왼쪽 위 버튼으로 "핵심 5"(주황 띠 5개, 막대 길이 = 가장 큰 매물대 대비 상대 크기, 진한 3개와 옅은 2개) → "50칸"(가격을 50칸으로 나눈 전체 분포) → "끔" 순서로 바뀝니다. 현재가 위의 매물대는 저항, 아래는 지지 후보입니다. 일봉 기준 근사입니다(하루 거래량을 그날 저가-고가에 똑같이 나눠 담음). 종목 크게 보기 차트에도 같은 버튼이 있습니다.</td></tr>
-<tr><td><span style="background:rgba(220,38,38,0.16);padding:0 8px">붉은 배경</span></td><td>지금 효력이 남아 있는 분산일(최근 25거래일 안, 5% 상승으로 지워지지 않은 것). 신호등은 이것만 셉니다. 붉은 칸이 몰리면 큰 자본이 빠져나가는 중입니다.</td></tr>
-<tr><td><span style="background:rgba(220,38,38,0.07);padding:0 8px">아주 옅은 붉은 배경</span></td><td>1년 안의 나머지 분산일(25거래일이 지났거나 5% 상승으로 지워진 것). 기준(−0.2% 이상 하락 + 전날보다 거래량 증가)만 채우면 모두 표시합니다.</td></tr>
+<tr><td style="color:#2a78d6">▇ 매물대</td><td>1년 동안 거래량이 많이 쌓인 가격대. 가격축 바로 옆에 파란 막대로 그립니다. 왼쪽 위 버튼으로 "핵심 5"(덩어리 5개, 막대 길이 = 가장 큰 매물대 대비 상대 크기, 진한 3개와 옅은 2개) → "50칸"(가격을 50칸으로 나눈 전체 분포) → "끔" 순서로 바뀝니다. 현재가 위의 매물대는 저항, 아래는 지지 후보입니다. 일봉 기준 근사입니다(하루 거래량을 그날 저가-고가에 똑같이 나눠 담음). 종목 크게 보기 차트에도 같은 버튼이 있습니다.</td></tr>
+<tr><td><span style="background:rgba(220,38,38,0.16);padding:0 8px">붉은 배경</span></td><td>지금 효력이 남아 있는 분산일(최근 25거래일 안, 5% 상승으로 지워지지 않은 것)만 칠합니다. 신호등이 세는 것과 같습니다. 붉은 칸이 몰리면 큰 자본이 빠져나가는 중입니다.</td></tr>
 <tr><td><span style="background:rgba(22,163,74,0.30);padding:0 8px">초록 배경</span></td><td>팔로스루 데이. 조정 뒤 상승 전환 확인.</td></tr>
 </table>
 
