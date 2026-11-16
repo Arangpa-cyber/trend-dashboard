@@ -11,7 +11,7 @@ const D = {}; for (const t of Object.keys(SER)) D[t] = toD(SER[t]);
 const Q = D.QQQ, QE = D.QQQE, dates = Q.map((r) => r.t);
 const NS = A.DAYS_STOCK, NM = A.DAYS_MARKET;
 const START = +(process.argv[3] || Math.max(NS, 300));
-const HOLD = 60, HARD = 0.10, RS_MIN = A.CHEAT_RS_MIN;
+const HOLD = 60, HARD = 0.10, RS_MIN = A.BUY_RS_MIN ?? A.CHEAT_RS_MIN;
 const idxOf = {}; for (const t of TK) { idxOf[t] = {}; D[t].forEach((r, i) => (idxOf[t][r.t] = i)); }
 const qIdx = {}; Q.forEach((r, i) => (qIdx[r.t] = i));
 
@@ -68,7 +68,7 @@ for (let qi = START; qi < Q.length; qi++) {
   const RS = A.ratings(sc);
   for (const t of Object.keys(cut)) {
     const [i, dd] = cut[t], rs = RS[t];
-    const rg = A.regimeOf(dd), cls = A.classify(dd, rs), ch = rs != null ? A.cheatOf(dd, rs) : null;
+    const rg = A.regimeOf(dd), cls = A.classify(dd, rs), ch = rs != null && A.cheatOf ? A.cheatOf(dd, rs) : null;   // 치트는 2026-11-16 앱에서 삭제됨(이전 커밋의 index.html로만 시험 가능)
     const p = prev[t]; prev[t] = { cls, ch, i };
     if (!p || p.i !== i - 1 || !rg || rg.r !== 2 || rs < RS_MIN) continue;
     const base = p.cls.box;   // 어제 기준 베이스
