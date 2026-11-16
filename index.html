@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-17 00:32</title>
+<title>추세 대시보드 v2026-11-17 00:40</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -285,7 +285,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 00:32</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 00:40</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -633,8 +633,8 @@ function distDays(d) {
 // 1층 판정 옆에 붙는 할 일 한 문장
 const MARKET_ACT = {
   go: "매수 후보가 피벗을 돌파하면 손절선을 정하고 삽니다.",
-  wait: "새로 사지 않고, 보유는 손절선대로 두며 매수 후보의 피벗만 지켜봅니다.",
-  stop: "새로 사지 않고, 보유 종목은 손절선에 닿으면 팔아 현금을 늘립니다.",
+  wait: "새로 사지 않고 보유는 손절선에 닿으면 팔고, 분산일이 줄어 공격으로 바뀌면 다시 삽니다.",
+  stop: "새로 사지 않고 보유는 손절선에 닿으면 팔고, QQQ가 200일선을 되찾을 때까지 현금을 지킵니다.",
 };
 function analyzeMarket(d, e) {
   const n = d.length, cl = d.map((r) => r.c);
