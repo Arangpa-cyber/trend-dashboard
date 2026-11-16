@@ -38,6 +38,8 @@ def main():
         else:
             failed.append(s)
             print(f"  [{i + 1}/{len(symbols)}] {s}: 실패", flush=True)
+            if i == 0:   # 첫 종목(QQQ)부터 실패면 키 문제일 가능성이 큼 → 104종목을 다 돌지 않고 멈춤
+                sys.exit("첫 종목부터 실패했습니다. 401이면 키가 틀렸거나 앞뒤에 다른 글자가 붙은 것입니다.")
         wait = bd.GAP - (time.time() - t0)
         if wait > 0 and i < len(symbols) - 1:
             time.sleep(wait)
