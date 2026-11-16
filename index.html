@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-17 00:24</title>
+<title>추세 대시보드 v2026-11-17 00:32</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
     --bg: #f6f6f4; --card: #ffffff; --text: #1a1a1a; --sub: #777; --line: #e3e3e0; --accent: #c2410c;
     --up: #c62828; --down: #1565c0;
-    --go: #15803d; --go-bg: #dcfce7; --wait: #b45309; --wait-bg: #fef3c7; --stop: #374151; --stop-bg: #e5e7eb;
+    --go: #15803d; --go-bg: #dcfce7; --wait: #b45309; --wait-bg: #fef3c7; --stop: #dc2626; --stop-bg: #fee2e2;
     --warn: #c2410c; --warn-bg: #fff1e6; --gold: #c99a06;
     --s0: #d4d4d4; --s1: #9ca3af; --s2: #16a34a; --s3: #ea8a0c; --s4: #5b6b85;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #131313; --card: #1c1c1c; --text: #eee; --sub: #999; --line: #2c2c2c; --accent: #fb923c;
             --up: #ef5350; --down: #64b5f6;
-            --go: #4ade80; --go-bg: #12301d; --wait: #fbbf24; --wait-bg: #33280c; --stop: #d1d5db; --stop-bg: #2a2d33; --gold: #f5c542;
+            --go: #4ade80; --go-bg: #12301d; --wait: #fbbf24; --wait-bg: #33280c; --stop: #f87171; --stop-bg: #3a1616; --gold: #f5c542;
             --warn: #fb923c; --warn-bg: #3a2210; --s0: #444; --s1: #8b929c; --s2: #4ade80; --s3: #fb9a2c; --s4: #8a9bb8; }
   }
   * { box-sizing: border-box; }
@@ -102,7 +102,7 @@
   .sep { color: var(--line); }
 
   /* ── 화면 규칙: 색은 뜻 하나에 하나 ──
-     등락 빨강(오름)·파랑(내림) · 판정 초록(공격 가능)·주황(매수 중지)·진한 회색(방어) · 경고 주황 하나
+     등락 빨강(오름)·파랑(내림) · 판정 신호등 초록(공격)·주황(대기)·빨강(방어) · 경고 주황 하나
      단계 점 1 회색 · 2 초록 · 3 주황 · 4 회청색 · 차트 선 21 EMA 노랑 · 50 SMA 청록 · 200 SMA 보라 */
   /* 1층: 신호등 */
   #signal { margin: 10px 0 12px; border-radius: 10px; padding: 12px 14px; border: 1px solid var(--line); background: var(--card); }
@@ -285,7 +285,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 00:24</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 00:32</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -399,8 +399,8 @@ const SHOW_DAYS_STOCK = 252;        // 종목 일봉 차트 표시: 1년
 const CORRECTION_PCT = 0.08;        // QQQ가 고점 대비 이만큼 빠지면 '조정'으로 봄
 const FTD_GAIN = 0.0125;            // 팔로스루 데이: 랠리 4일차 이후 +1.25% 이상, 전일보다 거래량 증가
 const DD_DROP = -0.002;             // 분산일: -0.2% 이상 하락, 전일보다 거래량 증가
-const DD_LIMIT = 5;                 // 최근 25거래일 분산일이 QQQ와 QQQE 모두 이 이상이면 신규 매수 중지 (2020-2026 백테스트: QQQ만 볼 때보다 수익·낙폭 모두 나음)
-const GATE_50 = false, GATE_CORR = false;   // 50일선 아래·8% 조정(팔로스루 전)을 신규 매수 중지 사유로 쓸지 (백테스트에서 수익만 깎아 꺼 둠. 참고로만 표시)
+const DD_LIMIT = 5;                 // 최근 25거래일 분산일이 QQQ와 QQQE 모두 이 이상이면 대기 (2020-2026 백테스트: QQQ만 볼 때보다 수익·낙폭 모두 나음)
+const GATE_50 = false, GATE_CORR = false;   // 50일선 아래·8% 조정(팔로스루 전)을 대기 사유로 쓸지 (백테스트에서 수익만 깎아 꺼 둠. 참고로만 표시)
 const BASE_MIN_DAYS = 15;           // 베이스 최소 기간: 3주(미너비니 VCP 최소)
 const BASE_LOOKBACK_D = 130, BASE_MAX_DEPTH = 0.35;   // 고점을 찾는 기간 26주 · 베이스 깊이 상한
 const SWING_PCT = 0.05;             // 스윙 인정 기준: 고점에서 5% 이상 내려갔다 5% 이상 반등해야 눌림(T) 하나
@@ -663,14 +663,14 @@ function analyzeMarket(d, e) {
   const above50 = c > ma50[last], above200 = c > ma200[last];
   let verdict, cls;
   if (!above200) { verdict = "방어"; cls = "stop"; }
-  else if (bothDD || (GATE_CORR && state === "corr") || (GATE_50 && !above50)) { verdict = "신규 매수 중지"; cls = "wait"; }
-  else { verdict = "공격 가능"; cls = "go"; }
+  else if (bothDD || (GATE_CORR && state === "corr") || (GATE_50 && !above50)) { verdict = "대기"; cls = "wait"; }
+  else { verdict = "공격"; cls = "go"; }
   const why = [];
   why.push(above50 ? "50일선 위" : GATE_50 ? "<b>50일선 아래</b>" : "50일선 아래(참고)");
   why.push(above200 ? "200일선 위" : "<b>200일선 아래</b>");
   const fdd = (v) => (v >= DD_LIMIT ? "<b>" + v + "회</b>" : v + "회");
   why.push("최근 25거래일 분산일 QQQ " + fdd(nQ) + (nE != null ? " · QQQE " + fdd(nE) : "") +
-           (oneDD ? ' <b class="warn">(한쪽만 ' + DD_LIMIT + "회 이상: 주의 · 둘 다면 신규 매수 중지)</b>" : ""));
+           (oneDD ? ' <b class="warn">(한쪽만 ' + DD_LIMIT + "회 이상: 주의 · 둘 다면 대기)</b>" : ""));
   if (state === "corr") why.push((GATE_CORR ? "<b>조정 중</b>" : "조정 중(참고)") + " (고점 대비 " + ((c / peak - 1) * 100).toFixed(1) + "%) · " +
                                  (rally > 0 ? "랠리 " + rally + "일차, 팔로스루 데이 대기" : "랠리 시도 전"));
   else if (ftds.length) why.push("팔로스루 데이 " + d[ftds[ftds.length - 1]].t.slice(5).replace("-", "/"));
@@ -1460,19 +1460,19 @@ const pcCell = (t) => { const w = periodStats(t).pc; return w == null ? '<span c
 const pctCell = (v) => (v == null ? '<span class="muted">-</span>' : '<b class="' + (v >= 0 ? "chg-up" : "chg-down") + '">' + pctf(v) + "</b>");
 const STAR2 = '<span class="star lv2" style="cursor:default">★★</span>', STAR1 = '<span class="star lv1" style="cursor:default">★</span>';
 const stopTxt = (cl) => { const r = cl && cl.risk; if (!r) return ""; return " · " + (r.wide ? '<span class="warn">손절 −' + (r.pct * 100).toFixed(0) + '% (구조상 더 넓음)</span>' : "손절 −" + (r.pct * 100).toFixed(1) + "%"); };
-// 다음 할 일 (사는 쪽): 단계·위치와 1층 시장 판정(go 공격 가능 · wait 신규 매수 중지 · stop 방어)에 맞춤
+// 다음 할 일 (사는 쪽): 단계·위치와 1층 시장 판정(go 공격 · wait 대기 · stop 방어)에 맞춤
 function todoOf(x, ms) {
   const c = x.cls; if (!c) return "";
   const mu = (s) => '<span class="muted">' + s + "</span>";
   const ed = earnDays(x.t), eN = ed != null && ed >= 0 && ed <= EARN_WARN_DAYS ? " · 실적 D-" + ed + " 지난 뒤" : "";
-  const MK = ms === "wait" ? "시장 매수 중지" : ms === "stop" ? "시장 방어" : "시장 판정 전";
+  const MK = ms === "wait" ? "시장 대기" : ms === "stop" ? "시장 방어" : "시장 판정 전";
   if (c.rg && c.rg.r !== 2) return mu(c.rg.r === 1 ? "사지 않음 · 2단계 전환 관찰" : c.rg.r === 3 ? "신규 매수 안 함 · 보유는 줄이기 검토" : "사지 않음 · 보유는 정리");
   if (c.pos === "out") return mu(c.state === "deep" ? "베이스 실패 · 새 베이스까지 제외" : "새 저점 확정(5% 반등)까지 제외");
   if (c.pos === "break" && !c.chase) return ms === "go" ? "<b>매수 검토</b> · 돌파 거래량 확인" + stopTxt(c) + eN : mu("사지 않음 (" + MK + ") · 회복 시 재검토");
   if (pull50(x)) return ms === "go" ? "<b>50일선 눌림</b> · 반등 시 매수 검토" + eN : mu("50일선 지지 관찰 (" + MK + ")");
   if (c.pos === "break") return mu("추격 금지 · 다음 베이스나 50일선 눌림 대기");
   if (c.near) return ms === "go" ? "피벗 <b>" + c.pivot.toFixed(2) + "</b> 돌파 + 거래량 시 매수" + stopTxt(c) + eN
-    : ms === "wait" ? "피벗 " + c.pivot.toFixed(2) + " 표시 · 시장 공격 가능 뒤 돌파 시 매수" : mu("관찰만 (" + MK + ")");
+    : ms === "wait" ? "피벗 " + c.pivot.toFixed(2) + " 표시 · 시장이 공격으로 바뀐 뒤 돌파 시 매수" : mu("관찰만 (" + MK + ")");
   return mu(c.state === "early" ? "베이스 완성 기다림 (" + c.days + "/" + BASE_MIN_DAYS + "일)" : "베이스 다지기 기다림");
 }
 // 다음 할 일 (보유): 언제 파나
@@ -1579,7 +1579,7 @@ function seasonHtml(m) {
     (g.cand ? " · " + g.cand + "단계 후보 " + g.days + "/" + RG_HOLD + "일" : "") + ")</span>";
   let note = "";
   if (rQ.r === 2 && m.cls === "stop") note = "주가는 200일선 " + (Math.abs(rQ.dist) * 100).toFixed(1) + "% 아래지만 선은 아직 오름 · 단계는 새 조건이 " + RG_HOLD + "거래일 이어져야 바뀜";
-  else if (rQ.r === 2 && m.cls === "wait") note = "분산일이 쌓여 신규 매수 중지 · 추세는 아직 2단계";
+  else if (rQ.r === 2 && m.cls === "wait") note = "분산일이 쌓여 대기 · 추세는 아직 2단계";
   else if (rQ.r !== 2 && m.cls === "go") note = "200일선 위지만 선이 평평하거나 내림 (" + rQ.r + "단계)";
   return "<b>계절</b> " + one("QQQ", rQ) + (rE ? " · " + one("QQQE", rE) : "") + ' <span class="muted">· 표시만, 판정에는 쓰지 않음</span>' +
     (note ? '<br><b class="warn">계절과 날씨가 다름</b> · ' + note : "");
@@ -2004,8 +2004,9 @@ function fitCols() {
   wraps.forEach((wrap) => wrap.querySelectorAll("col").forEach((c) => { const k = c.className.slice(2); if (w[k]) c.style.width = w[k] + "px"; }));
 }
 
-// ═════════════ 3층: 종목 — 보기 4개 ═════════════
+// ═════════════ 3층: 종목 — 보기 5개 ═════════════
 const VIEWS = [["buy", "매수 후보", "2단계 · RS 70 이상 · 돌파(매수 범위) · 형성(임박)"],
+               ["vpb", "매물대 베이스", "2단계 중 1년 동안 거래가 가장 많이 쌓인 띠가 지금 베이스 안에 있는 종목 · 할 일 순서로 묶음"],
                ["lead", "주도주", "RS 80 이상 · 할 일 순서로 묶음 · 1·3·4단계는 접어 둠"],
                ["turn", "전환 후보", "2단계로 넘어가는 종목(최근 돌파 · 2단계 후보) + 예비 주도주(RS 60-79, 4주 RS +10 이상, 4단계 제외)"],
                ["all", "전체 100", "나스닥100 전체 · RS 순"]];
@@ -2024,7 +2025,7 @@ function turnKind(x) {   // 0 최근 돌파로 2단계 · 1 1·3단계에서 2�
 function viewList(v) {
   if (!VIEW) return [];
   const all = Object.values(VIEW.info).filter((x) => x.cls && inGroup(x));
-  return v === "buy" ? all.filter(isBuy) : v === "lead" ? all.filter((x) => x.rs >= RS_LEADER) : v === "turn" ? all.filter((x) => turnKind(x) >= 0) : all;
+  return v === "buy" ? all.filter(isBuy) : v === "vpb" ? all.filter((x) => x.vpb) : v === "lead" ? all.filter((x) => x.rs >= RS_LEADER) : v === "turn" ? all.filter((x) => turnKind(x) >= 0) : all;
 }
 // 매수 후보에서 쓰는 피벗 거리
 const buyDist = (x) => pivDist(x) ?? 9;
@@ -2033,6 +2034,11 @@ const VIEW_OPTS = {
     const vb = (a, b) => (b.vpb ? 1 : 0) - (a.vpb ? 1 : 0);   // 매물대 베이스 먼저
     const up = L.filter((x) => buyDist(x) > 0).sort((a, b) => vb(a, b) || buyDist(a) - buyDist(b)), dn = L.filter((x) => buyDist(x) <= 0).sort((a, b) => vb(a, b) || buyDist(b) - buyDist(a));
     return [{ key: "up", label: "피벗 위 · 매수 범위", items: up, note: "매물대 베이스 먼저 · 피벗에 가까운 순" }, { key: "dn", label: "피벗 아래 · 돌파 대기", items: dn, note: "매물대 베이스 먼저 · 피벗에 가까운 순" }].filter((g) => g.items.length);
+  } },
+  vpb: { empty: "지금 매물대 베이스 종목이 없습니다.", sections: (L) => {
+    const by = {}; L.forEach((x) => (by[orderOf(x.cls)] = by[orderOf(x.cls)] || []).push(x));
+    const near = (a, b) => Math.abs(pivDist(a) ?? 9) - Math.abs(pivDist(b) ?? 9);   // 피벗에 가까운 순
+    return ORDER_NAME.map((nm, i) => ({ key: i, label: nm, items: (by[i] || []).sort(near) })).filter((g) => g.items.length);
   } },
   lead: { sections: (L) => {
     const by = {}; L.forEach((x) => (by[orderOf(x.cls)] = by[orderOf(x.cls)] || []).push(x));
@@ -2188,7 +2194,7 @@ async function showRefreshInfo() {
       ? "오늘 서버 갱신: <b>" + fmtKST(late.expect) + " 무렵</b> (한국시간)"
       : late && !late.missed
       ? '<b style="color:var(--wait)">오늘 서버 갱신 지연 중</b> (보통 ' + fmtKST(late.expect) + " 무렵, GitHub 실행 대기열이 밀림 · 10분마다 다시 확인해 들어오면 바로 반영)"
-      : (late ? '<b style="color:var(--stop)">오늘 서버 갱신이 오지 않음</b> (GitHub가 예약 실행을 빼먹었을 수 있음) · ' : "") +
+      : (late ? '<b style="color:var(--text)">오늘 서버 갱신이 오지 않음</b> (GitHub가 예약 실행을 빼먹었을 수 있음) · ' : "") +
         "다음 서버 갱신: <b>" + fmtKST(serverRun(Date.now(), +1) + SERVER_LAG_MS) + " 무렵</b> (한국시간)";
     document.getElementById("refreshInfo").innerHTML = base + "서버 갱신: <b>" + fmtKST(Date.parse(SERVER.generated)) + "</b> · " + nextTxt;
   } else {
@@ -2302,7 +2308,7 @@ function ddftdHtml() {
 <li>그날 거래량이 <b>전날 거래량보다 많음</b></li>
 <li>분산일마다 따로 지웁니다: ① 25거래일이 지나면 지워지고, ② 그 뒤 QQQ 종가가 <b>그 분산일의 종가</b>보다 5% 이상 오르면 그 분산일만 지워집니다. 나머지 분산일은 그대로 남습니다(한꺼번에 초기화하지 않음).</li>
 <li>차트에는 QQQ의 분산일만 칠합니다(신호등이 세는 QQQ 개수와 칠한 칸 수가 같습니다). QQQE 개수는 회색 줄에 나옵니다.</li>
-<li>25거래일 안에 <b>QQQ와 QQQE 모두 ${DD_LIMIT}회 이상</b>이면 신규 매수 중지. 한쪽만이면 주의 표시.</li></ol></div>
+<li>25거래일 안에 <b>QQQ와 QQQE 모두 ${DD_LIMIT}회 이상</b>이면 대기. 한쪽만이면 주의 표시.</li></ol></div>
 <div><h4><span style="background:rgba(22,163,74,0.30);padding:0 6px">팔로스루 데이</span> Follow-Through Day</h4>
 <b>개념</b>: 조정장에서 바닥을 찍은 뒤, 반등이 진짜인지 확인해 주는 날입니다. 큰 자본이 다시 사기 시작했다는 증거입니다.
 모든 팔로스루 데이가 성공하지는 않지만, 팔로스루 데이 없이 시작된 큰 상승장은 거의 없습니다(오닐).
@@ -2330,14 +2336,14 @@ function buildHelp() {
 <b>2층 산업</b> → 돈이 어디에 있고, 4주 동안 어디로 가나?<br>
 <b>3층 종목</b> → 무엇을 살까? (매수 후보 · 주도주 · 전환 후보 · 전체 100)<br>
 <b>4층 내 종목</b> → 보유는 언제 파나, 관심은 언제 사나?</div>
-<p>신호등이 <b>신규 매수 중지</b>나 <b>방어</b>면 좋은 차트가 있어도 새로 사지 않습니다. 사는 것은 <b>2단계 상승기</b> 종목의 <b>돌파(매수 범위)</b>와 <b>형성(임박)</b>에서만 합니다.</p>
+<p>신호등이 <b>대기</b>나 <b>방어</b>면 좋은 차트가 있어도 새로 사지 않습니다. 사는 것은 <b>2단계 상승기</b> 종목의 <b>돌파(매수 범위)</b>와 <b>형성(임박)</b>에서만 합니다.</p>
 <p>매일 아침: ① 고정 바의 판정과 <b>★★ 보유 경고 수</b> → ② 2층에서 2단계 비율이 높고 돈이 들어오는 산업 → ③ 3층 <b>매수 후보</b>와 4층 ★ 관심 종목의 차트.</p>
 <p>제목 옆 <b>?</b> 버튼을 누르면 그 층 설명으로 바로 옵니다. 종목 줄을 누르면 일봉 차트를 크게 봅니다.</p>
 
 <h3 id="h-signal">신호등 <small>1층 맨 위 큰 상자 · QQQ 일봉 기준</small></h3>
 <table>
-<tr><td>${pill("go", "공격 가능")}</td><td>QQQ가 200일선 위에 있고, 최근 25거래일 분산일이 QQQ와 QQQE 중 적어도 한쪽은 ${DD_LIMIT - 1}회 이하. 새로 사도 되는 시장. 한쪽만 ${DD_LIMIT}회 이상이면 "주의"가 붙지만 판정은 그대로입니다.</td></tr>
-<tr><td>${pill("wait", "신규 매수 중지")}</td><td><b>QQQ와 QQQE 둘 다</b> 최근 25거래일 분산일이 ${DD_LIMIT}회 이상. 새로 사지 않고 보유 종목만 관리. 50일선 아래와 8% 조정(팔로스루 데이 전)은 회색 줄에 "참고"로만 나오고 판정에는 쓰지 않습니다(설정 <code>GATE_50</code>, <code>GATE_CORR</code>로 되돌릴 수 있음).</td></tr>
+<tr><td>${pill("go", "공격")}</td><td>QQQ가 200일선 위에 있고, 최근 25거래일 분산일이 QQQ와 QQQE 중 적어도 한쪽은 ${DD_LIMIT - 1}회 이하. 새로 사도 되는 시장. 한쪽만 ${DD_LIMIT}회 이상이면 "주의"가 붙지만 판정은 그대로입니다.</td></tr>
+<tr><td>${pill("wait", "대기")}</td><td><b>QQQ와 QQQE 둘 다</b> 최근 25거래일 분산일이 ${DD_LIMIT}회 이상. 새로 사지 않고 보유 종목만 관리. 50일선 아래와 8% 조정(팔로스루 데이 전)은 회색 줄에 "참고"로만 나오고 판정에는 쓰지 않습니다(설정 <code>GATE_50</code>, <code>GATE_CORR</code>로 되돌릴 수 있음).</td></tr>
 <tr><td>${pill("stop", "방어")}</td><td>QQQ가 200일선 아래. 큰 하락 국면일 수 있으니 현금 비중을 지키는 쪽.</td></tr>
 </table>
 <p><b>왜 QQQE를 같이 보나</b>: QQQ는 시가총액 가중이라 상위 10종목이 47%를 차지해, 소수 대형주가 지수를 정합니다. QQQE(동일가중)는 100종목을 같은 비중으로 담아 "고르게 파는지"를 보여 줍니다. 2020-2026 백테스트(분산일 기준으로 QQQ를 보유/현금 전환)에서 QQQ만 볼 때(수익 +119%, 최대 낙폭 −26%)보다 둘 다 볼 때(+187%, −21%)가 수익과 낙폭 모두 나았고, 50일선·조정 조건을 더하면 수익만 깎였습니다(+102%). 한 번의 6년 경로이고 기준값 5회는 다른 값(4, 6, 7)에서 결과가 매끄럽지 않았으니 참고로 보세요.</p>
@@ -2403,10 +2409,11 @@ function buildHelp() {
 <tr><td>한계</td><td>초대형주(NVDA, AAPL, MSFT, GOOGL, META)는 QQQ 비중이 커서 시장 움직임을 빼면 묶음과의 상관관계가 낮게 나옵니다. SPCX·HONA는 상장 100일 남짓이라 데이터가 짧습니다. 나스닥100 변경(매년 12월) 때 새 종목은 사업 논리로 먼저 정하고, 몇 달 뒤 데이터로 확인합니다.</td></tr>
 </table>
 
-<h3 id="h-stocks">3층 · 종목 <small>무엇을 살까 · 보기 4개</small></h3>
+<h3 id="h-stocks">3층 · 종목 <small>무엇을 살까 · 보기 5개</small></h3>
 <p>나스닥100 종목을 <b>표 하나</b>로 보고, 위 버튼으로 보기만 바꿉니다. 버튼 옆 숫자는 그 보기의 종목 수입니다. 2층에서 산업을 고르면 모든 보기가 그 산업만 보여 줍니다. 오른쪽 칸에서 찾으면 보기와 상관없이 100종목 전체에서 찾습니다.</p>
 <table>
 <tr><td>매수 후보</td><td>2단계 상승기 · RS ${BUY_RS_MIN} 이상 중에서 <b>돌파(매수 범위)</b>, <b>형성(임박)</b>. "피벗 위 · 매수 범위"와 "피벗 아래 · 돌파 대기"로 나누고, 각각 <b>매물대 베이스</b> 종목을 먼저, 그다음 피벗에 가까운 순으로 놓습니다. 처음 열면 이 보기가 나옵니다.</td></tr>
+<tr><td>매물대 베이스</td><td>2단계 종목 중 <b>매물대 베이스</b> 꼬리표가 붙은 종목만(RS 제한 없음). 할 일 순서(돌파·매수 범위 → 형성·임박 → 형성 → 돌파·추격 금지)로 묶고, 묶음 안은 피벗에 가까운 순입니다. 꼬리표 뜻과 근거는 아래 꼬리표 표를 보세요.</td></tr>
 <tr><td>주도주</td><td>RS ${RS_LEADER} 이상 전부. 할 일 순서(돌파·매수 범위 → 형성·임박 → 형성 → 돌파·추격 금지 → 이탈 → 1·3·4단계)로 묶습니다. 1·3·4단계 묶음은 접어 두고, 묶음 제목을 누르면 펼칩니다.</td></tr>
 <tr><td>전환 후보</td><td>2단계로 넘어가는 종목: ① 최근 20거래일 안에 베이스를 돌파해 2단계가 된 종목 ② 1·3단계에서 2단계 조건이 이어지는 중인 종목(${RG_HOLD}거래일을 채우는 중) ③ 예비 주도주(RS ${PRE_RS_MIN}-${RS_LEADER - 1}, 4주 사이 RS +${PRE_RS_GAIN} 이상, 50일선 위, 이탈 아님, 4단계 제외).</td></tr>
 <tr><td>전체 100</td><td>나스닥100 전부, RS 높은 순. 주황 구분선 위가 주도주(RS ${RS_LEADER} 이상)입니다.</td></tr>
@@ -2419,7 +2426,7 @@ function buildHelp() {
 <tr><td>비중</td><td>나스닥100(QQQ) 안에서 그 종목이 차지하는 비중(%).</td></tr>
 <tr><td>영향</td><td>이 종목이 지난 4주 동안 QQQ를 몇 %p 움직였나 = 비중 × 4주 등락률. QQQ는 시가총액 가중이라 같은 −5%라도 비중 8%인 종목은 −0.4%p, 0.3%인 종목은 −0.015%p입니다. ${QI_BOLD}%p 이상은 굵게. 표 위 "합계"는 지금 보기의 종목 영향을 더한 값으로, 주도주가 지수를 받치는지(순환매) 함께 끌어내리는지(위험 신호) 봅니다. 비중은 서버가 매일 받은 값(실패하면 ${QQQ_W_AT} 스냅샷)이고, 계산할 때는 각 종목 주가로 4주 전 시점 비중으로 되돌려 씁니다. 그래서 100종목 합이 QQQ 실제 4주 등락과 거의 맞습니다(11/12 기준 −5.99%p 대 실제 −5.47%). GOOGL은 GOOG를 뺀 몫입니다.</td></tr>
 <tr><td>6개월</td><td>6개월 종가 선(붉은색: 50일선 위, 파란색: 아래), 청록 50일선, 보라 200일선, 주황 점선 피벗. 200일선이 너무 멀면(그림을 25% 넘게 넓혀야 하면) 선 대신 가장자리에 보라 점선과 "200일 −32%"만 적습니다.</td></tr>
-<tr><td>다음 할 일</td><td>단계·위치와 <b>1층 신호등</b>을 함께 보고 정합니다. 시장이 <b>공격 가능</b>일 때만 "매수 검토", "돌파 + 거래량 시 매수"가 나옵니다. <b>신규 매수 중지</b>면 피벗 표시까지, <b>방어</b>면 관찰만입니다. 실적이 ${EARN_WARN_DAYS}일 안이면 "실적 지난 뒤"를 덧붙입니다. 가장 긴 글에 맞춰 칸 폭을 정하고, 넘치면 마우스를 올려 봅니다.</td></tr>
+<tr><td>다음 할 일</td><td>단계·위치와 <b>1층 신호등</b>을 함께 보고 정합니다. 시장이 <b>공격</b>일 때만 "매수 검토", "돌파 + 거래량 시 매수"가 나옵니다. <b>대기</b>면 피벗 표시까지, <b>방어</b>면 관찰만입니다. 실적이 ${EARN_WARN_DAYS}일 안이면 "실적 지난 뒤"를 덧붙입니다. 가장 긴 글에 맞춰 칸 폭을 정하고, 넘치면 마우스를 올려 봅니다.</td></tr>
 <tr><td>손절 −n%</td><td>"다음 할 일"에 붙는 <b>손절 거리</b>. 진입가(피벗, 돌파 중이면 지금 가격)에서 손절선까지 몇 % 내려가나입니다. 손절선은 <b>마지막 수축(마지막 조용한 구간, 없으면 마지막 눌림)의 저점 바로 아래</b>입니다. 미너비니는 손절 절대 상한을 ${P(STOP_MAX)}로 봅니다. 저점이 더 멀면 ${P(STOP_MAX)}로 묶고 "구조상 더 넓음"을 주황으로 표시합니다. 규칙으로 찾은 근사치이니 실제 손절가는 차트로 정하세요.</td></tr>
 </table>
 
