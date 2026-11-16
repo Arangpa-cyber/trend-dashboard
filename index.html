@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-16 23:07</title>
+<title>추세 대시보드 v2026-11-16 23:20</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -156,6 +156,10 @@
   /* 1층 차트 */
   #marketChart { height: 42vh; min-height: 280px; position: relative; }
   .vpbtn { position: absolute; left: 8px; top: 6px; z-index: 5; font-size: 11px; padding: 2px 8px; border: 1px solid var(--line, #ccc); border-radius: 6px; background: var(--card, #fff); color: var(--sub, #666); cursor: pointer; }
+  .vpmenu { position: absolute; left: 8px; top: 28px; z-index: 6; display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.15); padding: 3px 0; }
+  .vpmenu button { font-size: 11px; text-align: left; padding: 4px 12px 4px 8px; background: none; border: 0; color: var(--text); cursor: pointer; white-space: nowrap; }
+  .vpmenu button:hover { background: var(--line); }
+  .vpmenu button i { display: inline-block; width: 14px; font-style: normal; color: var(--go); }
 
   /* 2층 */
   .grid2 { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -273,7 +277,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-16 23:07</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-16 23:20</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -692,6 +696,17 @@ function lastPivot(d, bases) {
   const b = bases || findBasesD(d), r = b[b.length - 1];
   return r ? { top: r.top, bottom: r.bottom, from: r.from, t: r.breakT, ago: r.ago, kind: r.kind, s: r.s, breakIdx: r.breakIdx } : null;
 }
+// 매물대 베이스: 2단계 종목의 지금 베이스(형성) 또는 방금 돌파한 베이스(돌파)가 1년 최대 매물대 띠(volProfile bands[0])를 VPB_OVERLAP 이상 품음
+// 근거: 5년 백테스트(backtest/, 2021-12부터 2026-11까지) 2단계 피벗 돌파 중 이런 경우 61건 모의 매매 평균 +14.1% · 중앙 +9.5%, 아닌 경우 164건 +4.2% · −5.9%
+function vpBaseOf(x) {
+  const c = x.cls; if (!c || (c.rg && c.rg.r !== 2) || c.pos === "out") return null;
+  const b = c.pos === "break" ? (x.lp ? { top: x.lp.top, bottom: x.lp.bottom } : null) : c.box;
+  if (!b) return null;
+  const d = x.d, vp = volProfile(d, Math.max(0, d.length - 252)); if (!vp || !vp.bands[0]) return null;
+  const z0 = vp.bands[0], a = vp.lo + z0.a * vp.st, z = vp.lo + (z0.b + 1) * vp.st;
+  const ov = Math.max(0, Math.min(z, b.top) - Math.max(a, b.bottom)) / (z - a);
+  return ov >= VPB_OVERLAP ? { a, z, share: z0.share, ov } : null;
+}
 // 스윙(눌림): 고점에서 SWING_PCT 이상 내려갔다가 저점에서 SWING_PCT 이상 반등하면 눌림 하나(T). 아직 반등 전이면 open
 function swingsOf(d, from) {
   const out = []; let hiI = from, hi = d[from].h, loI = -1, lo = Infinity;
@@ -928,6 +943,7 @@ function computeView(k) {
       x.below20 = m20 != null && c < m20;
       x.bases = findBasesD(d, x.cls.rg && x.cls.rg.hist);   // 최근 1년 돌파로 끝난 베이스(2단계)·저항선(1·3단계), 4단계 구간은 뺌
       x.lp = lastPivot(d, x.bases);             // 마지막 돌파 피벗(돌파 위치 · 보유 경고 · 50일선 눌림)
+      x.vpb = vpBaseOf(x);                      // 매물대 베이스 꼬리표 · 매수 후보 정렬
       const hi52 = Math.max(...y1.map((r) => r.h)), lo52 = Math.min(...y1.map((r) => r.l));
       x.fromHi = c / hi52 - 1;
       x.fromLo = c / lo52 - 1;
@@ -1043,7 +1059,9 @@ function earnDates(t) {
 // 하루 거래량을 그날 저가-고가 사이 칸에 똑같이 나눠 담는 근사입니다(일봉 기준).
 let VP_MODE = "B";
 try { const m = localStorage.getItem("td2_vp"); if (["A", "B", "off"].includes(m)) VP_MODE = m; } catch (e) {}
-const VP_LABEL = { B: "매물대: 핵심", A: "매물대: 50칸", off: "매물대: 끔" };
+const VP_LABEL = { B: "매물대: 핵심 ▾", A: "매물대: 50칸 ▾", off: "매물대: 끔 ▾" };
+const VP_MENU = [["B", "핵심 띠 (거래가 몰린 구간)"], ["A", "50칸 전체 분포"], ["off", "끔"]];
+const VPB_OVERLAP = 0.5;   // 매물대 베이스: 1년 최대 띠가 베이스 가격 범위에 50% 이상 겹침(백테스트 F1)
 const VP_BAND = 0.6, VP_MAX_BANDS = 3;   // 핵심 구간: 앞뒤 칸과 평균 낸 거래량이 가장 많은 곳의 60% 이상인 칸이 이어진 곳(이 대시보드의 값), 최대 3개
 function volProfile(d, from) {
   const N = 50, rows = d.slice(from).filter((r) => !r.pv);
@@ -1069,7 +1087,7 @@ function volProfile(d, from) {
   bands.sort((x, y) => y.m - x.m);
   return { lo, st, N, ratio, bands: bands.slice(0, VP_MAX_BANDS) };
 }
-function addVolProfile(chart, series, el, d, from) {
+function addVolProfile(chart, series, el, d, from, hl) {   // hl: 매물대 베이스(vpBaseOf)면 그 띠(가장 큰 띠)를 진하게
   const vp = volProfile(d, from);
   if (!vp) return;
   const blue = "#2a78d6";
@@ -1091,14 +1109,18 @@ function addVolProfile(chart, series, el, d, from) {
             });
           } else {
             g.font = "bold " + 11 * hr + "px sans-serif"; g.textAlign = "right"; g.textBaseline = "middle";
-            vp.bands.forEach((z) => {                       // 핵심 구간: 띠(가격 범위) + 중심 칸 진하게 + 몫(%)
+            vp.bands.forEach((z, bi) => {                   // 핵심 구간: 띠(가격 범위) + 중심 칸 진하게 + 몫(%)
               const yTop = y(vp.lo + vp.st * (z.b + 1)), yBot = y(vp.lo + vp.st * z.a);
               const yc1 = y(vp.lo + vp.st * (z.pk + 1)), yc2 = y(vp.lo + vp.st * z.pk);
               if (yTop == null || yBot == null) return;
               const L = z.v * maxLen;
-              g.globalAlpha = 0.14; g.fillRect(right - L, yTop * vr, L, (yBot - yTop) * vr);
-              if (yc1 != null && yc2 != null) { g.globalAlpha = 0.32; g.fillRect(right - L, yc1 * vr, L, (yc2 - yc1) * vr); }
-              g.globalAlpha = 0.9; g.fillText(Math.round(z.share * 100) + "%", right - L - 4 * hr, ((yTop + yBot) / 2) * vr);
+              const hb = hl && bi === 0;                    // 매물대 베이스: 지금 베이스와 겹친 가장 큰 띠
+              g.globalAlpha = hb ? 0.26 : 0.14; g.fillRect(right - L, yTop * vr, L, (yBot - yTop) * vr);
+              if (yc1 != null && yc2 != null) { g.globalAlpha = hb ? 0.45 : 0.32; g.fillRect(right - L, yc1 * vr, L, (yc2 - yc1) * vr); }
+              const lab = Math.round(z.share * 100) + "%" + (hb ? " · 베이스" : ""), tx = right - L - 4 * hr, ty = ((yTop + yBot) / 2) * vr;
+              g.globalAlpha = 0.9;
+              if (tx - g.measureText(lab).width < 4 * hr) { g.textAlign = "left"; g.fillText(lab, right - L + 4 * hr, ty); g.textAlign = "right"; }   // 띠가 길어 왼쪽 밖으로 나가면 띠 안쪽에
+              else g.fillText(lab, tx, ty);
             });
           }
           g.globalAlpha = 1;
@@ -1111,13 +1133,26 @@ function addVolProfile(chart, series, el, d, from) {
   series.attachPrimitive(prim);
   const btn = document.createElement("button");
   btn.className = "vpbtn"; btn.type = "button"; btn.textContent = VP_LABEL[VP_MODE];
-  btn.onclick = () => {
-    VP_MODE = VP_MODE === "B" ? "A" : VP_MODE === "A" ? "off" : "B";
-    try { localStorage.setItem("td2_vp", VP_MODE); } catch (e) {}
-    btn.textContent = VP_LABEL[VP_MODE]; req();
+  btn.onclick = (e) => {                             // 누르면 보기 방식을 고르는 메뉴
+    e.stopPropagation();
+    const open = el.querySelector(".vpmenu"); closeVpMenus(); if (open) return;
+    const m = document.createElement("div"); m.className = "vpmenu";
+    m.innerHTML = VP_MENU.map(([k, l]) => '<button type="button" data-m="' + k + '"><i>' + (k === VP_MODE ? "✓" : "") + "</i>" + l + "</button>").join("");
+    m.onclick = (ev) => { ev.stopPropagation(); const b = ev.target.closest("[data-m]"); if (!b) return; setVpMode(b.dataset.m); closeVpMenus(); };
+    el.appendChild(m);
   };
   el.appendChild(btn);
+  VP_INST.add({ btn, req: () => req() });
 }
+// 매물대 보기 방식: 모든 차트(1층 QQQ · 크게 보기)에 같이 적용하고 브라우저에 기억
+const VP_INST = new Set();
+function setVpMode(m) {
+  VP_MODE = m;
+  try { localStorage.setItem("td2_vp", m); } catch (e) {}
+  VP_INST.forEach((z) => { if (!z.btn.isConnected) { VP_INST.delete(z); return; } z.btn.textContent = VP_LABEL[m]; z.req(); });
+}
+const closeVpMenus = () => document.querySelectorAll(".vpmenu").forEach((m) => m.remove());
+document.addEventListener("click", closeVpMenus);
 function drawMarket(d, m) {
   const chart = baseChart(document.getElementById("marketChart"), 0.24);
   const from = Math.max(0, d.length - SHOW_DAYS_MARKET);
@@ -1170,7 +1205,7 @@ function drawDaily(el, d, cls, t, x) {
   const vm = chart.addLineSeries({ priceScaleId: "vol", color: C.ma10, lineWidth: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
   const vma = smaArr(d.map((r) => r.v), 50);
   vm.setData(d.map((r, i) => ({ time: r.t, value: vma[i] })).filter((q, i) => i >= from && q.value != null));
-  addVolProfile(chart, bars, el, d, from);
+  addVolProfile(chart, bars, el, d, from, x && x.vpb);
   const mkLine = (span, v, style) => {
     const s = chart.addLineSeries({ color: C.box, lineWidth: 2, lineStyle: style, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
     s.setData(span.map((r) => ({ time: r.t, value: v })));
@@ -1285,10 +1320,11 @@ function earnBadge(t) {
 // 50일선 눌림: 2단계에서 돌파한 적이 있는 종목이 50일선 위 0-5%까지 눌림(매수 범위·임박이 아닐 때만)
 const pull50 = (x) => !!(x && x.cls && (!x.cls.rg || x.cls.rg.r === 2) && x.cls.pos !== "out" && !(x.cls.pos === "break" && !x.cls.chase) &&
   !(x.cls.pos === "form" && x.cls.near) && x.lp && x.dist50 != null && x.dist50 >= 0 && x.dist50 <= PULLBACK_NEAR);
-// 꼬리표 (모든 표 공통): NEW · 50일선 눌림 · 흔들림 · 실적 D-n
+// 꼬리표 (모든 표 공통): NEW · 매물대 베이스 · 50일선 눌림 · 흔들림 · 실적 D-n
 function tagsOf(x) {
   let s = "";
   if (DIFF && DIFF.added.includes(x.t)) s += '<span class="badge new" title="4주 전(' + md(PREV_ASOF) + ' 마감)에는 RS ' + RS_LEADER + ' 아래였다가 지금 주도주">NEW</span>';
+  if (x.vpb) s += '<span class="badge tg" title="1년 동안 거래가 가장 많이 쌓인 가격대 ' + x.vpb.a.toFixed(2) + "-" + x.vpb.z.toFixed(2) + "(1년 거래량의 " + Math.round(x.vpb.share * 100) + '%)가 ' + (x.cls.pos === "break" ? "방금 돌파한" : "지금") + ' 베이스 안 · 5년 백테스트에서 이런 베이스의 돌파가 더 좋았음">매물대 베이스</span>';
   if (pull50(x)) s += '<span class="badge tg" title="돌파 뒤 오른 종목이 50일선 위 ' + pctf(x.dist50) + '까지 눌림 · 첫 눌림 반등은 매수 자리">50일선 눌림</span>';
   if (x.cls && x.cls.rg && x.cls.rg.cross >= 4) s += '<span class="badge tg" title="최근 60거래일 동안 주가가 200일선을 ' + x.cls.rg.cross + '번 넘나듦 · 단계 판정이 흔들릴 수 있음">흔들림</span>';
   return s + earnBadge(x.t);
@@ -1954,8 +1990,9 @@ function viewList(v) {
 const buyDist = (x) => pivDist(x) ?? 9;
 const VIEW_OPTS = {
   buy: { empty: "지금 매수 후보가 없습니다.", sections: (L) => {
-    const up = L.filter((x) => buyDist(x) > 0).sort((a, b) => buyDist(a) - buyDist(b)), dn = L.filter((x) => buyDist(x) <= 0).sort((a, b) => buyDist(b) - buyDist(a));
-    return [{ key: "up", label: "피벗 위 · 매수 범위", items: up }, { key: "dn", label: "피벗 아래 · 돌파 대기", items: dn, note: "피벗에 가까운 순" }].filter((g) => g.items.length);
+    const vb = (a, b) => (b.vpb ? 1 : 0) - (a.vpb ? 1 : 0);   // 매물대 베이스 먼저
+    const up = L.filter((x) => buyDist(x) > 0).sort((a, b) => vb(a, b) || buyDist(a) - buyDist(b)), dn = L.filter((x) => buyDist(x) <= 0).sort((a, b) => vb(a, b) || buyDist(b) - buyDist(a));
+    return [{ key: "up", label: "피벗 위 · 매수 범위", items: up, note: "매물대 베이스 먼저 · 피벗에 가까운 순" }, { key: "dn", label: "피벗 아래 · 돌파 대기", items: dn, note: "매물대 베이스 먼저 · 피벗에 가까운 순" }].filter((g) => g.items.length);
   } },
   lead: { sections: (L) => {
     const by = {}; L.forEach((x) => (by[orderOf(x.cls)] = by[orderOf(x.cls)] || []).push(x));
@@ -2283,7 +2320,7 @@ function buildHelp() {
 <tr><td style="color:#7c3aed">━ 200일선</td><td>장기 추세. 가격이 이 선 아래면 방어. 선의 기울기로 1년 흐름을 읽습니다.</td></tr>
 <tr><td style="color:#ca8a04">━ 21일 EMA</td><td>단기 추세선(짙은 노랑). 강한 주도 구간에서는 가격이 이 선 근처에서 받쳐지는지 봅니다.</td></tr>
 <tr><td style="color:#0f172a">━ 거래량 50일 평균</td><td>아래 거래량 막대 위의 가는 선. 막대가 이 선보다 높으면 평소보다 많이 거래된 날입니다.</td></tr>
-<tr><td style="color:#2a78d6">▇ 매물대</td><td>1년 동안 거래량이 많이 쌓인 가격대. 가격축 바로 옆에 파란색으로 그립니다. 왼쪽 위 버튼으로 "핵심" → "50칸" → "끔" 순서로 바뀝니다. <b>50칸</b>: 가격을 50칸으로 나눈 전체 분포(막대 길이 = 가장 큰 칸 대비). <b>핵심</b>: 거래가 몰린 <b>구간</b>을 띠로 그립니다. 앞뒤 칸과 평균 낸 거래량이 가장 많은 곳의 ${Math.round(VP_BAND * 100)}% 이상인 칸이 이어진 곳을 한 띠로 묶고(최대 ${VP_MAX_BANDS}개, 기준에 못 미치면 더 적게), 띠 안에서 가장 많은 칸을 진하게, 왼쪽 끝 숫자는 1년 거래량 중 그 띠의 몫(%)입니다. ${Math.round(VP_BAND * 100)}%는 책에 없는 이 대시보드의 값입니다. 현재가 위의 띠는 저항, 아래는 지지 후보입니다. 일봉 기준 근사입니다(하루 거래량을 그날 저가-고가에 똑같이 나눠 담음). 종목 크게 보기 차트에도 같은 버튼이 있습니다.</td></tr>
+<tr><td style="color:#2a78d6">▇ 매물대</td><td>1년 동안 거래량이 많이 쌓인 가격대. 가격축 바로 옆에 파란색으로 그립니다. 왼쪽 위 버튼을 누르면 <b>핵심 띠 · 50칸 전체 · 끔</b> 중에서 고릅니다. 고른 것은 1층과 크게 보기 차트에 함께 적용되고 브라우저에 기억됩니다. <b>50칸</b>: 가격을 50칸으로 나눈 전체 분포(막대 길이 = 가장 큰 칸 대비). <b>핵심</b>: 거래가 몰린 <b>구간</b>을 띠로 그립니다. 앞뒤 칸과 평균 낸 거래량이 가장 많은 곳의 ${Math.round(VP_BAND * 100)}% 이상인 칸이 이어진 곳을 한 띠로 묶고(최대 ${VP_MAX_BANDS}개, 기준에 못 미치면 더 적게), 띠 안에서 가장 많은 칸을 진하게, 왼쪽 끝 숫자는 1년 거래량 중 그 띠의 몫(%)입니다. ${Math.round(VP_BAND * 100)}%는 책에 없는 이 대시보드의 값입니다. 현재가 위의 띠는 저항, 아래는 지지 후보입니다. 일봉 기준 근사입니다(하루 거래량을 그날 저가-고가에 똑같이 나눠 담음). <b>매물대 베이스</b> 종목은 지금 베이스와 겹친 가장 큰 띠를 더 진하게 칠하고 "· 베이스"를 붙입니다. 종목 크게 보기 차트에도 같은 버튼이 있습니다.</td></tr>
 <tr><td><span style="background:rgba(220,38,38,0.16);padding:0 8px">붉은 배경</span></td><td>지금 효력이 남아 있는 분산일(최근 25거래일 안, 5% 상승으로 지워지지 않은 것)만 칠합니다. 신호등이 세는 것과 같습니다. 붉은 칸이 몰리면 큰 자본이 빠져나가는 중입니다.</td></tr>
 <tr><td><span style="background:rgba(22,163,74,0.30);padding:0 8px">초록 배경</span></td><td>팔로스루 데이. 조정 뒤 상승 전환 확인.</td></tr>
 </table>
@@ -2329,7 +2366,7 @@ function buildHelp() {
 <h3 id="h-stocks">3층 · 종목 <small>무엇을 살까 · 보기 4개</small></h3>
 <p>나스닥100 종목을 <b>표 하나</b>로 보고, 위 버튼으로 보기만 바꿉니다. 버튼 옆 숫자는 그 보기의 종목 수입니다. 2층에서 산업을 고르면 모든 보기가 그 산업만 보여 줍니다. 오른쪽 칸에서 찾으면 보기와 상관없이 100종목 전체에서 찾습니다.</p>
 <table>
-<tr><td>매수 후보</td><td>2단계 상승기 · RS ${BUY_RS_MIN} 이상 중에서 <b>돌파(매수 범위)</b>, <b>형성(임박)</b>. "피벗 위 · 매수 범위"와 "피벗 아래 · 돌파 대기"로 나누고 피벗에 가까운 순으로 놓습니다. 처음 열면 이 보기가 나옵니다.</td></tr>
+<tr><td>매수 후보</td><td>2단계 상승기 · RS ${BUY_RS_MIN} 이상 중에서 <b>돌파(매수 범위)</b>, <b>형성(임박)</b>. "피벗 위 · 매수 범위"와 "피벗 아래 · 돌파 대기"로 나누고, 각각 <b>매물대 베이스</b> 종목을 먼저, 그다음 피벗에 가까운 순으로 놓습니다. 처음 열면 이 보기가 나옵니다.</td></tr>
 <tr><td>주도주</td><td>RS ${RS_LEADER} 이상 전부. 할 일 순서(돌파·매수 범위 → 형성·임박 → 형성 → 돌파·추격 금지 → 이탈 → 1·3·4단계)로 묶습니다. 1·3·4단계 묶음은 접어 두고, 묶음 제목을 누르면 펼칩니다.</td></tr>
 <tr><td>전환 후보</td><td>2단계로 넘어가는 종목: ① 최근 20거래일 안에 베이스를 돌파해 2단계가 된 종목 ② 1·3단계에서 2단계 조건이 이어지는 중인 종목(${RG_HOLD}거래일을 채우는 중) ③ 예비 주도주(RS ${PRE_RS_MIN}-${RS_LEADER - 1}, 4주 사이 RS +${PRE_RS_GAIN} 이상, 50일선 위, 이탈 아님, 4단계 제외).</td></tr>
 <tr><td>전체 100</td><td>나스닥100 전부, RS 높은 순. 주황 구분선 위가 주도주(RS ${RS_LEADER} 이상)입니다.</td></tr>
@@ -2388,6 +2425,7 @@ function buildHelp() {
 <table>
 <tr><td><span class="pq buy">매수 범위</span> <span class="pq chase">추격 금지</span> <span class="pq near">임박</span></td><td>위치에 붙는 표시. 위 "단계와 위치" 참고.</td></tr>
 <tr><td>${b("new", "NEW")}</td><td>4주 전에는 RS ${RS_LEADER} 아래였다가 지금 주도주.</td></tr>
+<tr><td>${b("tg", "매물대 베이스")}</td><td>2단계 종목의 지금 베이스(돌파 중이면 방금 돌파한 베이스)가 <b>1년 동안 거래가 가장 많이 쌓인 띠</b>(매물대 "핵심"의 가장 큰 띠)를 ${P(VPB_OVERLAP)} 이상 품음. 1년 중 가장 많은 물량이 주인을 바꾼 자리가 지금 베이스라는 뜻이고, 돌파하면 그 매물이 아래에서 받쳐 줍니다. 5년 백테스트(2021-12부터 2026-11까지, 2단계 · RS ${BUY_RS_MIN} 이상 피벗 돌파, −10% 손절 · 최대 60일): 이런 돌파 61건 평균 +14.1% · 중앙 +9.5% · 이긴 비율 62%, 아닌 돌파 164건 +4.2% · −5.9% · 43%. 2023-2026년은 해마다 더 좋았고 하락장인 2022년(7건)은 나빴습니다. 숨기지 않고 매수 후보에서 먼저 보여 주기만 합니다. 1·3·4단계 돌파에서는 차이가 없거나 반대여서 2단계에만 붙입니다. 베이스 하루 거래량이 1년 평균보다 많은 경우는 오히려 나빴습니다(오닐: 베이스에서는 거래량이 말라야 함).</td></tr>
 <tr><td>${b("tg", "50일선 눌림")}</td><td>돌파한 적이 있는 2단계 종목이 50일선 위 ${P(PULLBACK_NEAR)} 이내까지 눌림(매수 범위·임박이 아닐 때). 돌파 뒤 첫 50일선 눌림 반등은 매수 자리(오닐).</td></tr>
 <tr><td>${b("tg", "흔들림")}</td><td>최근 60거래일에 200일선을 4번 이상 넘나듦. 단계 판정이 흔들릴 수 있음.</td></tr>
 <tr><td>${b("earn", "실적 D-5")}</td><td>${EARN_WARN_DAYS}일 안에 실적 발표(주황, 날짜는 마우스를 올리면). 실적 직후 갭은 계획보다 큰 손실을 만들 수 있습니다.</td></tr>
