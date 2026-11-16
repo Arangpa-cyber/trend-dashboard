@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-16 23:48</title>
+<title>추세 대시보드 v2026-11-17 00:05</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -107,6 +107,7 @@
   /* 1층: 신호등 */
   #signal { margin: 10px 0 12px; border-radius: 10px; padding: 12px 14px; border: 1px solid var(--line); background: var(--card); }
   #signal .verdict { font-size: 20px; font-weight: 800; }
+  #signal .verdict .act { font-size: 14px; font-weight: 700; color: var(--text); margin-left: 10px; }   /* 판정 옆 할 일 한 문장 */
   #signal .why { font-size: 13px; margin-top: 4px; line-height: 1.7; }
   #signal .why.season, #signal #breadth { border-top: 1px dashed color-mix(in srgb, currentColor 18%, transparent); padding-top: 4px; margin-top: 6px; }
   #signal.go { background: var(--go-bg); border-color: var(--go); } #signal.go .verdict { color: var(--go); }
@@ -284,7 +285,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-16 23:48</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 00:05</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -629,6 +630,12 @@ function distDays(d) {
   }
   return { dd, dd25: dd.filter((x) => x.i >= n - 25 && !x.expired) };
 }
+// 1층 판정 옆에 붙는 할 일 한 문장
+const MARKET_ACT = {
+  go: "매수 후보가 피벗을 돌파하면 손절선을 정하고 삽니다.",
+  wait: "새로 사지 않고, 보유는 손절선대로 두며 매수 후보의 피벗만 지켜봅니다.",
+  stop: "새로 사지 않고, 보유 종목은 손절선에 닿으면 팔아 현금을 늘립니다.",
+};
 function analyzeMarket(d, e) {
   const n = d.length, cl = d.map((r) => r.c);
   const ma50 = smaArr(cl, 50), ma200 = smaArr(cl, 200);
@@ -1585,7 +1592,7 @@ function renderMarket() {
   MARKET_STATE = m;
   const sig = document.getElementById("signal");
   sig.className = m.cls;
-  sig.innerHTML = '<div class="verdict">QQQ · ' + m.verdict + '</div><div class="why">' + m.why + '</div><div class="why season">' + seasonHtml(m) + '</div><div class="why" id="breadth"></div>';
+  sig.innerHTML = '<div class="verdict">QQQ · ' + m.verdict + '<span class="act">' + (MARKET_ACT[m.cls] || "") + '</span></div><div class="why">' + m.why + '</div><div class="why season">' + seasonHtml(m) + '</div><div class="why" id="breadth"></div>';
   updateBreadth();
   fitMarketChart();
   drawMarket(DATA.QQQ, m);
