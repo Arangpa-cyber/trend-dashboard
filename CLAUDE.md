@@ -28,6 +28,7 @@
 | `.github/workflows/update-data.yml` | 예약 실행 `30 0 * * 2-6`(UTC) = 한국 화-토 09:30. 수동 실행(workflow_dispatch) 가능 |
 | `data.json` | 서버가 매일 커밋하는 결과(직접 고치지 않음) |
 | `scripts/backfill_history.py` | 백테스트용 긴 일봉(기본 1700개)을 한 번 받아 `backtest/prices.json.gz`에 저장. 화면은 안 씀. 키가 필요해 사용자가 직접 실행(GitHub 토큰에 workflow 권한이 없어 워크플로 파일은 못 올림) |
+| `backtest/run.js`·`report.js`·`app.js` | 백테스트. `app.js`가 index.html 스크립트를 node에서 가짜 DOM으로 읽어 `classify`·`cheatOf`·`volProfile` 등을 그대로 씀. 매일 그날까지 일봉 470개로만 판단 |
 | `README.md` | 처음 설정 안내(일부 내용이 예전 기준이라 오래됨) |
 
 ## 데이터 흐름
