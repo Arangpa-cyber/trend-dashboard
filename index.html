@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-16 23:38</title>
+<title>추세 대시보드 v2026-11-16 23:48</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -231,6 +231,13 @@
   .star.lv0 { color: var(--sub); opacity: 0.4; letter-spacing: 0; }
   .star:hover { opacity: 1; }
   .card-head .star, #mName .star { min-width: 0; padding: 0 6px 0 0; }
+  .starmenu { position: fixed; z-index: 1000; display: flex; flex-direction: column; min-width: 110px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.18); padding: 3px 0; font-size: 13px; }
+  .starmenu .smh { font-size: 11px; font-weight: 700; color: var(--sub); padding: 3px 10px 2px; }
+  .starmenu button { text-align: left; padding: 6px 12px 6px 8px; background: none; border: 0; color: var(--text); cursor: pointer; white-space: nowrap; font-size: 13px; }
+  .starmenu button:hover { background: var(--line); }
+  .starmenu button.on { font-weight: 700; }
+  .starmenu button i { display: inline-block; width: 16px; font-style: normal; color: var(--go); }
+  .starmenu .g { color: var(--gold); letter-spacing: -2px; display: inline-block; min-width: 22px; }
   .mycard { margin-top: 10px; border-radius: 10px; padding: 10px 14px; border: 1px solid var(--line); background: var(--card); font-size: 13px; scroll-margin-top: 60px; overflow: hidden; }
   .mycard .mh { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
   .mycard .tblwrap { margin: 8px -14px -10px; border-top: 1px solid var(--line); }   /* 카드 여백을 넘어 테두리까지: 3층 표와 폭·칸 위치가 같게 */
@@ -277,7 +284,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-16 23:38</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-16 23:48</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -428,13 +435,13 @@ const STOCKS = Object.keys(TICKERS);
 
 // ═════════════ 내 종목: 보유 ★★ · 관심 ★ ═════════════
 // 이 브라우저에만 저장(공개 저장소로 보내지 않음). 다른 기기로는 '설정 링크'(#my=…)로 옮김.
-// 보유와 관심은 겹치지 않음. 별을 누를 때마다 ☆ → ★ 관심 → ★★ 보유 → ☆
+// 보유와 관심은 겹치지 않음. 별을 누르면 메뉴에서 ★★ 보유 · ★ 관심 · 해제를 고름
 let MY = { hold: [], watch: [] };
 const myLevel = (t) => (MY.hold.includes(t) ? 2 : MY.watch.includes(t) ? 1 : 0);
 const STAR_TXT = ["☆", "★", "★★"], LV_NAME = ["지정 안 함", "★ 관심", "★★ 보유"];
 function starHtml(t) {
   const lv = myLevel(t);
-  return '<span class="star lv' + lv + '" data-star="' + t + '" title="' + LV_NAME[lv] + ' · 누를 때마다 ☆ → ★ 관심 → ★★ 보유">' + STAR_TXT[lv] + "</span>";
+  return '<span class="star lv' + lv + '" data-star="' + t + '" title="' + LV_NAME[lv] + ' · 누르면 ★★ 보유 · ★ 관심 · 해제 중에서 고름">' + STAR_TXT[lv] + "</span>";
 }
 // 매수가·매수일: {티커: {p: 매수가, d: "YYYY-MM-DD"}} · 이 브라우저에만(공개 저장소로 보내지 않음), 설정 링크의 # 뒤에 함께 실림
 let BUY = {};
@@ -477,20 +484,46 @@ function toast(html, undo) {
 function myRefresh() {
   document.querySelectorAll("[data-star]").forEach((el) => {
     const lv = myLevel(el.dataset.star);
-    el.className = "star lv" + lv; el.textContent = STAR_TXT[lv]; el.title = LV_NAME[lv] + " · 누를 때마다 ☆ → ★ 관심 → ★★ 보유";
+    el.className = "star lv" + lv; el.textContent = STAR_TXT[lv]; el.title = LV_NAME[lv] + " · 누르면 ★★ 보유 · ★ 관심 · 해제 중에서 고름";
   });
   renderMine(); renderSticky(); renderStocks(); renderMyBox();
 }
-// 별 누르기: 줄·카드를 눌렀을 때 차트가 열리지 않도록 먼저 가로챔
+// 별 누르기: 메뉴를 띄워 고름. 줄·카드를 눌렀을 때 차트가 열리지 않도록 먼저 가로챔
+const closeStarMenu = () => { const m = document.getElementById("starMenu"); if (m) m.remove(); };
+function openStarMenu(st) {
+  closeStarMenu();
+  const t = st.dataset.star, lv = myLevel(t), r = st.getBoundingClientRect();
+  const m = document.createElement("div"); m.id = "starMenu"; m.className = "starmenu"; m.dataset.t = t;
+  m.innerHTML = '<div class="smh">' + t + "</div>" + [[2, "★★", "보유"], [1, "★", "관심"], [0, "☆", "해제"]]
+    .map(([k, s1, l]) => '<button type="button" data-lv="' + k + '"' + (k === lv ? ' class="on"' : "") + '><i>' + (k === lv ? "✓" : "") + '</i><span class="g">' + s1 + "</span> " + l + "</button>").join("");
+  document.body.appendChild(m); starMenuY = scrollY;
+  const w = m.offsetWidth, h = m.offsetHeight;
+  m.style.left = Math.max(4, Math.min(r.left, innerWidth - w - 4)) + "px";
+  m.style.top = (r.bottom + 4 + h > innerHeight ? Math.max(4, r.top - h - 4) : r.bottom + 4) + "px";
+}
 document.addEventListener("click", (e) => {
+  const mi = e.target.closest("#starMenu");
+  if (mi) {                                         // 메뉴 안: 고르면 바꾸고 닫음
+    e.stopPropagation(); e.preventDefault();
+    const b = e.target.closest("[data-lv]"); if (!b) return;
+    const t = mi.dataset.t, before = myLevel(t), after = +b.dataset.lv;
+    closeStarMenu();
+    if (after === before) return;
+    mySet(t, after); myRefresh();
+    toast(t + ' → <span class="g">' + (after ? STAR_TXT[after] : "☆") + "</span> " + (after ? LV_NAME[after].slice(after) : "해제"),
+          () => { mySet(t, before); myRefresh(); });
+    return;
+  }
   const st = e.target.closest("[data-star]");
-  if (!st) return;
+  if (!st) { closeStarMenu(); return; }
   e.stopPropagation(); e.preventDefault();
-  const t = st.dataset.star, before = myLevel(t), after = (before + 1) % 3;
-  mySet(t, after); myRefresh();
-  toast(t + ' → <span class="g">' + (after ? STAR_TXT[after] : "☆") + "</span> " + (after ? LV_NAME[after].slice(after) : "해제"),
-        () => { mySet(t, before); myRefresh(); });
+  if (document.getElementById("starMenu") && document.getElementById("starMenu").dataset.t === st.dataset.star) { closeStarMenu(); return; }
+  openStarMenu(st);
 }, true);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeStarMenu(); });
+let starMenuY = 0;
+addEventListener("scroll", () => { if (document.getElementById("starMenu") && Math.abs(scrollY - starMenuY) > 40) closeStarMenu(); });   // 화면을 조금 넘게 움직이면 닫음(메뉴가 별에서 떨어지지 않게)
+addEventListener("resize", closeStarMenu);
 
 // ═════════════ 3. 저장소: IndexedDB → localStorage → 메모리 ═════════════
 const MEM = {};
@@ -1455,7 +1488,7 @@ function renderMine() {
   const head = (star, ttl, sub) => '<div class="mh"><b>' + star + " " + ttl + '</b><span class="muted">' + sub + "</span></div>";
   const ms = MARKET_STATE ? MARKET_STATE.cls : null;
   const miss = (arr) => { const m = arr.filter((t) => !VIEW.info[t] || !VIEW.info[t].cls); return m.length ? " · 데이터 없음: " + m.join(", ") : ""; };
-  if (!MY.hold.length) el.innerHTML = head(STAR2, "보유 점검", "보유 종목이 없습니다. 종목 맨 앞의 ☆을 두 번 누르거나 ⚙ 설정의 '내 종목'에서 넣으세요.");
+  if (!MY.hold.length) el.innerHTML = head(STAR2, "보유 점검", "보유 종목이 없습니다. 종목 맨 앞의 ☆을 눌러 ★★ 보유를 고르거나 ⚙ 설정의 '내 종목'에서 넣으세요.");
   else if (!VIEW) el.innerHTML = head(STAR2, "보유 점검", "데이터를 받으면 표시됩니다.");
   else {
     const list = MY.hold.map((t) => VIEW.info[t]).filter((x) => x && x.cls);
@@ -1464,7 +1497,7 @@ function renderMine() {
       '<div class="tblwrap" id="tb-hold"></div>';
     stockTable("tb-hold", list, { todo: holdTodo, warn: true, order: (x) => -holdWarns(x.t).length * 100 + orderOf(x.cls) });
   }
-  if (!MY.watch.length) wl.innerHTML = head(STAR1, "관심 점검", "관심 종목이 없습니다. 종목 맨 앞의 ☆을 한 번 누르세요.");
+  if (!MY.watch.length) wl.innerHTML = head(STAR1, "관심 점검", "관심 종목이 없습니다. 종목 맨 앞의 ☆을 눌러 ★ 관심을 고르세요.");
   else if (!VIEW) wl.innerHTML = head(STAR1, "관심 점검", "데이터를 받으면 표시됩니다.");
   else {
     const list = MY.watch.map((t) => VIEW.info[t]).filter((x) => x && x.cls);
@@ -2408,7 +2441,7 @@ function buildHelp() {
 <p>예전에는 미너비니의 "컵 완성 치트"를 본뜬 규칙(조정 15-50% · 되오름 30-80% · 저점 뒤 5-25일 평평한 구간)으로 피벗 돌파보다 이른 매수 자리를 찾았습니다. 5년(2021-12부터 2026-11까지, 100종목, 2단계 · RS 70 이상) 백테스트에서 자기 손절선 기준 평균이 치트 +0.24R, 로우치트 −0.15R로 피벗 돌파(약 +0.69R)보다 크게 못했고, 해마다 들쭉날쭉해서 뺐습니다. 손절 폭도 중앙값 9.7%로 "손절이 가깝다"는 장점이 거의 없었습니다. 책의 치트 전체가 아니라 이 대시보드의 규칙을 시험한 결과입니다.</p>
 
 <h3 id="h-my">4층 · 내 종목 <small>★★ 보유 · ★ 관심</small></h3>
-<p>모든 표 맨 앞의 별을 누를 때마다 <b>☆ → ★ 관심 → ★★ 보유 → ☆</b> 순서로 바뀝니다. 잘못 눌렀으면 아래에 잠깐 뜨는 '되돌리기'를 누르세요. 표는 3층과 같은 칸이고, 다른 것은 "다음 할 일"과 경고뿐입니다.</p>
+<p>모든 표 맨 앞의 별을 누르면 작은 메뉴가 뜨고 <b>★★ 보유 · ★ 관심 · 해제</b> 중에서 고릅니다. 바깥을 누르거나 Esc를 누르면 닫힙니다. 잘못 눌렀으면 아래에 잠깐 뜨는 '되돌리기'를 누르세요. 표는 3층과 같은 칸이고, 다른 것은 "다음 할 일"과 경고뿐입니다.</p>
 <table>
 <tr><td>★★ 보유 점검</td><td><b>언제 파나.</b> 경고가 많은 종목부터 놓습니다. 다음 할 일: 4단계 → 정리 검토 · 3단계 → 비중 줄이기 검토 · 이탈 → 정리 검토 · 손절선 아래 → 정리 검토 · 경고가 있으면 경고 확인 · 아니면 보유 유지. 손절선과 거리도 함께 적습니다.</td></tr>
 <tr><td>보유 손절선</td><td><b>구조 손절선</b>: 마지막으로 확정된 수축의 저점 바로 아래 1%(확정 = 눌림 뒤 5% 넘게 반등까지 끝남, 진행 중인 하락의 저점은 쓰지 않음). 기준 베이스는 지금 베이스(3주 이상) → 마지막으로 돌파한 베이스(돌파 전날까지) → 최근 26주. 그 안에 최근 10일 조용한 구간(폭 5% 미만)이 있으면 그 저점.<br>
