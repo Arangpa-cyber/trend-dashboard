@@ -41,7 +41,7 @@
   (2026-11-10 QQQ 거래량이 실제의 10배로 들어와 분산일로 잘못 세어진 일 이후 '너무 큰 값' 검사 추가)
 - **Nasdaq 거래량 교차 확인(`fixed`)**: 코드는 있으나 GitHub에서 Nasdaq이 403으로 막아 사실상 작동 안 함.
 - **실적 일정**: Alpha Vantage `EARNINGS_CALENDAR`(키 `ALPHAVANTAGE_KEY`, 하루 1회). 응답이 100건 미만이면 실패로 보고 전날 일정 유지. 지난 발표일은 `earnHist`에 누적.
-- **매출 성장·PSR(`fund`, `fx`)**: Alpha Vantage `INCOME_STATEMENT`(분기 매출) + `OVERVIEW`(시가총액 → `sh` = 시가총액 ÷ 받은 날 종가) 종목당 2회, 하루 11종목(`FUND_BUDGET`=22). 처음 100종목 약 9일, 그 뒤 `earnHist`에 새 발표가 생긴 종목만(새 분기가 아직 없으면 2일 뒤 재시도). 달러 아닌 매출 통화는 Twelve Data `exchange_rate`. 화면 `calcFund`: 매출 = 최근 분기 YoY와 직전 분기 YoY 차이(%p), PSR = sh × 오늘 종가 ÷ TTM(4개 분기 합), 차이 = 직전 분기 실적 발표 다음 거래일 PSR(그날 종가 ÷ 그때 TTM)과 비교(사용자 채택 A안). `매출 가속` = YoY 25%(`ACC_MIN`) 이상이면서 직전 분기보다 큼. 확대 차트 프로필 아래 한 줄(`fundHtml`). ADR 시가총액이 맞는지는 첫 수집 뒤 확인 필요.
+- **매출 성장·PSR(`fund`, `fx`)**: Alpha Vantage `INCOME_STATEMENT`(분기 매출) + `BALANCE_SHEET`(분기 말 보통주 수 `sh`·`sh1`, `OVERVIEW`는 2026-11 무료 키에서 유료 전용) 종목당 2회, 하루 11종목(`FUND_BUDGET`=22). 처음 100종목 약 9일, 그 뒤 `earnHist`에 새 발표가 생긴 종목만(새 분기가 아직 없으면 2일 뒤 재시도). 달러 아닌 매출 통화는 Twelve Data `exchange_rate`. 화면 `calcFund`: 매출 = 최근 분기 YoY와 직전 분기 YoY 차이(%p), PSR = sh × 오늘 종가 ÷ TTM(4개 분기 합), 차이 = 직전 분기 실적 발표 다음 거래일 PSR(sh1 × 그날 종가 ÷ 그때 TTM)과 비교(사용자 채택 A안). `매출 가속` = YoY 25%(`ACC_MIN`) 이상이면서 직전 분기보다 큼. 확대 차트 프로필 아래 한 줄(`fundHtml`). ADR 시가총액이 맞는지는 첫 수집 뒤 확인 필요.
 - **QQQ 보유 종목·비중**: Alpha Vantage `ETF_PROFILE`(QQQ). 티커가 "n/a"인 종목(FERROVIAL SE → FER)은 회사 이름 첫 단어로 맞춤. 비중은 `ndxw`로 4·6층 QQQ 영향 계산에 사용, 받기 실패 시 index.html 안의 스냅샷 `QQQ_W` 사용.
   `UNIVERSE`와 차이가 있으면 `notices`에 kind="holdings" 알림(지금 상태만 유지, 맞으면 사라짐).
 - **Alpha Vantage 무료 키 주의**: 1초에 1번까지(연속 요청이 막힌 적 있음) → `av_get()`이 요청 사이 3초 띄움. 하루 25회. `NEWS_SENTIMENT`는 무료 키로 안 됨(유료).

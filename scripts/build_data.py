@@ -23,7 +23,7 @@
   지난 발표일은 전에 받은 일정이 지나갈 때마다 쌓아 둠. (2026-11-11부터 GitHub에서 Nasdaq이 403으로 막혀 추가)
 - (예전) 실적 일정: Nasdaq 실적 캘린더 (공식 API가 아니라서 막히면 실적 표시만 빠지고 나머지는 정상)
   지난 400일 발표일은 처음 한 번만 다 받고(약 4분), 그 뒤로는 새 날짜만 이어 받습니다.
-- 매출 성장·PSR: Alpha Vantage 분기 매출(INCOME_STATEMENT)과 시가총액(OVERVIEW)을 종목당 2회로 받아 fund에 쌓음.
+- 매출 성장·PSR: Alpha Vantage 분기 매출(INCOME_STATEMENT)과 발행주식 수(BALANCE_SHEET)를 종목당 2회로 받아 fund에 쌓음.
   하루 11종목까지(처음 100종목 채우기 약 9일), 그 뒤로는 새 실적이 발표된 종목만. 달러가 아닌 매출은 Twelve Data 환율(fx).
 - 결과: 저장소 맨 위의 data.json
 """
@@ -406,13 +406,13 @@ def fetch_earnings(symbols, start, end):
     return found
 
 
-# ── 매출 성장·PSR용 재무: Alpha Vantage INCOME_STATEMENT(분기 매출) + OVERVIEW(시가총액), 종목당 2회 ──
+# ── 매출 성장·PSR용 재무: Alpha Vantage INCOME_STATEMENT(분기 매출) + BALANCE_SHEET(발행주식 수), 종목당 2회 ──
 # 무료 키는 하루 25회. 보유 종목·실적 일정(2회)을 빼고 하루 FUND_BUDGET회만 씀 → 처음 100종목 채우기 약 9일.
 # 그 뒤로는 새 실적이 발표된 종목만 다시 받음(실적 시즌에 몰리면 하루 이틀 밀림).
 FUND_BUDGET = 22
 FUND_KEEP_Q = 9          # 분기 매출 몇 개를 남길지(YoY 4분기 + 직전 분기 TTM에 충분)
 FUND_RETRY_DAYS = 2      # 새 실적이 아직 Alpha Vantage에 안 올라왔으면 며칠 뒤 다시
-FUND_REFRESH_DAYS = 120  # 실적과 상관없이 시가총액(주식 수)을 다시 받는 간격
+FUND_REFRESH_DAYS = 120  # 실적과 상관없이 다시 받는 간격
 
 
 def _num(v):
@@ -428,18 +428,26 @@ def _av_limited(j):
     return isinstance(j, dict) and not any(k in j for k in ("quarterlyReports", "Symbol")) and any(k in j for k in ("Information", "Note"))
 
 
+def _av_premium(j):
+    return isinstance(j, dict) and "premium" in str(j.get("Information", "")).lower()
+
+
 def _av_try(params):
-    """한도 안내가 오면 20초 쉬고 한 번 더(1초 1회 제한에 걸린 경우 대비). 그래도 안내면 그대로 돌려줌"""
+    """한도 안내가 오면 20초 쉬고 한 번 더(1초 1회 제한에 걸린 경우 대비). 유료 전용 안내면 다시 안 함"""
     j = av_get(params)
-    if _av_limited(j):
+    if _av_limited(j) and not _av_premium(j):
         time.sleep(20)
         j = av_get(params)
     return j
 
 
+_NO_BS = [False]   # 대차대조표가 유료 전용이면 이번 실행에서는 더 묻지 않음
+
+
 def fetch_fund_av(sym, close):
-    """종목 하나의 분기 매출과 시가총액. 한도면 "limit", 실패면 None.
-    sh = 시가총액 ÷ 오늘 종가(주식 수 환산, 여러 주식 종류·ADR 비율을 시가총액이 이미 반영) → 화면에서 날짜별 시총 = sh × 그날 종가"""
+    """종목 하나의 분기 매출(INCOME_STATEMENT)과 발행주식 수(BALANCE_SHEET). 한도면 "limit", 실패면 None.
+    OVERVIEW(시가총액)는 2026-11 무료 키에서 유료 전용이라 대차대조표의 보통주 발행주식 수를 씀.
+    sh = 최근 분기 말 주식 수, sh1 = 그 전 분기 말 주식 수 → 화면에서 시총 = 주식 수 × 그날 종가"""
     try:
         inc = _av_try({"function": "INCOME_STATEMENT", "symbol": sym})
         if _av_limited(inc):
@@ -452,15 +460,26 @@ def fetch_fund_av(sym, close):
                 rows.append([r["fiscalDateEnding"], v])
                 cur = cur or r.get("reportedCurrency")
         rows.sort(reverse=True)
-        if not rows:                                     # 분기 매출이 없으면 시가총액은 안 받음(1회 아낌)
+        if not rows:                                     # 분기 매출이 없으면 주식 수는 안 받음(1회 아낌)
             print(f"  재무 {sym}: 분기 매출 없음 - {str(inc)[:100]!r}", flush=True)
             return None
-        ov = _av_try({"function": "OVERVIEW", "symbol": sym})
-        if _av_limited(ov):                              # 매출은 받았으니 남기고, 시가총액은 다음에
-            print(f"  재무 {sym} 시가총액: Alpha Vantage 안내 - {str(ov)[:200]!r}", flush=True)
-            return {"cur": (cur or "USD").upper(), "q": rows[:FUND_KEEP_Q], "sh": None, "limit": True}
-        mc = _num(ov.get("MarketCapitalization"))
-        return {"cur": (cur or "USD").upper(), "q": rows[:FUND_KEEP_Q], "sh": round(mc / close) if mc and close else None}
+        out = {"cur": (cur or "USD").upper(), "q": rows[:FUND_KEEP_Q], "sh": None, "sh1": None}
+        if _NO_BS[0]:
+            return out
+        bs = _av_try({"function": "BALANCE_SHEET", "symbol": sym})
+        if _av_limited(bs):                              # 매출은 받았으니 남기고, 주식 수는 다음에
+            print(f"  재무 {sym} 주식 수: Alpha Vantage 안내 - {str(bs)[:200]!r}", flush=True)
+            if _av_premium(bs):
+                _NO_BS[0] = True
+                return out
+            return dict(out, limit=True)
+        sh = sorted(((r.get("fiscalDateEnding"), _num(r.get("commonStockSharesOutstanding"))) for r in bs.get("quarterlyReports") or []), reverse=True)
+        sh = [z for z in sh if z[0] and z[1]]
+        if sh:
+            out["sh"] = round(sh[0][1])
+            q1 = rows[1][0] if len(rows) > 1 else None
+            out["sh1"] = next((round(v) for d, v in sh if d == q1), None)
+        return out
     except Exception as e:
         print(f"  재무 {sym}: 실패 - {e}", flush=True)
         return None
@@ -476,7 +495,7 @@ def fund_need(s, f, hist, today_s):
     reps = sorted(d for d in hist.get(s, []) if q0 < d < today_s)
     if len(reps) >= 2:                                   # 가진 최근 분기의 발표 뒤에 또 발표가 있었음 = 새 분기
         return (0, reps[-1])
-    if not f.get("sh"):                                  # 매출만 있고 시가총액을 못 받음
+    if not f.get("sh"):                                  # 매출만 있고 주식 수를 못 받음
         return (1, "")
     if (dt.date.fromisoformat(today_s) - dt.date.fromisoformat(f.get("at", "2000-01-01"))).days >= FUND_REFRESH_DAYS:
         return (2, f.get("at", ""))
@@ -503,7 +522,7 @@ def update_fund(prev_fund, hist, series, today_s):
             print(f"  재무 {s}: 새 분기가 아직 없음({got['q'][0][0]}) — {FUND_RETRY_DAYS}일 뒤 다시", flush=True)
             fund[s] = dict(old, sh=got["sh"] or old.get("sh"), tried=today_s)
             continue
-        fund[s] = {"cur": got["cur"], "q": got["q"] or old.get("q", []), "sh": got["sh"] or old.get("sh"), "at": today_s}
+        fund[s] = {"cur": got["cur"], "q": got["q"] or old.get("q", []), "sh": got["sh"] or old.get("sh"), "sh1": got.get("sh1") or old.get("sh1"), "at": today_s}
         q = fund[s]["q"]
         print(f"  재무 {s}: 분기 {len(q)}개, 최근 {q[0][0] if q else '-'} ({got['cur']}), 주식 수 환산 {fund[s]['sh']}", flush=True)
         if got.get("limit"):
