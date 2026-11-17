@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-17 17:44</title>
+<title>추세 대시보드 v2026-11-17 20:44</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -302,7 +302,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 17:44</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 20:44</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1409,7 +1409,7 @@ function calcFund(t) {
     for (let k = i; k < i + 3; k++) { const g = dayGap(q[k][0], q[k + 1][0]); if (g < 75 || g > 105) return null; }
     return q[i][1] + q[i + 1][1] + q[i + 2][1] + q[i + 3][1];
   };
-  const fx = !f.cur || f.cur === "USD" ? 1 : FX[f.cur];
+  const fx = !/^[A-Z]{3}$/.test(f.cur || "") || f.cur === "USD" ? 1 : FX[f.cur];   // 통화가 "NONE" 등으로 오면 달러로 봄
   const hist = (EARN_HIST[t] || []).slice().sort();
   const repOf = (end) => hist.find((x) => x > end && dayGap(x, end) <= 100) || null;   // 그 분기 끝 뒤 첫 발표일
   const rep0 = repOf(q[0][0]), rep1 = q[1] ? repOf(q[1][0]) : null;
@@ -1435,7 +1435,7 @@ function fundTip(t) {
   return qName(f.q0) + (f.rep0 ? " · " + md(f.rep0) + " 발표" : "") + (f.stale ? " · 새 분기 실적 반영 대기" : "") +
     " · 매출 YoY 최근 4분기: " + f.hist.map((z) => pctI(z.g)).join(" → ") +
     (f.psr != null ? " · PSR " + psrF(f.psr) + (f.psr1 != null ? " (직전 분기 실적 다음 날 " + md(f.at1) + " " + psrF(f.psr1) + ")" : "") : "") +
-    (f.ttm ? " · 4분기 매출 " + usdF(f.ttm) : "") + (f.mc ? " · 시총 " + usdF(f.mc) : "") + (f.cur && f.cur !== "USD" ? " · " + f.cur + " 매출을 오늘 환율로 환산" : "");
+    (f.ttm ? " · 4분기 매출 " + usdF(f.ttm) : "") + (f.mc ? " · 시총 " + usdF(f.mc) : "") + (/^[A-Z]{3}$/.test(f.cur || "") && f.cur !== "USD" ? " · " + f.cur + " 매출을 오늘 환율로 환산" : "");
 }
 function revCell(t) {
   const f = fundOf(t);

@@ -458,7 +458,8 @@ def fetch_fund_av(sym, close):
             v = _num(r.get("totalRevenue"))
             if r.get("fiscalDateEnding") and v:
                 rows.append([r["fiscalDateEnding"], v])
-                cur = cur or r.get("reportedCurrency")
+                c = str(r.get("reportedCurrency") or "").upper()
+                cur = cur or (c if re.fullmatch(r"[A-Z]{3}", c) and c != "NON" else None)   # "None"으로 오면 달러로 봄
         rows.sort(reverse=True)
         if not rows:                                     # 분기 매출이 없으면 주식 수는 안 받음(1회 아낌)
             print(f"  재무 {sym}: 분기 매출 없음 - {str(inc)[:100]!r}", flush=True)
@@ -679,7 +680,7 @@ def main():
         hist, earnings, upto_new = earnings_nasdaq(prev, today)
 
     fund = update_fund(prev.get("fund"), hist, series, today.isoformat())
-    curs = {f.get("cur") for f in fund.values() if f.get("cur") and f.get("cur") != "USD"}
+    curs = {f.get("cur") for f in fund.values() if re.fullmatch(r"[A-Z]{3}", f.get("cur") or "") and f.get("cur") != "USD"}
     if curs:
         print("환율 받기 (Twelve Data)", flush=True)
     fx = fetch_fx(curs, prev.get("fx")) if curs else {}
