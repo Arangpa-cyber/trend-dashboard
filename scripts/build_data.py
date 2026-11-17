@@ -23,6 +23,8 @@
   지난 발표일은 전에 받은 일정이 지나갈 때마다 쌓아 둠. (2026-11-11부터 GitHub에서 Nasdaq이 403으로 막혀 추가)
 - (예전) 실적 일정: Nasdaq 실적 캘린더 (공식 API가 아니라서 막히면 실적 표시만 빠지고 나머지는 정상)
   지난 400일 발표일은 처음 한 번만 다 받고(약 4분), 그 뒤로는 새 날짜만 이어 받습니다.
+- 매출 성장·PSR: Alpha Vantage 분기 매출(INCOME_STATEMENT)과 시가총액(OVERVIEW)을 종목당 2회로 받아 fund에 쌓음.
+  하루 11종목까지(처음 100종목 채우기 약 9일), 그 뒤로는 새 실적이 발표된 종목만. 달러가 아닌 매출은 Twelve Data 환율(fx).
 - 결과: 저장소 맨 위의 data.json
 """
 import datetime as dt
@@ -404,6 +406,114 @@ def fetch_earnings(symbols, start, end):
     return found
 
 
+# ── 매출 성장·PSR용 재무: Alpha Vantage INCOME_STATEMENT(분기 매출) + OVERVIEW(시가총액), 종목당 2회 ──
+# 무료 키는 하루 25회. 보유 종목·실적 일정(2회)을 빼고 하루 FUND_BUDGET회만 씀 → 처음 100종목 채우기 약 9일.
+# 그 뒤로는 새 실적이 발표된 종목만 다시 받음(실적 시즌에 몰리면 하루 이틀 밀림).
+FUND_BUDGET = 22
+FUND_KEEP_Q = 9          # 분기 매출 몇 개를 남길지(YoY 4분기 + 직전 분기 TTM에 충분)
+FUND_RETRY_DAYS = 2      # 새 실적이 아직 Alpha Vantage에 안 올라왔으면 며칠 뒤 다시
+FUND_REFRESH_DAYS = 120  # 실적과 상관없이 시가총액(주식 수)을 다시 받는 간격
+
+
+def _num(v):
+    try:
+        x = float(v)
+        return x if x > 0 else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _av_limited(j):
+    """한도 안내문이면 True (Alpha Vantage는 한도에 걸려도 200으로 {"Information": ...}을 돌려줌)"""
+    return isinstance(j, dict) and not any(k in j for k in ("quarterlyReports", "Symbol")) and any(k in j for k in ("Information", "Note"))
+
+
+def fetch_fund_av(sym, close):
+    """종목 하나의 분기 매출과 시가총액. 한도면 "limit", 실패면 None.
+    sh = 시가총액 ÷ 오늘 종가(주식 수 환산, 여러 주식 종류·ADR 비율을 시가총액이 이미 반영) → 화면에서 날짜별 시총 = sh × 그날 종가"""
+    try:
+        inc = av_get({"function": "INCOME_STATEMENT", "symbol": sym})
+        if _av_limited(inc):
+            return "limit"
+        rows, cur = [], None
+        for r in inc.get("quarterlyReports") or []:
+            v = _num(r.get("totalRevenue"))
+            if r.get("fiscalDateEnding") and v:
+                rows.append([r["fiscalDateEnding"], v])
+                cur = cur or r.get("reportedCurrency")
+        rows.sort(reverse=True)
+        if not rows:                                     # 분기 매출이 없으면 시가총액은 안 받음(1회 아낌)
+            print(f"  재무 {sym}: 분기 매출 없음 - {str(inc)[:100]!r}", flush=True)
+            return None
+        ov = av_get({"function": "OVERVIEW", "symbol": sym})
+        if _av_limited(ov):
+            return "limit"
+        mc = _num(ov.get("MarketCapitalization"))
+        return {"cur": (cur or "USD").upper(), "q": rows[:FUND_KEEP_Q], "sh": round(mc / close) if mc and close else None}
+    except Exception as e:
+        print(f"  재무 {sym}: 실패 - {e}", flush=True)
+        return None
+
+
+def fund_need(s, f, hist, today_s):
+    """다시 받을 필요와 우선순위(작을수록 먼저). 필요 없으면 None"""
+    if f and f.get("tried") and (dt.date.fromisoformat(today_s) - dt.date.fromisoformat(f["tried"])).days < FUND_RETRY_DAYS:
+        return None
+    if not f or not f.get("q"):
+        return (1, "")                                   # 처음
+    q0 = f["q"][0][0]
+    reps = sorted(d for d in hist.get(s, []) if q0 < d < today_s)
+    if len(reps) >= 2:                                   # 가진 최근 분기의 발표 뒤에 또 발표가 있었음 = 새 분기
+        return (0, reps[-1])
+    if (dt.date.fromisoformat(today_s) - dt.date.fromisoformat(f.get("at", "2000-01-01"))).days >= FUND_REFRESH_DAYS:
+        return (2, f.get("at", ""))
+    return None
+
+
+def update_fund(prev_fund, hist, series, today_s):
+    fund = {s: v for s, v in (prev_fund or {}).items() if s in STOCKS}
+    if not AV_KEY:
+        return fund
+    todo = sorted((p, s) for s in STOCKS if s in series and (p := fund_need(s, fund.get(s), hist, today_s)) is not None)
+    todo = todo[:FUND_BUDGET // 2]
+    print(f"재무 받기 (Alpha Vantage): {len(todo)}종목 {[s for _, s in todo]}", flush=True)
+    for (pri, _), s in todo:
+        got = fetch_fund_av(s, series[s][-1][3])
+        if got == "limit":
+            print("  Alpha Vantage 하루 한도 — 나머지는 내일", flush=True)
+            break
+        old = fund.get(s) or {}
+        if got is None:
+            fund[s] = dict(old, tried=today_s)
+            continue
+        if old.get("q") and got["q"] and got["q"][0][0] <= old["q"][0][0] and pri == 0:
+            print(f"  재무 {s}: 새 분기가 아직 없음({got['q'][0][0]}) — {FUND_RETRY_DAYS}일 뒤 다시", flush=True)
+            fund[s] = dict(old, sh=got["sh"] or old.get("sh"), tried=today_s)
+            continue
+        fund[s] = {"cur": got["cur"], "q": got["q"] or old.get("q", []), "sh": got["sh"] or old.get("sh"), "at": today_s}
+        q = fund[s]["q"]
+        print(f"  재무 {s}: 분기 {len(q)}개, 최근 {q[0][0] if q else '-'} ({got['cur']}), 주식 수 환산 {fund[s]['sh']}", flush=True)
+    return fund
+
+
+def fetch_fx(currencies, prev_fx):
+    """달러가 아닌 매출 통화의 환율(1단위 = 몇 달러). Twelve Data exchange_rate. 실패하면 전날 값"""
+    fx = dict(prev_fx or {})
+    for c in sorted(currencies):
+        try:
+            j = get_json("https://api.twelvedata.com/exchange_rate?" + urllib.parse.urlencode({"symbol": f"{c}/USD", "apikey": KEY}))
+            r = _num(j.get("rate"))
+            if r:
+                fx[c] = r
+                print(f"  환율 {c}/USD {r}", flush=True)
+            else:
+                print(f"  환율 {c}/USD: 실패 - {str(j)[:100]!r}", flush=True)
+        except Exception as e:
+            print(f"  환율 {c}/USD: 실패 - {e}", flush=True)
+        time.sleep(GAP)
+    return fx
+
+
 HIST_DAYS = 400   # 차트에 노란 배경으로 칠할 지난 실적 발표일 범위
 AHEAD_DAYS = 60   # 다가오는 실적 일정 범위
 
@@ -533,6 +643,12 @@ def main():
     else:
         hist, earnings, upto_new = earnings_nasdaq(prev, today)
 
+    fund = update_fund(prev.get("fund"), hist, series, today.isoformat())
+    curs = {f.get("cur") for f in fund.values() if f.get("cur") and f.get("cur") != "USD"}
+    if curs:
+        print("환율 받기 (Twelve Data)", flush=True)
+    fx = fetch_fx(curs, prev.get("fx")) if curs else {}
+
     data = {
         "generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "asOf": series["QQQ"][-1][0],
@@ -546,6 +662,8 @@ def main():
         "earnings": earnings,
         "earnHist": hist,
         "earnHistUpTo": upto_new,
+        "fund": fund,
+        "fx": fx,
         "series": series,
     }
     with open(OUT, "w", encoding="utf-8") as f:

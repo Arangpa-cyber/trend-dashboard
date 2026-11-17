@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-17 12:10</title>
+<title>추세 대시보드 v2026-11-17 17:44</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -198,10 +198,11 @@
   /* 칸 폭은 fitCols가 정함(고정 칸 COL_W · 글에 맞추는 칸: 단계·위치 · 다음 할 일 · 꼬리표). 아래는 그리기 전 기본값 */
   table.ntable col.c-my { width: 34px; } table.ntable col.c-t { width: 58px; } table.ntable col.c-grp { width: 136px; }
   table.ntable col.c-pos { width: 190px; } table.ntable col.c-rs { width: 60px; } table.ntable col.c-pc { width: 64px; } table.ntable col.c-qw { width: 52px; }
-  table.ntable col.c-qi { width: 74px; } table.ntable col.c-sp { width: 82px; } table.ntable col.c-todo { width: 220px; } table.ntable col.c-bd { width: auto; }
+  table.ntable col.c-qi { width: 74px; } table.ntable col.c-rev { width: 54px; } table.ntable col.c-psr { width: 50px; } table.ntable col.c-sp { width: 66px; } table.ntable col.c-todo { width: 220px; } table.ntable col.c-bd { width: auto; }
   /* 산업 이름은 한 줄로 끝까지: 가장 긴 "전자상거래·소비자 서비스"(12px 약 121px) + 여백 = 136px */
   table.ntable td.grp { overflow: visible; text-overflow: clip; font-size: 12px; }
   table.ntable td.todo { font-size: 12px; }
+  table.ntable td.fd { line-height: 1.2; } table.ntable td.fd .fsub { font-size: 11px; }
   table.ntable td.bd { white-space: normal; line-height: 1.5; } table.ntable td.bd .badge:first-child { margin-left: 0; }
   table.ntable td.sp .spark { display: block; }
   /* ★·티커는 가로로 밀어도 왼쪽에 고정 */
@@ -290,6 +291,8 @@
   #mProf .pf-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 16px; padding: 6px 10px 8px; border-top: 1px solid var(--line); }
   #mProf .pf-chip { display: inline-block; border: 1px solid var(--line); border-radius: 9px; padding: 0 7px; margin: 0 4px 2px 0; font-size: 11px; }
   #mProf .pf-chip.weak { color: var(--warn); border-color: var(--warn); }
+  #mProf .pf-fund { display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: baseline; padding: 5px 10px 0; }
+  #mProf .pf-fund b { margin-right: 3px; } #mProf .pf-fund .badge { margin-left: 2px; }
   @media (max-width: 800px) { #mProf .pf-grid { grid-template-columns: 1fr; } #mProf details[open] { max-height: 34vh; overflow-y: auto; } }
   @media (max-width: 800px) { #modal .mcharts { grid-template-columns: 1fr; overflow-y: auto; } #modal .mcharts .mc { height: 40vh; flex: none; } }
 
@@ -299,7 +302,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 12:10</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 17:44</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1382,7 +1385,69 @@ function tagsOf(x) {
   if (x.vpb) s += '<span class="badge tg" title="1년 동안 거래가 가장 많이 쌓인 가격대 ' + x.vpb.a.toFixed(2) + "-" + x.vpb.z.toFixed(2) + "(1년 거래량의 " + Math.round(x.vpb.share * 100) + '%)가 ' + (x.cls.pos === "break" ? "방금 돌파한" : "지금") + ' 베이스 안 · 5년 백테스트에서 이런 베이스의 돌파가 더 좋았음">매물대 베이스</span>';
   if (pull50(x)) s += '<span class="badge tg" title="돌파 뒤 오른 종목이 50일선 위 ' + pctf(x.dist50) + '까지 눌림 · 첫 눌림 반등은 매수 자리">50일선 눌림</span>';
   if (x.cls && x.cls.rg && x.cls.rg.cross >= 4) s += '<span class="badge tg" title="최근 60거래일 동안 주가가 200일선을 ' + x.cls.rg.cross + '번 넘나듦 · 단계 판정이 흔들릴 수 있음">흔들림</span>';
+  const f = fundOf(x.t);
+  if (f && f.accel) s += '<span class="badge tg" title="최근 분기 매출 전년 대비 ' + pctI(f.g0) + " · 직전 분기 " + pctI(f.g1) + " → " + ppI(f.g0 - f.g1) + ' 가속 (기준: ' + Math.round(ACC_MIN * 100) + '% 이상이면서 직전 분기보다 큼)">매출 가속</span>';
   return s + earnBadge(x.t);
+}
+// ── 매출 성장·PSR: 서버 fund(Alpha Vantage 분기 매출 + 시가총액 환산 주식 수 sh) · fx(달러가 아닌 매출 통화 환율) ──
+let FUND = {}, FX = {}, FUND_MEMO = {};
+const ACC_MIN = 0.25;   // 매출 가속: 최근 분기 YoY 25% 이상이면서 직전 분기 YoY보다 큼(오닐 C: 매출 25% 이상 또는 가속)
+const dayGap = (a, b) => (Date.parse(a) - Date.parse(b)) / 864e5;
+const pctI = (v) => (v >= 0 ? "+" : "−") + Math.abs(Math.round(v * 100)) + "%";
+const ppI = (v) => { const p = Math.round(v * 100); return (p > 0 ? "▲" : p < 0 ? "▼" : "±") + Math.abs(p) + "%p"; };
+const psrF = (v) => (v >= 100 ? v.toFixed(0) : v.toFixed(1));
+const psrD = (v) => (v >= 10 ? v.toFixed(0) : v.toFixed(1));   // PSR 차이(절댓값)
+const usdF = (v) => (v >= 1e12 ? (v / 1e12).toFixed(2) + "조" : Math.round(v / 1e8).toLocaleString() + "억") + " 달러";
+const fundOf = (t) => (t in FUND_MEMO ? FUND_MEMO[t] : (FUND_MEMO[t] = calcFund(t)));
+function calcFund(t) {
+  const f = FUND[t], d = DATA[t];
+  if (!f || !f.q || f.q.length < 2 || !d || !d.length) return null;
+  const q = f.q;                                           // [[분기 끝, 매출]] 최신이 앞
+  const yoy = (i) => { const j = q.findIndex((z, k) => k > i && Math.abs(dayGap(q[i][0], z[0]) - 365) <= 25); return j < 0 ? null : q[i][1] / q[j][1] - 1; };
+  const ttm = (i) => {                                     // 이어진 4개 분기 합(분기 간격 75-105일)
+    if (q.length < i + 4) return null;
+    for (let k = i; k < i + 3; k++) { const g = dayGap(q[k][0], q[k + 1][0]); if (g < 75 || g > 105) return null; }
+    return q[i][1] + q[i + 1][1] + q[i + 2][1] + q[i + 3][1];
+  };
+  const fx = !f.cur || f.cur === "USD" ? 1 : FX[f.cur];
+  const hist = (EARN_HIST[t] || []).slice().sort();
+  const repOf = (end) => hist.find((x) => x > end && dayGap(x, end) <= 100) || null;   // 그 분기 끝 뒤 첫 발표일
+  const rep0 = repOf(q[0][0]), rep1 = q[1] ? repOf(q[1][0]) : null;
+  const last = d[d.length - 1];
+  const g0 = yoy(0), g1 = q.length > 1 ? yoy(1) : null;
+  const t0 = ttm(0), t1 = ttm(1);
+  const ok = (v) => (v != null && isFinite(v) && v > 0 ? v : null);
+  const psr = f.sh && fx && t0 ? ok((f.sh * last.c) / (t0 * fx)) : null;
+  let psr1 = null, at1 = null;
+  if (f.sh && fx && t1 && rep1) {                          // 직전 분기 실적 발표 다음 거래일 종가 기준
+    const r = d.find((z) => z.t > rep1);
+    if (r) { psr1 = ok((f.sh * r.c) / (t1 * fx)); at1 = r.t; }
+  }
+  // 가진 최근 분기 발표 뒤에 또 발표가 있었으면 새 분기가 아직 안 들어온 것
+  const stale = hist.filter((x) => x > q[0][0] && x <= last.t).length >= 2;
+  return { g0, g1, accel: g0 != null && g1 != null && g0 >= ACC_MIN && g0 > g1, psr, psr1, at1, q0: q[0][0], rep0, ttm: t0 && fx ? t0 * fx : null,
+           mc: f.sh ? f.sh * last.c : null, cur: f.cur, stale, hist: [0, 1, 2, 3].map((i) => (q.length > i ? { e: q[i][0], g: yoy(i) } : null)).filter((z) => z && z.g != null).reverse() };
+}
+const qName = (e) => e.slice(2, 4) + "년 " + e.slice(5, 7) + "월 끝 분기";
+function fundTip(t) {
+  const f = fundOf(t);
+  if (!f) return FUND[t] ? "재무 자료가 모자람" : "재무 자료 아직 없음(서버가 하루 11종목씩 받는 중)";
+  return qName(f.q0) + (f.rep0 ? " · " + md(f.rep0) + " 발표" : "") + (f.stale ? " · 새 분기 실적 반영 대기" : "") +
+    " · 매출 YoY 최근 4분기: " + f.hist.map((z) => pctI(z.g)).join(" → ") +
+    (f.psr != null ? " · PSR " + psrF(f.psr) + (f.psr1 != null ? " (직전 분기 실적 다음 날 " + md(f.at1) + " " + psrF(f.psr1) + ")" : "") : "") +
+    (f.ttm ? " · 4분기 매출 " + usdF(f.ttm) : "") + (f.mc ? " · 시총 " + usdF(f.mc) : "") + (f.cur && f.cur !== "USD" ? " · " + f.cur + " 매출을 오늘 환율로 환산" : "");
+}
+function revCell(t) {
+  const f = fundOf(t);
+  if (!f || f.g0 == null) return '<span class="muted">-</span>';
+  const a = f.g1 == null ? "" : Math.round((f.g0 - f.g1) * 100);
+  return "<b>" + pctI(f.g0) + '</b><br><span class="fsub ' + (a > 0 ? "chg-up" : a < 0 ? "chg-down" : "muted") + '">' + (a === "" ? "" : ppI(f.g0 - f.g1)) + "</span>";
+}
+function psrCell(t) {
+  const f = fundOf(t);
+  if (!f || f.psr == null) return '<span class="muted">-</span>';
+  const c = f.psr1 == null ? null : f.psr - f.psr1, cs = c == null ? "" : psrD(Math.abs(c));
+  return "<b>" + psrF(f.psr) + '</b><br><span class="fsub ' + (c == null || +cs === 0 ? "muted" : c > 0 ? "chg-up" : "chg-down") + '">' + (c == null ? "" : (+cs === 0 ? "±" : c > 0 ? "▲" : "▼") + cs) + "</span>";
 }
 // 실적 D-n을 '다음 할 일' 뒤에 짧게
 function earnNote(t, warn) {
@@ -1909,7 +1974,7 @@ function breadthHtml() {
 function updateBreadth() { const el = document.getElementById("breadth"); if (el) el.innerHTML = breadthHtml(); }
 
 // ═════════════ 공통 종목 표 (3층 종목 · 4층 내 종목) ═════════════
-// 칸: ★ · 티커 · 산업 · 단계·위치 · RS(4주) · 4주 등락 · 비중 · 영향 · 미니차트 · 다음 할 일 · 꼬리표
+// 칸: ★ · 티커 · 산업 · 단계·위치 · RS(4주) · 4주 등락 · 비중 · 영향 · 매출 · PSR · 미니차트 · 다음 할 일 · 꼬리표
 // 칸 제목을 누르면 내림차순(글자 칸은 오름차순) → 반대 → 기본 순서
 const ST_COLS = [   // [키, 제목, 정렬값(없으면 정렬 안 함), 첫 방향, 머리 설명]
   ["my", "★", (x) => myLevel(x.t), -1, "★★ 보유 · ★ 관심"],
@@ -1920,6 +1985,8 @@ const ST_COLS = [   // [키, 제목, 정렬값(없으면 정렬 안 함), 첫 �
   ["pc", "4주 등락", (x) => periodStats(x.t).pc ?? -999, -1, "20거래일 등락률"],
   ["qw", "비중", (x) => NDXW[x.t] ?? -1, -1, "나스닥100(QQQ) 안 비중(%)"],
   ["qi", "영향", (x) => { const q = qqqImpact(x.t); return q && q.c != null ? q.c : -999; }, -1, "QQQ 영향: 비중 × 4주 등락률 = 이 종목이 지난 4주 동안 QQQ를 몇 %p 움직였나"],
+  ["rev", "매출", (x) => { const f = fundOf(x.t); return f && f.g0 != null ? f.g0 : -999; }, -1, "최근 분기 매출 전년 대비(YoY) · 아래: 직전 분기 YoY와 차이(▲ 가속 · ▼ 감속)"],
+  ["psr", "PSR", (x) => { const f = fundOf(x.t); return f && f.psr != null ? f.psr : -999; }, -1, "주가매출비율 = 오늘 시가총액 ÷ 최근 4개 분기 매출 합 · 아래: 직전 분기 실적 발표 다음 날 PSR과 차이"],
   ["sp", "6개월", null, 0, "종가 · 50일선(청록) · 200일선(보라) · 피벗(주황 점선)"],
   ["todo", "다음 할 일", (x) => { const hp = myLevel(x.t) === 2 ? holdPlan(x) : null; return hp ? x.d[x.d.length - 1].c / hp.stop - 1 : 9 + orderOf(x.cls); }, 1, "누르면 ★★ 보유는 손절선에 가까운 순(이미 아래면 맨 위), 나머지는 할 일 순서"],
   ["bd", "꼬리표", null, 0, ""],
@@ -1940,7 +2007,7 @@ function stockTable(id, list, o) {
   } else if (o.sections) groups = o.sections(list);
   else groups = [{ items: [...list].sort((a, b) => o.order(a) - o.order(b) || b.rs - a.rs) }];
   const head = "<colgroup>" + ST_COLS.map((c) => '<col class="c-' + c[0] + '">').join("") + "</colgroup><thead><tr>" +
-    ST_COLS.map((c) => '<th data-k="' + c[0] + '" class="' + (c[0] === "my" ? "stc" : c[0] === "t" ? "tkc" : "") + (["pc", "qw", "qi"].includes(c[0]) ? " num" : "") +
+    ST_COLS.map((c) => '<th data-k="' + c[0] + '" class="' + (c[0] === "my" ? "stc" : c[0] === "t" ? "tkc" : "") + (["pc", "qw", "qi", "rev", "psr"].includes(c[0]) ? " num" : "") +
       (c[2] ? " sortable" : "") + (srt && srt.k === c[0] ? " on" : "") + '"' + (c[4] ? ' title="' + c[4] + '"' : "") + ">" + c[1] +
       (srt && srt.k === c[0] ? (srt.dir < 0 ? " ▼" : " ▲") : "") + "</th>").join("") + "</tr></thead>";
   const row = (x) => {
@@ -1950,7 +2017,8 @@ function stockTable(id, list, o) {
       '<td class="muted grp">' + TICKERS[x.t].group + '</td><td class="pos">' + posCell(x) + "</td>" +
       "<td>" + rsCell(x) + '</td><td class="num">' + pcCell(x.t) + '</td><td class="num">' + weightCell(x.t) + "</td>" +
       '<td class="qi num" title="' + QI_TIP(x.t) + '">' + impactCell(x.t, true) + "</td>" +
-      '<td class="sp">' + sparkSvg(x.d, 72, pivOf(x)) + "</td>" +
+      '<td class="fd num" title="' + fundTip(x.t) + '">' + revCell(x.t) + '</td><td class="fd num" title="' + fundTip(x.t) + '">' + psrCell(x.t) + "</td>" +
+      '<td class="sp">' + sparkSvg(x.d, 58, pivOf(x)) + "</td>" +
       '<td class="todo" title="' + strip(td) + '">' + td + "</td>" +
       '<td class="bd">' + w.filter((z) => !/단계|이탈/.test(z)).map((z) => '<span class="wtag">' + z + "</span>").join("") + (o.warn ? tagsOf(x).replace(/<span class="badge earn[^]*?<\/span>/, "") : tagsOf(x)) + "</td></tr>";
   };
@@ -1988,8 +2056,8 @@ const rerenderTable = (id) => (id === "tb-stock" ? renderStocks() : renderMine()
 // 칸 폭: 숫자·짧은 칸은 고정(내용 폭 + 여백), 단계·위치 · 다음 할 일 · 꼬리표는 지금 보이는 글에 맞춤.
 // 다 들어가면 남는 폭은 맨 오른쪽 꼬리표가 가져가 줄 끝만 비고 칸 사이는 벌어지지 않음.
 // 모자라면 단계·위치(가장 긴 글이 드묾) → 다음 할 일 → 꼬리표 순서로 줄임(넘치는 글은 말줄임·마우스를 올리면 전체, 꼬리표는 두 줄)
-const COL_W = { my: 34, t: 58, grp: 136, rs: 60, pc: 64, qw: 52, qi: 74, sp: 82 };
-const COL_MIN = { pos: 150, todo: 130, bd: 84 };
+const COL_W = { my: 34, t: 58, grp: 136, rs: 60, pc: 64, qw: 52, qi: 74, rev: 54, psr: 50, sp: 66 };
+const COL_MIN = { pos: 134, todo: 112, bd: 72 };   // 1000px 화면(표 상자 966px)에서 가로 스크롤이 안 생기는 최소 폭
 // 3층·4층 표(보유·관심)는 모두 같은 칸 폭을 씀: 세 표의 글을 함께 재서 한 번에 정하므로 칸 위치가 정확히 맞음
 const TABLE_IDS = ["tb-stock", "tb-hold", "tb-watch"];
 function fitCols() {
@@ -2114,7 +2182,8 @@ const pfEsc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) => ({ "&"
 function renderProfile(t) {
   const box = document.getElementById("mProf");
   const p = PROFILES && PROFILES.items && PROFILES.items[t];
-  if (!p) { box.innerHTML = ""; return; }
+  const fh = fundHtml(t);
+  if (!p) { box.innerHTML = fh; return; }
   let open = true; try { open = localStorage.getItem("td2_prof") !== "0"; } catch (e) {}
   const path = ['<span><span class="pf-k">산업</span><b>' + pfEsc(p.g) + "</b></span>"];
   if (p.theme && p.theme !== p.g) path.push('<span><span class="pf-k">테마</span>' + pfEsc(p.theme) + "</span>");
@@ -2124,9 +2193,24 @@ function renderProfile(t) {
     (p.pp ? '<span class="pf-pp" title="' + pfEsc(p.ppWhy || "") + '">가격결정력 <b>' + p.pp + "</b>위</span>" : "") + "</summary>" +
     '<div class="pf-grid"><div><span class="pf-k">하는 일</span><br>' + pfEsc(p.do) + "</div>" +
     '<div><span class="pf-k">시장에 있는 이유</span><br>' + pfEsc(p.why) + "</div>" +
-    '<div><span class="pf-k">해자</span> ' + chips + "<br>" + pfEsc(p.edge) + "</div></div></details>";
+    '<div><span class="pf-k">해자</span> ' + chips + "<br>" + pfEsc(p.edge) + "</div></div></details>" + fh;
   const d = box.querySelector("details");
   d.addEventListener("toggle", () => { try { localStorage.setItem("td2_prof", d.open ? "1" : "0"); } catch (e) {} });
+}
+
+// 확대 차트 위 매출·PSR 한 줄(프로필 아래)
+function fundHtml(t) {
+  const f = fundOf(t);
+  if (!f || (f.g0 == null && f.psr == null)) return "";
+  const cc = (v) => (v > 0 ? "chg-up" : v < 0 ? "chg-down" : "muted");
+  const bars = f.hist.map((z) => '<span title="' + qName(z.e) + '">' + pctI(z.g) + "</span>").join(' <span class="muted">→</span> ');
+  let s = '<div class="pf-fund">';
+  if (f.g0 != null) s += '<span><span class="pf-k">매출 YoY</span><b>' + pctI(f.g0) + "</b>" + (f.g1 != null ? ' <span class="' + cc(f.g0 - f.g1) + '">' + ppI(f.g0 - f.g1) + "</span>" : "") +
+    (f.accel ? ' <span class="badge tg">매출 가속</span>' : "") + ' <span class="muted">· 최근 4분기 </span>' + bars + "</span>";
+  if (f.psr != null) s += '<span><span class="pf-k">PSR</span><b>' + psrF(f.psr) + "</b>" + (f.psr1 != null ? ' <span class="' + cc(f.psr - f.psr1) + '">' + (f.psr >= f.psr1 ? "▲" : "▼") + psrD(Math.abs(f.psr - f.psr1)) + '</span> <span class="muted">(직전 분기 실적 다음 날 ' + md(f.at1) + " " + psrF(f.psr1) + ")</span>" : "") + "</span>";
+  s += '<span class="muted">' + qName(f.q0) + (f.rep0 ? " · " + md(f.rep0) + " 발표" : "") + (f.ttm ? " · 4분기 매출 " + usdF(f.ttm) : "") + (f.mc ? " · 시총 " + usdF(f.mc) : "") + "</span>";
+  if (f.stale) s += '<span class="wtag" title="실적 발표 뒤 Alpha Vantage에 새 분기가 아직 안 올라옴. 서버가 2일마다 다시 확인">새 분기 반영 대기</span>';
+  return s + "</div>";
 }
 
 // 크게 보기
@@ -2289,6 +2373,7 @@ async function loadServer() {
     for (const [s, rows] of Object.entries(j.series)) DATA[s] = unpack(rows);
     EARN = j.earnings || {};
     EARN_HIST = j.earnHist || {};
+    FUND = j.fund || {}; FX = j.fx || {}; FUND_MEMO = {};
     if (j.ndxw && Object.keys(j.ndxw).length > 90) { NDXW = j.ndxw; NDXW_AT = j.ndxwAt || QQQ_W_AT; } else { NDXW = QQQ_W; NDXW_AT = QQQ_W_AT; }
     SERVER = { generated: j.generated };
     NOTICES = j.notices || []; NEWS_AT = j.newsCheckedAt || null; NDXW_SRC_AT = j.ndxwAt || null;
@@ -2371,7 +2456,7 @@ function buildHelp() {
   document.getElementById("helpPanel").innerHTML = `
 <div class="phead"><b>이 대시보드 보는 법</b><button class="close" id="helpClose" title="닫기 (Esc)">✕</button></div>
 <div class="toc"><a href="#h-start">처음 오셨다면</a><a href="#h-signal">신호등</a><a href="#h-sticky">0층 고정 바</a>
-<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 산업</a><a href="#h-phase">국면 한 줄</a><a href="#h-groups">산업 분류</a><a href="#h-prof">기업 프로필</a><a href="#h-stocks">3층 종목</a><a href="#h-states">단계와 위치</a><a href="#h-cheat">치트 삭제</a><a href="#h-my">4층 내 종목 ★</a>
+<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 산업</a><a href="#h-phase">국면 한 줄</a><a href="#h-groups">산업 분류</a><a href="#h-prof">기업 프로필</a><a href="#h-stocks">3층 종목</a><a href="#h-states">단계와 위치</a><a href="#h-cheat">치트 삭제</a><a href="#h-fund">매출 성장·PSR</a><a href="#h-my">4층 내 종목 ★</a>
 <a href="#h-tags">꼬리표</a><a href="#h-rs">RS 계산법</a><a href="#h-charts">차트 읽는 법</a><a href="#h-data">데이터·갱신</a><a href="#h-limits">한계</a></div>
 
 <h3 id="h-start">처음 오셨다면</h3>
@@ -2469,13 +2554,14 @@ function buildHelp() {
 <tr><td>전환 후보</td><td>2단계로 넘어가는 종목: ① 최근 20거래일 안에 베이스를 돌파해 2단계가 된 종목 ② 1·3단계에서 2단계 조건이 이어지는 중인 종목(${RG_HOLD}거래일을 채우는 중) ③ 예비 주도주(RS ${PRE_RS_MIN}-${RS_LEADER - 1}, 4주 사이 RS +${PRE_RS_GAIN} 이상, 50일선 위, 이탈 아님, 4단계 제외).</td></tr>
 <tr><td>전체 100</td><td>나스닥100 전부, RS 높은 순. 주황 구분선 위가 주도주(RS ${RS_LEADER} 이상)입니다.</td></tr>
 </table>
-<p><b>칸</b>: ★ · 티커 · 산업 · 단계·위치 · RS(4주) · 4주 등락 · 비중 · 영향 · 6개월 · 다음 할 일 · 꼬리표. 4층 내 종목도 같은 칸입니다. 숫자 칸은 내용에 맞춘 고정 폭이고, 단계·위치 · 다음 할 일 · 꼬리표는 지금 보이는 글에 맞춰 폭이 바뀝니다(남는 폭은 맨 오른쪽 꼬리표 칸으로, 화면이 좁으면 넘치는 글은 말줄임). 칸 제목을 누르면 큰 순(글자 칸은 가나다순), 한 번 더 누르면 반대, 한 번 더 누르면 보기의 기본 순서로 돌아갑니다. 줄을 누르면 일봉 차트를 크게 보고, 마우스를 올리면 판정 근거가 보입니다.</p>
+<p><b>칸</b>: ★ · 티커 · 산업 · 단계·위치 · RS(4주) · 4주 등락 · 비중 · 영향 · 매출 · PSR · 6개월 · 다음 할 일 · 꼬리표. 4층 내 종목도 같은 칸입니다. 숫자 칸은 내용에 맞춘 고정 폭이고, 단계·위치 · 다음 할 일 · 꼬리표는 지금 보이는 글에 맞춰 폭이 바뀝니다(남는 폭은 맨 오른쪽 꼬리표 칸으로, 화면이 좁으면 넘치는 글은 말줄임). 칸 제목을 누르면 큰 순(글자 칸은 가나다순), 한 번 더 누르면 반대, 한 번 더 누르면 보기의 기본 순서로 돌아갑니다. 줄을 누르면 일봉 차트를 크게 보고, 마우스를 올리면 판정 근거가 보입니다.</p>
 <table>
 <tr><td>단계·위치</td><td>단계 점(1 회색 · 2 초록 · 3 주황 · 4 회청색) + 위치(형성·돌파·이탈) + 매수 범위·추격 금지·임박 + <b>피벗 대비 %</b>(마우스를 올리면 피벗 가격). 1·3·4단계는 위치 대신 단계 이름만 적습니다(200일선 대비는 마우스를 올리면). 돌파일 거래량이 50일 평균의 ${BREAKOUT_VOL}배에 못 미치면 "거래량 n배"가 주황으로 붙습니다.</td></tr>
 <tr><td>RS (4주)</td><td>RS 순위와 4주 전 대비 변화(<span class="chg-up">▲</span> 상대강도가 좋아지는 중).</td></tr>
 <tr><td>4주 등락</td><td>20거래일 전 종가 대비 지금 등락률.</td></tr>
 <tr><td>비중</td><td>나스닥100(QQQ) 안에서 그 종목이 차지하는 비중(%).</td></tr>
 <tr><td>영향</td><td>이 종목이 지난 4주 동안 QQQ를 몇 %p 움직였나 = 비중 × 4주 등락률. QQQ는 시가총액 가중이라 같은 −5%라도 비중 8%인 종목은 −0.4%p, 0.3%인 종목은 −0.015%p입니다. ${QI_BOLD}%p 이상은 굵게. 표 위 "합계"는 지금 보기의 종목 영향을 더한 값으로, 주도주가 지수를 받치는지(순환매) 함께 끌어내리는지(위험 신호) 봅니다. 비중은 서버가 매일 받은 값(실패하면 ${QQQ_W_AT} 스냅샷)이고, 계산할 때는 각 종목 주가로 4주 전 시점 비중으로 되돌려 씁니다. 그래서 100종목 합이 QQQ 실제 4주 등락과 거의 맞습니다(11/12 기준 −5.99%p 대 실제 −5.47%). GOOGL은 GOOG를 뺀 몫입니다.</td></tr>
+<tr><td>매출 · PSR</td><td>최근 분기 매출 전년 대비(YoY)와 PSR. 아래 작은 숫자는 직전 분기와의 차이입니다. 자세한 뜻은 아래 <a href="#h-fund">매출 성장·PSR</a>.</td></tr>
 <tr><td>6개월</td><td>6개월 종가 선(붉은색: 50일선 위, 파란색: 아래), 청록 50일선, 보라 200일선, 주황 점선 피벗. 200일선이 너무 멀면(그림을 25% 넘게 넓혀야 하면) 선 대신 가장자리에 보라 점선과 "200일 −32%"만 적습니다.</td></tr>
 <tr><td>다음 할 일</td><td>단계·위치와 <b>1층 신호등</b>을 함께 보고 정합니다. 시장이 <b>공격</b>일 때만 "매수 검토", "돌파 + 거래량 시 매수"가 나옵니다. <b>대기</b>면 피벗 표시까지, <b>방어</b>면 관찰만입니다. 실적이 ${EARN_WARN_DAYS}일 안이면 "실적 지난 뒤"를 덧붙입니다. 가장 긴 글에 맞춰 칸 폭을 정하고, 넘치면 마우스를 올려 봅니다.</td></tr>
 <tr><td>손절 −n%</td><td>"다음 할 일"에 붙는 <b>손절 거리</b>. 진입가(피벗, 돌파 중이면 지금 가격)에서 손절선까지 몇 % 내려가나입니다. 손절선은 <b>마지막 수축(마지막 조용한 구간, 없으면 마지막 눌림)의 저점 바로 아래</b>입니다. 미너비니는 손절 절대 상한을 ${P(STOP_MAX)}로 봅니다. 저점이 더 멀면 ${P(STOP_MAX)}로 묶고 "구조상 더 넓음"을 주황으로 표시합니다. 규칙으로 찾은 근사치이니 실제 손절가는 차트로 정하세요.</td></tr>
@@ -2505,6 +2591,15 @@ function buildHelp() {
 <h3 id="h-cheat">치트·로우치트를 쓰지 않는 이유 <small>2026-11-16 삭제</small></h3>
 <p>예전에는 미너비니의 "컵 완성 치트"를 본뜬 규칙(조정 15-50% · 되오름 30-80% · 저점 뒤 5-25일 평평한 구간)으로 피벗 돌파보다 이른 매수 자리를 찾았습니다. 5년(2021-12부터 2026-11까지, 100종목, 2단계 · RS 70 이상) 백테스트에서 자기 손절선 기준 평균이 치트 +0.24R, 로우치트 −0.15R로 피벗 돌파(약 +0.69R)보다 크게 못했고, 해마다 들쭉날쭉해서 뺐습니다. 손절 폭도 중앙값 9.7%로 "손절이 가깝다"는 장점이 거의 없었습니다. 책의 치트 전체가 아니라 이 대시보드의 규칙을 시험한 결과입니다.</p>
 
+<h3 id="h-fund">매출 성장·PSR <small>매출 · PSR 칸 · 확대 차트 위 한 줄</small></h3>
+<table>
+<tr><td>매출</td><td><b>위 숫자</b>: 실적을 발표한 가장 최근 분기 매출의 전년 같은 분기 대비 성장률(YoY). <b>아래 숫자</b>: 그 전 분기 YoY와의 차이(%p). <span class="chg-up">▲</span>면 성장이 빨라지는 중(가속), <span class="chg-down">▼</span>면 느려지는 중입니다. 오닐은 매출 25% 이상 성장, 또는 몇 분기 이어진 가속을 봅니다.</td></tr>
+<tr><td>PSR</td><td><b>위 숫자</b>: 오늘 시가총액 ÷ 최근 4개 분기 매출 합(TTM). 계절 영향이 없고 100종목을 같은 잣대로 비교하려고 TTM을 씁니다(고성장주는 과거 매출이 섞여 높게 나오는 약점). <b>아래 숫자</b>: 직전 분기 실적 발표 다음 거래일의 PSR(그날 종가 ÷ 그때의 4개 분기 매출)과의 차이. <span class="chg-up">▲</span>면 매출보다 주가가 더 올라 비싸진 것, <span class="chg-down">▼</span>면 싸진 것입니다.</td></tr>
+<tr><td>확대 차트</td><td>프로필 아래 한 줄: 매출 YoY와 가속, 최근 4분기 YoY 흐름, PSR과 직전 분기 PSR, 어느 분기인지·발표일·4분기 매출·시가총액. 칸에 마우스를 올려도 같은 내용이 보입니다.</td></tr>
+<tr><td>자료</td><td>서버가 Alpha Vantage에서 분기 매출과 시가총액을 받습니다. 무료 키 한도 때문에 하루 11종목씩 받고(처음 100종목은 약 9일), 그 뒤로는 새 실적이 나온 종목만 다시 받습니다. 아직 못 받았으면 "-"입니다. 실적 발표 뒤 새 분기가 아직 안 올라왔으면 확대 차트에 <span class="wtag">새 분기 반영 대기</span>가 붙습니다.</td></tr>
+<tr><td>주의</td><td>시가총액은 받은 날 시가총액을 그날 종가로 나눈 주식 수에 날짜별 종가를 곱해 구합니다(직전 분기 PSR에도 지금 주식 수를 씀, 자사주 매입 영향은 작음). 달러가 아닌 통화로 실적을 내는 회사(예: ASML 유로)는 오늘 환율로 바꿉니다. 큰 인수합병이 있으면 YoY가 부풀고, 회계 분기가 달력과 다른 회사도 있습니다. 주도주는 늘 PSR이 높아 보이므로 PSR은 매수·매도 신호가 아니라 "너무 빨리 부풀었나"를 보는 참고값입니다.</td></tr>
+</table>
+
 <h3 id="h-my">4층 · 내 종목 <small>★★ 보유 · ★ 관심</small></h3>
 <p>모든 표 맨 앞의 별을 누르면 작은 메뉴가 뜨고 <b>★★ 보유 · ★ 관심 · 해제</b> 중에서 고릅니다. 바깥을 누르거나 Esc를 누르면 닫힙니다. 잘못 눌렀으면 아래에 잠깐 뜨는 '되돌리기'를 누르세요. 표는 3층과 같은 칸이고, 다른 것은 "다음 할 일"과 경고뿐입니다.</p>
 <table>
@@ -2525,6 +2620,7 @@ function buildHelp() {
 <tr><td>${b("new", "NEW")}</td><td>4주 전에는 RS ${RS_LEADER} 아래였다가 지금 주도주.</td></tr>
 <tr><td>${b("tg", "매물대 베이스")}</td><td>2단계 종목의 지금 베이스(돌파 중이면 방금 돌파한 베이스)가 <b>1년 동안 거래가 가장 많이 쌓인 띠</b>(매물대 "핵심"의 가장 큰 띠)를 ${P(VPB_OVERLAP)} 이상 품음. 1년 중 가장 많은 물량이 주인을 바꾼 자리가 지금 베이스라는 뜻이고, 돌파하면 그 매물이 아래에서 받쳐 줍니다. 5년 백테스트(2021-12부터 2026-11까지, 2단계 · RS ${BUY_RS_MIN} 이상 피벗 돌파, −10% 손절 · 최대 60일): 이런 돌파 56건 평균 +15.6% · 중앙 +11.5% · 이긴 비율 64%, 아닌 돌파 169건 +4.1% · −5.8% · 43%. 2023-2026년은 해마다 더 좋았고 하락장인 2022년(7건)은 나빴습니다. 숨기지 않고 매수 후보에서 먼저 보여 주기만 합니다. 1·3·4단계 돌파에서는 차이가 없거나 반대여서 2단계에만 붙입니다. 베이스 하루 거래량이 1년 평균보다 많은 경우는 오히려 나빴습니다(오닐: 베이스에서는 거래량이 말라야 함).</td></tr>
 <tr><td>${b("tg", "50일선 눌림")}</td><td>돌파한 적이 있는 2단계 종목이 50일선 위 ${P(PULLBACK_NEAR)} 이내까지 눌림(매수 범위·임박이 아닐 때). 돌파 뒤 첫 50일선 눌림 반등은 매수 자리(오닐).</td></tr>
+<tr><td>${b("tg", "매출 가속")}</td><td>최근 분기 매출 YoY가 ${Math.round(ACC_MIN * 100)}% 이상이면서 직전 분기 YoY보다 큼. 오닐 C(분기 실적: 매출 25% 이상 성장, 가속이면 더 좋음).</td></tr>
 <tr><td>${b("tg", "흔들림")}</td><td>최근 60거래일에 200일선을 4번 이상 넘나듦. 단계 판정이 흔들릴 수 있음.</td></tr>
 <tr><td>${b("earn", "실적 D-5")}</td><td>${EARN_WARN_DAYS}일 안에 실적 발표(주황, 날짜는 마우스를 올리면). 실적 직후 갭은 계획보다 큰 손실을 만들 수 있습니다.</td></tr>
 <tr><td>${b("earn far", "실적 D-31")}</td><td>${EARN_WARN_DAYS + 1}-45일 뒤 실적 발표(회색).</td></tr>
