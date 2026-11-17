@@ -27,6 +27,7 @@
 | `scripts/build_data.py` | 서버 데이터 수집 → `data.json`. 종목 목록·일봉 개수는 index.html의 `UNIVERSE`, `MARKET`, `DAYS_*`를 정규식으로 읽음 |
 | `.github/workflows/update-data.yml` | 예약 실행 `30 0 * * 2-6`(UTC) = 한국 화-토 09:30. 수동 실행(workflow_dispatch) 가능 |
 | `data.json` | 서버가 매일 커밋하는 결과(직접 고치지 않음) |
+| `profiles.json` | 종목별 기업 프로필(산업·테마·세부 테마·하는 일·시장에 있는 이유·해자 유형·강점·가격결정력 순위). 확대 차트 위 패널(`renderProfile`)이 읽음. 구글 시트 `QQQ_구성종목_종합표`의 '기업 프로필' 탭과 같은 내용이며 직접 편집함. 나스닥100 종목이 바뀌면(12월 정기 변경 등) 함께 고치고 `python3 scripts/check_profiles.py`로 `UNIVERSE`와 맞는지 확인 |
 | `scripts/backfill_history.py` | 백테스트용 긴 일봉(기본 1700개)을 한 번 받아 `backtest/prices.json.gz`에 저장. 화면은 안 씀. 키가 필요해 사용자가 직접 실행(GitHub 토큰에 workflow 권한이 없어 워크플로 파일은 못 올림) |
 | `backtest/run.js`·`report.js`·`app.js` | 백테스트. `app.js`가 index.html 스크립트를 node에서 가짜 DOM으로 읽어 `classify`·`cheatOf`·`volProfile` 등을 그대로 씀. 매일 그날까지 일봉 470개로만 판단 |
 | `README.md` | 처음 설정 안내(일부 내용이 예전 기준이라 오래됨) |
