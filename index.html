@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-17 20:44</title>
+<title>추세 대시보드 v2026-11-17 21:04</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -302,7 +302,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 20:44</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 21:04</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1080,7 +1080,7 @@ function disposeCharts(root) {
 }
 // 오닐·미너비니식 바 (고가-저가 + 종가 눈금), 전일(전주) 종가 대비 색
 function addBars(chart, rows, from) {
-  const s = chart.addBarSeries({ openVisible: false, thinBars: false, upColor: C.barUp, downColor: C.barDown, priceLineVisible: false });
+  const s = chart.addBarSeries({ openVisible: false, thinBars: false, upColor: C.barUp, downColor: C.barDown, priceLineWidth: 1 });
   s.setData(rows.map((r, i) => ({ r, i })).filter(({ i }) => i >= from).map(({ r, i }) => ({
     time: r.t, open: r.c, high: r.h, low: r.l, close: r.c, color: i > 0 && r.c < rows[i - 1].c ? C.barDown : C.barUp })));
   return s;
