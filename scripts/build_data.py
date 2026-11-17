@@ -428,12 +428,22 @@ def _av_limited(j):
     return isinstance(j, dict) and not any(k in j for k in ("quarterlyReports", "Symbol")) and any(k in j for k in ("Information", "Note"))
 
 
+def _av_try(params):
+    """한도 안내가 오면 20초 쉬고 한 번 더(1초 1회 제한에 걸린 경우 대비). 그래도 안내면 그대로 돌려줌"""
+    j = av_get(params)
+    if _av_limited(j):
+        time.sleep(20)
+        j = av_get(params)
+    return j
+
+
 def fetch_fund_av(sym, close):
     """종목 하나의 분기 매출과 시가총액. 한도면 "limit", 실패면 None.
     sh = 시가총액 ÷ 오늘 종가(주식 수 환산, 여러 주식 종류·ADR 비율을 시가총액이 이미 반영) → 화면에서 날짜별 시총 = sh × 그날 종가"""
     try:
-        inc = av_get({"function": "INCOME_STATEMENT", "symbol": sym})
+        inc = _av_try({"function": "INCOME_STATEMENT", "symbol": sym})
         if _av_limited(inc):
+            print(f"  재무 {sym} 매출: Alpha Vantage 안내 - {str(inc)[:200]!r}", flush=True)
             return "limit"
         rows, cur = [], None
         for r in inc.get("quarterlyReports") or []:
@@ -445,9 +455,10 @@ def fetch_fund_av(sym, close):
         if not rows:                                     # 분기 매출이 없으면 시가총액은 안 받음(1회 아낌)
             print(f"  재무 {sym}: 분기 매출 없음 - {str(inc)[:100]!r}", flush=True)
             return None
-        ov = av_get({"function": "OVERVIEW", "symbol": sym})
-        if _av_limited(ov):
-            return "limit"
+        ov = _av_try({"function": "OVERVIEW", "symbol": sym})
+        if _av_limited(ov):                              # 매출은 받았으니 남기고, 시가총액은 다음에
+            print(f"  재무 {sym} 시가총액: Alpha Vantage 안내 - {str(ov)[:200]!r}", flush=True)
+            return {"cur": (cur or "USD").upper(), "q": rows[:FUND_KEEP_Q], "sh": None, "limit": True}
         mc = _num(ov.get("MarketCapitalization"))
         return {"cur": (cur or "USD").upper(), "q": rows[:FUND_KEEP_Q], "sh": round(mc / close) if mc and close else None}
     except Exception as e:
@@ -465,6 +476,8 @@ def fund_need(s, f, hist, today_s):
     reps = sorted(d for d in hist.get(s, []) if q0 < d < today_s)
     if len(reps) >= 2:                                   # 가진 최근 분기의 발표 뒤에 또 발표가 있었음 = 새 분기
         return (0, reps[-1])
+    if not f.get("sh"):                                  # 매출만 있고 시가총액을 못 받음
+        return (1, "")
     if (dt.date.fromisoformat(today_s) - dt.date.fromisoformat(f.get("at", "2000-01-01"))).days >= FUND_REFRESH_DAYS:
         return (2, f.get("at", ""))
     return None
@@ -493,6 +506,9 @@ def update_fund(prev_fund, hist, series, today_s):
         fund[s] = {"cur": got["cur"], "q": got["q"] or old.get("q", []), "sh": got["sh"] or old.get("sh"), "at": today_s}
         q = fund[s]["q"]
         print(f"  재무 {s}: 분기 {len(q)}개, 최근 {q[0][0] if q else '-'} ({got['cur']}), 주식 수 환산 {fund[s]['sh']}", flush=True)
+        if got.get("limit"):
+            print("  Alpha Vantage 하루 한도 — 나머지는 내일", flush=True)
+            break
     return fund
 
 
