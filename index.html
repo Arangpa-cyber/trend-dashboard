@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-17 00:40</title>
+<title>추세 대시보드 v2026-11-17 12:10</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -277,6 +277,20 @@
   #modal .mcharts > div { display: flex; flex-direction: column; min-height: 0; }
   #modal .mcharts .cap { font-size: 12px; color: var(--sub); padding: 2px 2px 4px; }
   #modal .mcharts .mc { flex: 1; position: relative; min-height: 200px; }
+  #mProf { padding: 0 14px 8px; font-size: 12px; line-height: 1.5; }
+  #mProf:empty { display: none; }
+  #mProf details { border: 1px solid var(--line); border-radius: 6px; background: var(--card); }
+  #mProf summary { cursor: pointer; padding: 5px 10px; display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; list-style: none; }
+  #mProf summary::-webkit-details-marker { display: none; }
+  #mProf summary::before { content: "\25BE"; color: var(--sub); }
+  #mProf details:not([open]) summary::before { content: "\25B8"; }
+  #mProf .pf-k { color: var(--sub); font-size: 11px; margin-right: 3px; }
+  #mProf .pf-sep { color: var(--sub); }
+  #mProf .pf-pp { margin-left: auto; color: var(--sub); }
+  #mProf .pf-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 16px; padding: 6px 10px 8px; border-top: 1px solid var(--line); }
+  #mProf .pf-chip { display: inline-block; border: 1px solid var(--line); border-radius: 9px; padding: 0 7px; margin: 0 4px 2px 0; font-size: 11px; }
+  #mProf .pf-chip.weak { color: var(--warn); border-color: var(--warn); }
+  @media (max-width: 800px) { #mProf .pf-grid { grid-template-columns: 1fr; } #mProf details[open] { max-height: 34vh; overflow-y: auto; } }
   @media (max-width: 800px) { #modal .mcharts { grid-template-columns: 1fr; overflow-y: auto; } #modal .mcharts .mc { height: 40vh; flex: none; } }
 
   footer { color: var(--sub); font-size: 11px; text-align: center; padding: 24px 16px 32px; line-height: 1.7; }
@@ -285,7 +299,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 00:40</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 12:10</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -348,6 +362,7 @@
 <div id="modal"><div class="box">
   <div class="mhead"><div class="name" id="mName"></div><span class="tag" id="mTag"></span><button class="close" id="mClose" title="닫기 (Esc)">✕</button>
     <div class="reason" id="mReason"></div><div id="mTT"></div></div>
+  <div id="mProf"></div>
   <div class="mcharts">
     <div><div class="mc" id="mDaily"></div>
       <div class="legend"><i style="color:#ca8a04">━</i> 21 EMA &nbsp; <i style="color:#0d9488">━</i> 50 SMA &nbsp; <i style="color:#7c3aed">━</i> 200 SMA &nbsp; <i style="color:#0d9488">━</i> 거래량 50 SMA &nbsp;
@@ -2084,6 +2099,36 @@ function renderStocks() {
   stockTable("tb-stock", list, STOCK_Q ? VIEW_OPTS.all : VIEW_OPTS[STOCK_VIEW]);
 }
 
+// 기업 프로필: profiles.json (구글 시트 '기업 프로필' 탭과 같은 내용). 못 받으면 패널만 안 보임
+let PROFILES = null;
+async function loadProfiles() {
+  try {
+    const r = await fetch("profiles.json?t=" + Math.floor(Date.now() / 3600000), { cache: "no-store" });
+    if (!r.ok) return;
+    const p = await r.json();
+    if (p && p.items) PROFILES = p;
+  } catch (e) {}
+}
+loadProfiles();
+const pfEsc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function renderProfile(t) {
+  const box = document.getElementById("mProf");
+  const p = PROFILES && PROFILES.items && PROFILES.items[t];
+  if (!p) { box.innerHTML = ""; return; }
+  let open = true; try { open = localStorage.getItem("td2_prof") !== "0"; } catch (e) {}
+  const path = ['<span><span class="pf-k">산업</span><b>' + pfEsc(p.g) + "</b></span>"];
+  if (p.theme && p.theme !== p.g) path.push('<span><span class="pf-k">테마</span>' + pfEsc(p.theme) + "</span>");
+  if (p.sub) path.push('<span><span class="pf-k">세부</span>' + pfEsc(p.sub) + "</span>");
+  const chips = (p.types || []).map((x) => '<span class="pf-chip' + (x === "약함" ? " weak" : "") + '">' + pfEsc(x) + "</span>").join("");
+  box.innerHTML = '<details' + (open ? " open" : "") + '><summary>' + path.join('<span class="pf-sep">›</span>') +
+    (p.pp ? '<span class="pf-pp" title="' + pfEsc(p.ppWhy || "") + '">가격결정력 <b>' + p.pp + "</b>위</span>" : "") + "</summary>" +
+    '<div class="pf-grid"><div><span class="pf-k">하는 일</span><br>' + pfEsc(p.do) + "</div>" +
+    '<div><span class="pf-k">시장에 있는 이유</span><br>' + pfEsc(p.why) + "</div>" +
+    '<div><span class="pf-k">해자</span> ' + chips + "<br>" + pfEsc(p.edge) + "</div></div></details>";
+  const d = box.querySelector("details");
+  d.addEventListener("toggle", () => { try { localStorage.setItem("td2_prof", d.open ? "1" : "0"); } catch (e) {} });
+}
+
 // 크게 보기
 function openModal(t) {
   const x = VIEW && VIEW.info[t];
@@ -2092,6 +2137,7 @@ function openModal(t) {
   document.getElementById("mName").innerHTML = starHtml(t) + TICKERS[t].name + '<span class="ticker">' + t + "</span>" + tagsOf(x);
   document.getElementById("mTag").innerHTML = TICKERS[t].group + " · RS <b>" + x.rs + "</b> · " + (cls.rg ? stageDot(cls.rg.r) + cls.rg.r + "단계 " + RG_NAME[cls.rg.r] : "") + (cls.rg && cls.rg.r !== 2 ? "" : " · <b>" + POS_NAME[cls.pos] + "</b> " + qualHtml(posQual(cls)));
   document.getElementById("mReason").innerHTML = x.cls ? reasonOf(x) : cls.reason;
+  renderProfile(t);
   const tel = document.getElementById("mTT");
   tel.innerHTML = "";
   if (myLevel(t) === 2) {
@@ -2325,7 +2371,7 @@ function buildHelp() {
   document.getElementById("helpPanel").innerHTML = `
 <div class="phead"><b>이 대시보드 보는 법</b><button class="close" id="helpClose" title="닫기 (Esc)">✕</button></div>
 <div class="toc"><a href="#h-start">처음 오셨다면</a><a href="#h-signal">신호등</a><a href="#h-sticky">0층 고정 바</a>
-<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 산업</a><a href="#h-phase">국면 한 줄</a><a href="#h-groups">산업 분류</a><a href="#h-stocks">3층 종목</a><a href="#h-states">단계와 위치</a><a href="#h-cheat">치트 삭제</a><a href="#h-my">4층 내 종목 ★</a>
+<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 산업</a><a href="#h-phase">국면 한 줄</a><a href="#h-groups">산업 분류</a><a href="#h-prof">기업 프로필</a><a href="#h-stocks">3층 종목</a><a href="#h-states">단계와 위치</a><a href="#h-cheat">치트 삭제</a><a href="#h-my">4층 내 종목 ★</a>
 <a href="#h-tags">꼬리표</a><a href="#h-rs">RS 계산법</a><a href="#h-charts">차트 읽는 법</a><a href="#h-data">데이터·갱신</a><a href="#h-limits">한계</a></div>
 
 <h3 id="h-start">처음 오셨다면</h3>
@@ -2408,6 +2454,11 @@ function buildHelp() {
 <tr><td>판단이 갈린 곳</td><td>AAPL → 단독(필수소비재와 0.23이라 방어주로 묶지 않음, 12월에 다시 확인) · APP → 응용 소프트웨어(IGV 편입, 상관은 약함) · NFLX·TTWO·CMCSA·TMUS → 미디어·통신(XLC 구분을 따름, TMUS는 필수소비재와 0.32로 조금 더 높았지만 ETF 기준 우선) · DDOG → 보안·관측(보안 3종목과 0.5-0.6, 단독 IGV 기준과 달라도 데이터와 클라우드 소프트웨어 ETF가 지지) · ROP·TRI·AXON → 응용 소프트웨어(0.5-0.7) · INTC → 반도체 장비·제조(칩 설계보다 공장 투자로 움직임) · LIN → 산업재 · CEG → 유틸리티(AI 반도체보다 유틸리티와 조금 더 가까움) · MPWR·AMD → 사업 기준으로 AI 반도체(데이터상으로는 각각 범용 반도체·반도체 장비와 더 가까움) · SPCX → 우주·방산(하이퍼스케일러와는 따로, RKLB·TSLA와 함께 움직임) · SBUX·ORLY → 경기소비재 유지(지금은 방어적으로 움직이지만 국면이 바뀌면 갈라지는 업종이라 6개월 데이터만 보고 옮기지 않음)</td></tr>
 <tr><td>한계</td><td>초대형주(NVDA, AAPL, MSFT, GOOGL, META)는 QQQ 비중이 커서 시장 움직임을 빼면 묶음과의 상관관계가 낮게 나옵니다. SPCX·HONA는 상장 100일 남짓이라 데이터가 짧습니다. 나스닥100 변경(매년 12월) 때 새 종목은 사업 논리로 먼저 정하고, 몇 달 뒤 데이터로 확인합니다.</td></tr>
 </table>
+
+<h3 id="h-prof">기업 프로필 <small>확대 차트 위 설명 패널</small></h3>
+<p>종목을 눌러 확대 차트를 열면 위쪽에 <b>산업 › 테마 › 세부 테마</b>와 그 회사가 <b>하는 일</b>, <b>시장에 있는 이유</b>, <b>해자</b>(강점)가 나옵니다. 제목 줄을 누르면 접고 펼 수 있고, 고른 상태는 기억합니다.</p>
+<p><b>해자 유형</b>은 규모의 경제 · 네트워크 효과 · 전환비용 · 기술·특허 · 브랜드 · 규제·인허가 · 과점·독점 · 입지·자산 · 유통망 · 데이터 · 원가 우위 중 해당하는 것이고, 뚜렷한 해자가 없으면 주황색 <b>약함</b>입니다. <b>가격결정력 n위</b>는 100종목 중 순위(1이 가장 강함)이며 마우스를 올리면 근거가 나옵니다.</p>
+<p>내용은 <b>profiles.json</b>에 있고 구글 시트 "기업 프로필" 탭과 같습니다. 해자와 가격결정력은 사업·경쟁 환경이 바뀌면 달라지므로 방향을 보는 참고용입니다.</p>
 
 <h3 id="h-stocks">3층 · 종목 <small>무엇을 살까 · 보기 5개</small></h3>
 <p>나스닥100 종목을 <b>표 하나</b>로 보고, 위 버튼으로 보기만 바꿉니다. 버튼 옆 숫자는 그 보기의 종목 수입니다. 2층에서 산업을 고르면 모든 보기가 그 산업만 보여 줍니다. 오른쪽 칸에서 찾으면 보기와 상관없이 100종목 전체에서 찾습니다.</p>
