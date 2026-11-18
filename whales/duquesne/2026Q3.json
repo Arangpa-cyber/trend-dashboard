@@ -1,0 +1,124 @@
+{
+ "id": "duquesne",
+ "period": "2026-09-30",
+ "filed": "2026-11-16",
+ "acc": "0001536411-26-000011",
+ "positions": 65,
+ "total": 4470867,
+ "qMax": 12,
+ "skipped": [
+  "EWZ"
+ ],
+ "top": [
+  {
+   "t": "NTRA",
+   "name": "Natera",
+   "w": 29.22,
+   "chg": "same",
+   "pct": -0.8,
+   "call": false,
+   "put": false,
+   "q": 12,
+   "sh": 3160666
+  },
+  {
+   "t": "STX",
+   "name": "Seagate",
+   "w": 7.05,
+   "chg": "add",
+   "pct": 180.2,
+   "call": true,
+   "put": false,
+   "q": 3,
+   "sh": 341790
+  },
+  {
+   "t": "AMZN",
+   "name": "Amazon",
+   "w": 4.31,
+   "chg": "add",
+   "pct": 42.7,
+   "call": true,
+   "put": false,
+   "q": 5,
+   "sh": 772600
+  },
+  {
+   "t": "FOXA",
+   "name": "Fox (A)",
+   "w": 4.27,
+   "chg": "add",
+   "pct": 38.2,
+   "call": false,
+   "put": false,
+   "q": 2,
+   "sh": 3046050
+  },
+  {
+   "t": "YPF",
+   "name": "YPF",
+   "w": 3.97,
+   "chg": "add",
+   "pct": 12.8,
+   "call": false,
+   "put": false,
+   "q": 10,
+   "sh": 3541897
+  },
+  {
+   "t": "U",
+   "name": "Unity Software",
+   "w": 3.62,
+   "chg": "add",
+   "pct": 435.5,
+   "call": false,
+   "put": false,
+   "q": 6,
+   "sh": 3956385
+  },
+  {
+   "t": "SE",
+   "name": "Sea",
+   "w": 3.47,
+   "chg": "add",
+   "pct": 44.8,
+   "call": false,
+   "put": false,
+   "q": 6,
+   "sh": 1592765
+  },
+  {
+   "t": "INSM",
+   "name": "Insmed",
+   "w": 2.79,
+   "chg": "trim",
+   "pct": -23.3,
+   "call": true,
+   "put": false,
+   "q": 10,
+   "sh": 1092650
+  },
+  {
+   "t": "RVMD",
+   "name": "Revolution Medicines",
+   "w": 2.0,
+   "chg": "add",
+   "pct": 9.2,
+   "call": false,
+   "put": false,
+   "q": 3,
+   "sh": 436287
+  },
+  {
+   "t": "TBBB",
+   "name": "BBB Foods",
+   "w": 1.94,
+   "chg": "trim",
+   "pct": -43.2,
+   "call": false,
+   "put": false,
+   "q": 6,
+   "sh": 1647408
+  }
+ ]
+}
