@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-18 20:50</title>
+<title>추세 대시보드 v2026-11-18 21:27</title>
 <!-- 차트 라이브러리: 저장소 안 사본을 먼저(외부 CDN이 막혀도 열리게), 없으면 unpkg -->
 <script src="vendor/lightweight-charts-4.2.0.standalone.production.js"></script>
 <script>window.LightweightCharts || document.write('<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"><\/script>');</script>
@@ -169,6 +169,9 @@
   @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } }
   .ratioChart { height: 150px; position: relative; }
   table.flow { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .secmap { margin-top: 12px; padding: 9px 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 13px; }
+  .secmap .lbl { font-size: 11px; font-weight: 700; color: var(--sub); }
+  .secmap .sec { white-space: nowrap; }
   table.flow th { text-align: left; font-weight: 600; color: var(--sub); font-size: 11px; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   table.flow td { padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   #phase { display: block; margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); text-decoration: none; font-size: 14px; line-height: 1.5; }
@@ -216,6 +219,32 @@
   table.ntable tr.cut td { padding: 3px 8px; font-size: 11px; color: var(--accent); border-bottom: 2px solid var(--accent); overflow: visible; }
   table.ntable tr.cut .cutl { position: sticky; left: 8px; }
   @media (max-width: 900px) { table.ntable .tkc { box-shadow: 6px 0 6px -6px rgba(0,0,0,0.35); } }
+  /* 휴대폰(640px 이하): 종목 표(3·4·5층)를 한 종목 한 카드로. 1줄 ★ 티커 산업 6개월 · 2줄 단계·위치 · 3줄 다음 할 일 · 4줄 숫자 6칸 · 5줄 꼬리표 */
+  @media (max-width: 640px) {
+    table.ltable { display: block; min-width: 0; table-layout: auto; }
+    table.ltable colgroup, table.ltable thead { display: none; }
+    table.ltable tbody { display: block; }
+    table.ltable tr.sg, table.ltable tr.cut { display: block; }
+    table.ltable tr.sg td, table.ltable tr.cut td { display: block; }
+    table.ltable tr[data-t] { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr) minmax(0, 0.8fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.9fr); gap: 3px 8px; padding: 9px 12px; border-bottom: 1px solid var(--line);
+      grid-template-areas: "my t t grp grp sp" "pos pos pos pos pos pos" "todo todo todo todo todo todo" "rs pc qw qi rev psr" "bd bd bd bd bd bd"; }
+    #tb-whale table.ltable tr[data-t] { grid-template-areas: "my t t grp grp sp" "pos pos pos pos pos pos" "todo todo todo todo todo todo" "pc wd ww wq rev psr" "bd bd bd bd bd bd"; }
+    table.ltable tr[data-t] td { display: block; border: 0; padding: 0; position: static; white-space: normal; overflow: visible; text-overflow: clip; background: none; box-shadow: none; min-width: 0; }
+    table.ltable tr.mwarn { box-shadow: inset 3px 0 0 var(--warn); }
+    table.ltable td[data-k] { grid-area: auto; }
+    table.ltable td[data-k="my"] { grid-area: my; text-align: left; } table.ltable td[data-k="t"] { grid-area: t; font-size: 15px; }
+    table.ltable td[data-k="grp"] { grid-area: grp; align-self: center; } table.ltable td[data-k="sp"] { grid-area: sp; justify-self: end; }
+    table.ltable td[data-k="pos"] { grid-area: pos; } table.ltable td[data-k="todo"] { grid-area: todo; }
+    table.ltable td[data-k="rs"] { grid-area: rs; } table.ltable td[data-k="pc"] { grid-area: pc; } table.ltable td[data-k="qw"] { grid-area: qw; }
+    table.ltable td[data-k="qi"] { grid-area: qi; } table.ltable td[data-k="rev"] { grid-area: rev; } table.ltable td[data-k="psr"] { grid-area: psr; }
+    table.ltable td[data-k="wd"] { grid-area: wd; } table.ltable td[data-k="ww"] { grid-area: ww; } table.ltable td[data-k="wq"] { grid-area: wq; }
+    table.ltable td[data-k="bd"] { grid-area: bd; } table.ltable td[data-k="bd"]:empty { display: none; }
+    table.ltable td[data-k="rs"], table.ltable td.num { text-align: left; font-size: 12px; line-height: 1.3; white-space: nowrap; letter-spacing: -0.2px; }
+    table.ltable td[data-k="rs"]::before, table.ltable td.num::before { content: attr(data-l); display: block; font-size: 10px; color: var(--sub); font-weight: 400; }
+    table.ltable td.qi .qiw { display: none; }
+    table.flow th:nth-child(3), table.flow td:nth-child(3), table.flow th:nth-child(6), table.flow td:nth-child(6), table.flow th:nth-child(8), table.flow td:nth-child(8) { display: none; }
+    table.flow tr.gx td { display: table-cell; }
+  }
   .spark { display: block; }
 
   /* 3층 종목: 보기 버튼 · 찾기 · 요약 */
@@ -312,7 +341,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-18 20:50</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-18 21:27</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -347,6 +376,7 @@
     <div class="card"><div class="card-head"><div class="name">QQQE / QQQ<span class="ticker">동일가중 ÷ 시총가중</span></div><div class="reason" id="r1txt">-</div></div><div class="ratioChart" id="r1"></div></div>
     <div class="card"><div class="card-head"><div class="name">XLY / XLP<span class="ticker">경기소비재 ÷ 필수소비재</span></div><div class="reason" id="r2txt">-</div></div><div class="ratioChart" id="r2"></div></div>
   </div>
+  <div class="card secmap" id="sectors" hidden></div>
   <div class="card" style="margin-top:12px;overflow-x:auto">
     <table class="flow">
       <thead><tr><th data-k="rs">순위<span class="ar"></span></th><th data-k="g">산업<span class="ar"></span></th><th>평균 RS 40주</th><th data-k="rc">평균 RS (4주)<span class="ar"></span></th><th data-k="s2" title="산업 안 종목의 단계 분포(1 회색 · 2 초록 · 3 주황 · 4 회청색) · 숫자는 2단계 상승기 종목 수">2단계<span class="ar"></span></th><th data-k="bc">50일선 위 (4주)<span class="ar"></span></th><th data-k="lc" title="지금 주도주(RS 80 이상) 종목 수 / 산업 종목 수, 4주 전과 비교한 편입(▲)·편출(▼) 종목 수">주도주 (4주)<span class="ar"></span></th><th>주도주(RS 80+)</th></tr></thead>
@@ -420,6 +450,9 @@ const UNIVERSE = [   // 22개 산업: 같은 이유(매출원·수요)로 함께
   ["비트코인", [["MSTR","Strategy"]]],
 ];
 const MARKET = ["QQQ", "QQQE", "XLY", "XLP"];
+// 2층 S&P 500 섹터 지도: 섹터 ETF 11개(서버 build_data.py도 이 목록을 읽음). 시세만 받고 판정에는 쓰지 않음
+const SECTORS = [["XLK", "기술"], ["XLC", "통신"], ["XLY", "경기소비재"], ["XLP", "필수소비재"], ["XLV", "헬스케어"], ["XLF", "금융"],
+                 ["XLI", "산업재"], ["XLE", "에너지"], ["XLB", "소재"], ["XLU", "유틸리티"], ["XLRE", "부동산"]];
 
 // ═════════════ 2. 설정 ═════════════
 const RS_LEADER = 80;               // 주도주 기준 RS
@@ -1479,7 +1512,7 @@ function fundTip(t) {
   return qName(f.q0) + (f.rep0 ? " · " + md(f.rep0) + " 발표" : "") + (f.stale ? " · 새 분기 실적 반영 대기" : "") +
     " · 매출 YoY 최근 4분기: " + f.hist.map((z) => pctI(z.g)).join(" → ") +
     (f.psr != null ? " · PSR " + psrF(f.psr) + (f.psr1 != null ? " (직전 분기 실적 다음 날 " + md(f.at1) + " " + psrF(f.psr1) + ")" : "") : "") +
-    (f.ttm ? " · 4분기 매출 " + usdF(f.ttm) : "") + (f.mc ? " · 시총 " + usdF(f.mc) : "") + (/^[A-Z]{3}$/.test(f.cur || "") && f.cur !== "USD" ? " · " + f.cur + " 매출을 오늘 환율로 환산" : "");
+    (f.ttm ? " · 4분기 매출 " + usdF(f.ttm) : "") + (f.mc ? " · 시총 " + usdF(f.mc) : "") + (/^[A-Z]{3}$/.test(f.cur || "") && f.cur !== "USD" ? " · " + f.cur + " 매출을 오늘 환율로 환산" : "") + (FUND[t] && FUND[t].adr ? " · 주식 수는 ADR 기준(1 ADR = 보통주 " + FUND[t].adr + "주로 환산)" : "");
 }
 function revCell(t) {
   const f = fundOf(t);
@@ -1725,7 +1758,22 @@ function renderMarket() {
   if (DATA.QQQE) drawRatio("r1", "r1txt", DATA.QQQE, DATA.QQQ, "상승이 넓게 퍼지는 중", "소수 대형주에 몰리는 중");
   if (DATA.XLY && DATA.XLP) drawRatio("r2", "r2txt", DATA.XLY, DATA.XLP, "공격 쪽으로 돈이 감", "방어 쪽으로 숨는 중");
   renderSticky();
+  renderSectors();
   fitMarketChart();
+}
+// 2층 S&P 500 섹터 지도: 섹터 ETF 11개를 4주 등락 순으로 · 단계 점(200일선) · 마우스를 올리면 13주 등락과 QQQ 대비
+function renderSectors() {
+  const el = document.getElementById("sectors");
+  if (!el) return;
+  const q4 = DATA.QQQ ? periodStats("QQQ").pc : null;
+  const ch = (d, k) => (d && d.length > k ? d[d.length - 1].c / d[d.length - 1 - k].c - 1 : null);
+  const list = SECTORS.filter(([t]) => DATA[t] && DATA[t].length > 70).map(([t, nm]) => ({ t, nm, p4: periodStats(t).pc, p13: ch(DATA[t], 63), rg: regimeOf(DATA[t]) }))
+    .filter((z) => z.p4 != null).sort((a, b) => b.p4 - a.p4);
+  if (!list.length) { el.hidden = true; return; }
+  el.innerHTML = '<span class="lbl">S&amp;P 500 섹터 · 4주</span>' + list.map((z) => '<span class="sec" title="' + z.t + " " + z.nm +
+    (z.rg ? " · " + z.rg.r + "단계 " + RG_NAME[z.rg.r] + " (200일선 " + pctf(z.rg.dist) + ")" : "") + " · 4주 " + pctf(z.p4 / 100) + (q4 != null ? " (QQQ " + pctf(q4 / 100) + ")" : "") +
+    (z.p13 != null ? " · 13주 " + pctf(z.p13) : "") + '">' + stageDot(z.rg ? z.rg.r : 0) + z.nm + ' <b class="' + (z.p4 >= 0 ? "chg-up" : "chg-down") + '">' + pctf(z.p4 / 100) + "</b></span>").join("");
+  el.hidden = false;
 }
 
 // 0층 고정 바: 층 순서대로 한 줄 (시장 → 2단계 비율 → 종목 → 내 종목)
@@ -2101,6 +2149,8 @@ function sinceOf(t, day) {
   return b && d && d.length ? d[d.length - 1].c / b.c - 1 : null;
 }
 const chgTxt = (h) => (h.chg === "new" ? "신규" : h.chg === "same" ? "유지" : (h.chg === "add" ? "추가 +" : "축소 −") + Math.abs(Math.round(h.pct)) + "%");
+// 표 칸용 짧은 글: 부호와 색으로 추가·축소를 구분(1000px에서 5층 표가 넘치지 않게)
+const chgShort = (h) => (h.chg === "new" ? "신규" : h.chg === "same" ? "유지" : (h.chg === "add" ? "+" : "−") + Math.abs(Math.round(h.pct)) + "%");
 const chgCls = (h) => (h.chg === "new" || h.chg === "add" ? "chg-up" : h.chg === "trim" ? "chg-down" : "muted");
 const optTxt = (h) => (h.call ? " · 콜" : "") + (h.put ? " · 풋" : "");
 const heldTxt = (h, f) => (f.qMax && h.q >= f.qMax ? Math.floor(f.qMax / 4) + "년+" : h.q + "분기");
@@ -2115,7 +2165,7 @@ const WH_COLS = (() => {
   const pos = (t) => { const w = whaleSel(); return w && w.f.top.find((z) => z.t === t); };
   const extra = [
     ["wd", "기준일 등락", (x) => { const w = whaleSel(); const v = w ? sinceOf(x.t, w.f.period) : null; return v ?? -999; }, -1, "13F 기준일(분기 말) 종가 대비 지금 등락률 · 같은 기간 QQQ보다 많이 오른 종목은 빨강"],
-    ["ww", "비중", (x) => { const h = pos(x.t); return h ? h.w : -1; }, -1, "13F 전체 평가액(옵션 포함) 중 이 종목 보통주 비중 · 아래: 직전 분기 대비 주식 수 변화(신규 · 추가 · 축소 · 유지, ±1%는 유지)와 콜·풋 옵션"],
+    ["ww", "비중", (x) => { const h = pos(x.t); return h ? h.w : -1; }, -1, "13F 전체 평가액(옵션 포함) 중 이 종목 보통주 비중 · 아래: 직전 분기 대비 주식 수 변화(신규 · +n% 추가 · −n% 축소 · 유지, ±1%는 유지)와 콜·풋 옵션"],
     ["wq", "보유", (x) => { const h = pos(x.t); return h ? h.q : -1; }, -1, "끊기지 않고 들고 있던 분기 수(최근 12분기 안에서 · 다 들고 있었으면 3년+)"],
   ];
   return ["my", "t", "grp", "sp", "pos", "todo", "pc"].map(by).concat(extra, ["rev", "psr", "bd"].map(by));
@@ -2142,7 +2192,7 @@ function renderWhale() {
       wd: (x) => { const v = sinceOf(x.t, f.period); if (v == null) return '<td class="num"><span class="muted">-</span></td>';
         return '<td class="num" title="' + md(f.period) + " 종가 대비 · 같은 기간 QQQ " + (qs != null ? pctf(qs) : "-") + '"><b class="' + (qs != null && v > qs ? "chg-up" : v < 0 ? "chg-down" : "") + '">' + pctf(v) + "</b></td>"; },
       ww: (x) => { const h = f.top.find((z) => z.t === x.t);
-        return '<td class="fd num" title="' + h.sh.toLocaleString() + "주" + (h.pct != null ? " · 직전 분기 대비 " + (h.pct > 0 ? "+" : "") + h.pct + "%" : "") + '"><b>' + h.w.toFixed(1) + '%</b><br><span class="fsub ' + chgCls(h) + '">' + chgTxt(h) + optTxt(h) + "</span></td>"; },
+        return '<td class="fd num" title="' + h.sh.toLocaleString() + "주" + (h.pct != null ? " · 직전 분기 대비 " + (h.pct > 0 ? "+" : "") + h.pct + "%" : "") + '"><b>' + h.w.toFixed(1) + '%</b><br><span class="fsub ' + chgCls(h) + '">' + chgShort(h) + optTxt(h) + "</span></td>"; },
       wq: (x) => { const h = f.top.find((z) => z.t === x.t); return '<td class="num">' + heldTxt(h, f) + "</td>"; },
     },
   });
@@ -2184,7 +2234,7 @@ function stockTable(id, list, o) {
       bd: () => '<td class="bd">' + w.filter((z) => !/단계|이탈/.test(z)).map((z) => '<span class="wtag">' + z + "</span>").join("") + (o.warn ? tagsOf(x).replace(/<span class="badge earn[^]*?<\/span>/, "") : tagsOf(x)) + "</td>",
     };
     return '<tr data-t="' + x.t + '"' + (w.length ? ' class="mwarn"' : "") + ' title="' + TICKERS[x.t].name + " · " + strip(posLabel(x.cls) + " · " + reasonOf(x)) + '">' +
-      COLS.map((c) => ((o.cells && o.cells[c[0]]) || cell[c[0]])(x)).join("") + "</tr>";
+      COLS.map((c) => ((o.cells && o.cells[c[0]]) || cell[c[0]])(x).replace("<td", '<td data-k="' + c[0] + '" data-l="' + c[1] + '"')).join("") + "</tr>";   // data-k·data-l: 휴대폰 카드형에서 칸 위치·이름표
   };
   let rows = "";
   groups.forEach((g) => {
@@ -2220,8 +2270,8 @@ const rerenderTable = (id) => (id === "tb-stock" ? renderStocks() : id === "tb-w
 // 칸 폭: 숫자·짧은 칸은 고정(내용 폭 + 여백), 단계·위치 · 다음 할 일 · 꼬리표는 지금 보이는 글에 맞춤.
 // 다 들어가면 남는 폭은 맨 오른쪽 꼬리표가 가져가 줄 끝만 비고 칸 사이는 벌어지지 않음.
 // 모자라면 단계·위치(가장 긴 글이 드묾) → 다음 할 일 → 꼬리표 순서로 줄임(넘치는 글은 말줄임·마우스를 올리면 전체, 꼬리표는 두 줄)
-const COL_W = { my: 34, t: 58, grp: 136, rs: 66, pc: 64, qw: 52, qi: 74, rev: 54, psr: 50, sp: 66, wd: 70, ww: 112, wq: 52 };
-const COL_MIN = { pos: 134, todo: 112, bd: 72 };   // 1000px 화면(표 상자 966px)에서 가로 스크롤이 안 생기는 최소 폭
+const COL_W = { my: 34, t: 58, grp: 136, rs: 66, pc: 64, qw: 52, qi: 74, rev: 54, psr: 50, sp: 66, wd: 70, ww: 70, wq: 52 };
+const COL_MIN = { pos: 134, todo: 112, bd: 66 };   // 1000px 화면(표 상자 966px)에서 가로 스크롤이 안 생기는 최소 폭: 3층 고정 칸 합 654 + 이 셋 312 = 966 (2026-11-18 bd 72→66, 6px 넘치던 것)
 // 3층·4층 표(보유·관심)는 모두 같은 칸 폭을 씀: 세 표의 글을 함께 재서 한 번에 정하므로 칸 위치가 정확히 맞음
 const TABLE_IDS = ["tb-stock", "tb-hold", "tb-watch", "tb-whale"];   // 큰손 표도 앞 6칸(★·티커·산업·6개월·단계·할 일)과 꼬리표 위치가 같음
 function fitCols() {
@@ -2463,7 +2513,7 @@ function closeBoundary(now, dir) {
 function fmtKST(ts) {
   return new Date(ts).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 }
-const SERVER_LAG_MS = 75 * 60000;    // 예약 뒤 반영까지: GitHub 실행 대기(보통 1시간 안팎) + 약 15분 수집 → 한국시간 10:45 무렵
+const SERVER_LAG_MS = 95 * 60000;    // 예약 뒤 반영까지: GitHub 실행 대기 + 수집(2026-11 실제 반영 10:50-11:06) → 한국시간 11:05 10:45 무렵
 // 서버 예약 실행 시각: 화-토 00:30 UTC (미국 월-금 장의 다음 날)
 // 오늘 예약이 지났는데 새 data.json이 아직 없으면: 반영 예상 시각 전이면 '오늘 갱신 예정', 지나면 '지연 중'(10분마다 확인),
 // 예약 뒤 4시간이 지나도 없으면 빠진 것으로 봄
@@ -2562,7 +2612,7 @@ async function loadAll(force) {
   if (!key) { statusEl.textContent = "⚙ 설정에서 Twelve Data API 키를 넣어 주세요. (twelvedata.com 무료 가입 후 발급)"; document.getElementById("settings").hidden = false; return; }
   running = true;
   const boundary = closeBoundary(Date.now(), -1);
-  const all = MARKET.concat(STOCKS, whaleExtra()), todo = [];
+  const all = [...new Set(MARKET.concat(SECTORS.map((z) => z[0]), STOCKS, whaleExtra()))], todo = [];
   for (const s of all) {
     const c = await dbGet("d_" + s);
     if (c && c.rows && !force && (!boundary || c.at >= boundary)) DATA[s] = unpack(c.rows);
@@ -2577,7 +2627,7 @@ async function loadAll(force) {
     if (wait) await new Promise((r) => setTimeout(r, wait));
     lastReq = Date.now();
     try {
-      const rows = await fetchDaily(s, key, MARKET.includes(s) ? DAYS_MARKET : DAYS_STOCK);
+      const rows = await fetchDaily(s, key, MARKET.includes(s) || SECTORS.some((z) => z[0] === s) ? DAYS_MARKET : DAYS_STOCK);
       await dbSet("d_" + s, { at: Date.now(), rows });
       DATA[s] = unpack(rows);
       if (MARKET.includes(s)) renderMarket();
@@ -2681,6 +2731,7 @@ function buildHelp() {
 <tr><td>XLY / XLP</td><td>경기소비재 ÷ 필수소비재. <b>▲ 공격 쪽</b>: 큰돈이 위험을 감수. <b>▼ 방어 쪽</b>: 큰돈이 숨는 중.</td></tr>
 <tr><td>방향 없음</td><td>비율이 50일 평균 근처에서 오르내림. 판단 보류.</td></tr>
 </table>
+<p><b>S&amp;P 500 섹터</b> 줄은 나스닥100 밖까지 넓혀 돈의 방향을 봅니다. 섹터 ETF 11개(XLK 기술 · XLC 통신 · XLY 경기소비재 · XLP 필수소비재 · XLV 헬스케어 · XLF 금융 · XLI 산업재 · XLE 에너지 · XLB 소재 · XLU 유틸리티 · XLRE 부동산)를 <b>4주 등락이 큰 순</b>으로 놓고, 앞의 점은 그 ETF의 단계(200일선, 종목과 같은 규칙)입니다. 마우스를 올리면 13주 등락과 같은 기간 QQQ가 보입니다. 기술·경기소비재·통신이 앞이면 공격, 유틸리티·필수소비재·헬스케어가 앞이면 방어 쪽으로 돈이 가는 중입니다. 표시만 하고 신호등 판정에는 쓰지 않습니다.</p>
 <p><b>아래 산업 표</b>는 나스닥100 종목을 산업별로 묶어, 돈이 지금 어디에 있고 4주 동안 어디로 흐르는지 봅니다. 처음에는 2단계 비율이 높은 산업부터 놓습니다. 칸 제목을 누르면 그 칸으로 정렬합니다. <b>행을 누르면 펼쳐져</b> 그 산업 종목을 단계별로(2단계는 위치까지), 4주 동안 주도주에 편입·편출된 종목과 위치가 바뀐 주도주를 보여 주고, 3층 종목 표도 그 산업만 보여 줍니다(다시 누르면 풀림).</p>
 <table>
 <tr><td>순위 · 산업</td><td>평균 RS 순위와 산업 이름(옆 숫자는 종목 수). 종목이 적은 산업은 한두 종목 변화로 숫자가 크게 흔들리니 종목 수를 함께 보세요(2개 이하면 마우스를 올렸을 때 알려 줍니다).</td></tr>
@@ -2836,11 +2887,11 @@ function buildHelp() {
 
 <h3 id="h-data">데이터와 갱신</h3>
 <p><b>🔔 알림</b>: 오른쪽 위 종 모양을 누르면 나스닥100(QQQ) 구성 변경 소식이 보입니다. 새 알림이 있으면 빨간 숫자가 붙습니다. ① <b>발표</b>: 매주 화요일 아침 Claude 예약 작업이 웹 검색으로 나스닥100 편입·교체·정기 변경 발표를 찾아 <code>press-notices.json</code>에 적습니다. 서버(GitHub)에서는 Nasdaq 보도자료 주소가 막혀 이 방식을 씁니다. 출처 링크가 함께 붙으니 눌러서 원문을 확인하세요. 발표는 보통 실제 적용 1주일 안팎 전에 나옵니다. ② <b>구성 차이</b>: 서버가 매일 Alpha Vantage에서 QQQ 보유 종목과 비중을 받아, 대시보드 종목 목록과 다르면 적습니다(실제 변경 뒤 며칠 늦을 수 있음). 받은 비중은 3층·4층 비중·영향 칸에 바로 씁니다. 구성 차이는 '지금 상태'라서 목록을 맞추면 알림이 사라집니다. 구성 차이 알림이 오면 종목 목록과 산업 분류를 갱신해야 하니 말씀해 주세요.</p>
-<p>시세는 Twelve Data, 실적 일정은 Alpha Vantage 실적 달력(막히면 Nasdaq)에서 받습니다. 대상은 나스닥100 구성종목(GOOG처럼 중복된 주식 종류는 하나만)과 QQQ, QQQE, XLY, XLP입니다.</p>
-<p>GitHub가 미국 평일 장의 <b>시간외 거래까지 끝난 뒤</b>(한국시간 화-토 <b>오전 10시 45분 무렵</b> 반영) 자동으로 새로 받습니다. 예약은 한국시간 9시 30분이고, 서버는 미국 동부 20시 15분(시간외 거래 마감 15분 뒤)이 되기 전이면 그때까지 기다렸다 받습니다. 장 마감 직후에는 거래량이 아직 집계 중이기 때문입니다.</p>
+<p>시세는 Twelve Data, 실적 일정은 Alpha Vantage 실적 달력(막히면 Nasdaq)에서 받습니다. 대상은 나스닥100 구성종목(GOOG처럼 중복된 주식 종류는 하나만), 5층 큰손 종목, QQQ, QQQE, S&P 500 섹터 ETF 11개(XLK·XLC·XLY·XLP·XLV·XLF·XLI·XLE·XLB·XLU·XLRE)입니다. 서버는 미국 동부 20시(시간외 거래 마감) 전에 받은 "오늘" 일봉은 아직 끝나지 않은 봉이라 버립니다.</p>
+<p>GitHub가 미국 평일 장의 <b>시간외 거래까지 끝난 뒤</b>(한국시간 화-토 <b>오전 11시 무렵</b> 반영) 자동으로 새로 받습니다. 예약은 한국시간 9시 30분이고, 서버는 미국 동부 20시 15분(시간외 거래 마감 15분 뒤)이 되기 전이면 그때까지 기다렸다 받습니다. 장 마감 직후에는 거래량이 아직 집계 중이기 때문입니다.</p>
 <p><b>거래량 잠정</b>: 그래도 QQQ 등 시장 지표의 마지막 날 거래량이 확정되지 않았을 수 있어 두 겹으로 확인합니다. ① 서버가 수집 맨 처음과 맨 끝(약 15분 간격)에 두 번 받아 비교하고, 1% 넘게 다르면 15분 간격으로 다시 받아 같아질 때까지 최대 4번 확인합니다. 그래도 안 맞으면 '잠정'(다시 확인하는 동안 반영이 최대 45분 늦어짐) ② 서버가 Nasdaq 일별 시세로 최근 5거래일 거래량을 한 번 더 맞춰 봅니다. 두 출처가 평소엔 맞는데 어느 날만 15% 넘게 다르면 그날은 Nasdaq 값으로 바로잡고, 신호등 줄에 "11/10 거래량 정정(4.5억 → Nasdaq 기준 4,516만)"처럼 적습니다. ③ 최근 5거래일 중 20일 평균의 4배가 넘는데 그날 등락이 2% 안쪽인 날(거래량만 튀고 가격은 조용함)은 의심값으로 '잠정'. 두 출처가 같은 값을 준 날은 지수 재편일 같은 실제 대량 거래로 보고 넘어갑니다. ④ 화면에서 마지막 날 거래량이 최근 20일 평균의 ${P(PARTIAL_VOL)} 미만이면 '잠정'. (2026-11-10 QQQ 거래량이 실제의 10배로 들어와 분산일로 잘못 세어진 일 이후 ②③ 추가) 잠정인 날은 1층 차트의 거래량 막대가 회색이 되고, 신호등에 "거래량 잠정 · 판정 보류"가 붙으며, 그날의 분산일·팔로스루 판정을 하지 않습니다. 틀린 판정보다 보류가 낫기 때문입니다. 다음 갱신에서 확정값으로 바뀝니다.</p>
 <p>화면 위 줄에 <b>데이터 기준일</b>(어느 날 장 마감까지 반영됐는지)과 <b>다음 갱신 예정 시각</b>이 나옵니다. 페이지를 열어 둔 채로 갱신 시각이 지나면 알아서 다시 읽습니다.</p>
-<p><b>갱신 지연</b>: GitHub의 예약 실행은 정각에 바로 돌지 않고 대기열에 들어가, 보통 1시간 안팎 늦게 시작합니다. 예상 시각(10시 45분 무렵)이 지났는데 새 데이터가 아직 없으면 위 줄에 <b>"오늘 서버 갱신 지연 중"</b>이 뜨고, 들어올 때까지 10분마다 다시 확인해 바로 반영합니다. 4시간이 지나도 없으면 <b>"오늘 서버 갱신이 오지 않음"</b>으로 바뀝니다. GitHub가 그날 예약을 빼먹은 경우로, 다음 날 갱신에서 빠진 날까지 함께 채워집니다.</p>
+<p><b>갱신 지연</b>: GitHub의 예약 실행은 정각에 바로 돌지 않고 대기열에 들어가, 보통 1시간 안팎 늦게 시작합니다. 예상 시각(11시 5분 무렵)이 지났는데 새 데이터가 아직 없으면 위 줄에 <b>"오늘 서버 갱신 지연 중"</b>이 뜨고, 들어올 때까지 10분마다 다시 확인해 바로 반영합니다. 4시간이 지나도 없으면 <b>"오늘 서버 갱신이 오지 않음"</b>으로 바뀝니다. GitHub가 그날 예약을 빼먹은 경우로, 다음 날 갱신에서 빠진 날까지 함께 채워집니다.</p>
 <p>⚙ 설정의 "새로 받기"는 서버에 올라온 최신 파일을 다시 읽는 버튼입니다.</p>
 
 <h3 id="h-limits">한계</h3>
@@ -2899,7 +2950,7 @@ document.addEventListener("visibilitychange", async () => {
 (async () => {
   const noChart = !HAS_CHART();
   if (await loadServer()) {
-    document.getElementById("settingsNote").textContent = "서버 모드: GitHub가 매일 미국 시간외 거래가 끝난 뒤(한국시간 오전 10시 45분 무렵) 데이터를 갱신합니다. 이 화면에서는 키가 필요 없습니다. '새로 받기'는 서버의 최신 파일을 다시 읽습니다.";
+    document.getElementById("settingsNote").textContent = "서버 모드: GitHub가 매일 미국 시간외 거래가 끝난 뒤(한국시간 오전 11시 무렵) 데이터를 갱신합니다. 이 화면에서는 키가 필요 없습니다. '새로 받기'는 서버의 최신 파일을 다시 읽습니다.";
     document.getElementById("key").style.display = "none"; document.getElementById("saveKey").style.display = "none";
   } else {
     if (!getKey()) document.getElementById("settings").hidden = false;

@@ -48,6 +48,8 @@ NAMES = dict(re.findall(r'\["([A-Z][A-Z0-9.]*)",\s*"([^"]+)"\]', universe_block)
 MARKET = json.loads(re.search(r"const MARKET = (\[.*?\]);", HTML).group(1))
 DAYS_MARKET = int(re.search(r"const DAYS_MARKET = (\d+)", HTML).group(1))
 DAYS_STOCK = int(re.search(r"const DAYS_STOCK = (\d+)", HTML).group(1))
+# 2층 S&P 500 섹터 지도용 섹터 ETF(MARKET에 이미 있는 XLY·XLP는 빼고). 시세만 받고 거래량 확정 확인은 안 함
+SECTORS = [t for t in re.findall(r'\["([A-Z]+)",\s*"', HTML[HTML.index("const SECTORS"):HTML.index("];", HTML.index("const SECTORS"))]) if t not in MARKET]
 
 
 def whale_tickers():
@@ -91,6 +93,15 @@ def get_json(url, headers=None, timeout=30):
         return json.loads(r.read().decode("utf-8"))
 
 
+def drop_unfinished(rows, now=None):
+    """마지막 일봉이 '미국 오늘'인데 동부 20:00(시간외 거래 마감) 전이면 아직 끝나지 않은 봉이라 버림.
+    (2026-11-13 02:31 한국시간 = 미국 장중 수동 실행에서 QQQ 11-12 봉이 거래량 38만 주·종가는 전날 값으로 저장된 일 이후)"""
+    now = now or dt.datetime.now(NY)
+    if rows and rows[-1][0] == now.date().isoformat() and now.time() < dt.time(20, 0):
+        return rows[:-1]
+    return rows
+
+
 def fetch_series(symbol, size):
     q = urllib.parse.urlencode({"symbol": symbol, "interval": "1day", "outputsize": size, "apikey": KEY})
     for attempt in range(3):
@@ -99,9 +110,9 @@ def fetch_series(symbol, size):
         except Exception as e:  # 네트워크 오류
             j = {"status": "error", "message": str(e)}
         if j.get("status") == "ok":
-            return [[v["datetime"][:10], round(float(v["high"]), 4), round(float(v["low"]), 4),
-                     round(float(v["close"]), 4), int(float(v.get("volume") or 0))]
-                    for v in reversed(j["values"])]
+            return drop_unfinished([[v["datetime"][:10], round(float(v["high"]), 4), round(float(v["low"]), 4),
+                                     round(float(v["close"]), 4), int(float(v.get("volume") or 0))]
+                                    for v in reversed(j["values"])])
         if j.get("code") == 429:  # 한도 초과: 1분 쉬고 다시
             print(f"  {symbol}: 한도 대기", flush=True)
             time.sleep(61)
@@ -542,7 +553,8 @@ def update_fund(prev_fund, hist, series, today_s):
             continue
         if old.get("q") and got["q"] and got["q"][0][0] <= old["q"][0][0] and pri == 0:
             print(f"  재무 {s}: 새 분기가 아직 없음({got['q'][0][0]}) — {FUND_RETRY_DAYS}일 뒤 다시", flush=True)
-            fund[s] = dict(old, sh=got["sh"] or old.get("sh"), tried=today_s)
+            # ADR 환산(adr)을 한 종목은 이미 나눈 주식 수를 그대로 둠(새 값으로 바꾸면 sh만 다시 커짐)
+            fund[s] = dict(old, sh=(old.get("sh") if old.get("adr") else got["sh"] or old.get("sh")), tried=today_s)
             continue
         fund[s] = {"cur": got["cur"], "q": got["q"] or old.get("q", []), "sh": got["sh"] or old.get("sh"), "sh1": got.get("sh1") or old.get("sh1"), "shq": got.get("shq") or old.get("shq"), "at": today_s}
         q = fund[s]["q"]
@@ -551,6 +563,37 @@ def update_fund(prev_fund, hist, series, today_s):
             print("  Alpha Vantage 하루 한도 — 나머지는 내일", flush=True)
             break
     return fund
+
+
+# ADR 1주가 보통주 여러 주인 종목(나스닥100·큰손 종목 중 PDD만, 1 ADS = 보통주 4주).
+# Alpha Vantage 주식 수가 보통주 기준이면 시가총액·PSR이 그 배수로 커지므로 ADS 기준으로 나눔.
+# 판단: QQQ 비중 1% 미만 종목들의 (시가총액 ÷ 비중) 중앙값과 비교해 배수(4) 이상 크면 보통주 기준으로 봄.
+# (2026-11-18 시험: PDD를 ADS 기준 주식 수로 넣으면 2.0배, 보통주 기준이면 8.0배 → 그 사이 4로 가름)
+# (모든 종목을 비중과 비교하는 검사는 쓰지 않음: 큰 종목은 QQQ가 비중을 깎고, 여러 주식 종류·ADR은 상장 주식만 세어 맞는 값도 2-3.6배 어긋남, 2026-11-18 확인)
+ADR_RATIO = {"PDD": 4}
+
+
+def adr_fix(fund, ndxw, series):
+    ref = []
+    for t, f in fund.items():
+        w = ndxw.get(t)
+        if f.get("sh") and w and w < 1 and t not in ADR_RATIO and series.get(t):
+            ref.append(f["sh"] * series[t][-1][3] / w)
+    if len(ref) < 10:
+        return
+    med = sorted(ref)[len(ref) // 2]
+    for t, k in ADR_RATIO.items():
+        f, w = fund.get(t), ndxw.get(t)
+        if not f or not f.get("sh") or f.get("adr") or not w or not series.get(t):
+            continue
+        x = f["sh"] * series[t][-1][3] / w / med
+        print(f"  ADR {t}: 시가총액÷비중이 다른 종목의 {x:.2f}배 (1 ADS = 보통주 {k}주)", flush=True)
+        if x >= k:
+            f["sh"] = round(f["sh"] / k)
+            f["sh1"] = round(f["sh1"] / k) if f.get("sh1") else f.get("sh1")
+            f["shq"] = [[d, round(v / k)] for d, v in f.get("shq") or []]
+            f["adr"] = k
+            print(f"  ADR {t}: 주식 수를 보통주 기준에서 ADS 기준으로 나눔(÷{k})", flush=True)
 
 
 def fetch_fx(currencies, prev_fx):
@@ -669,11 +712,11 @@ def main():
     wait_for_settle()
 
     series, failed = {}, []
-    symbols = MARKET + ALL
+    symbols = MARKET + SECTORS + ALL
     print(f"시세 받기: {len(symbols)}종목 (약 {len(symbols) * GAP / 60:.0f}분)", flush=True)
     for i, s in enumerate(symbols, 1):
         t0 = time.time()
-        rows = fetch_series(s, DAYS_MARKET if s in MARKET else DAYS_STOCK)
+        rows = fetch_series(s, DAYS_MARKET if s in MARKET or s in SECTORS else DAYS_STOCK)
         if rows:
             series[s] = rows
         else:
@@ -793,6 +836,7 @@ def main():
         print(f"  거래량 확인 기다리는 발표일 {len(pending)}건: {pending}", flush=True)
 
     fund = update_fund(prev.get("fund"), hist, series, today.isoformat())
+    adr_fix(fund, ndxw, series)
     curs = {f.get("cur") for f in fund.values() if re.fullmatch(r"[A-Z]{3}", f.get("cur") or "") and f.get("cur") != "USD"}
     if curs:
         print("환율 받기 (Twelve Data)", flush=True)
