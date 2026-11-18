@@ -574,6 +574,87 @@ def fetch_fx(currencies, prev_fx):
 HIST_DAYS = 400   # 차트에 노란 배경으로 칠할 지난 실적 발표일 범위
 AHEAD_DAYS = 60   # 다가오는 실적 일정 범위
 
+# ── 지난 실적 발표일 바로잡기: 먼저 적고, 며칠 뒤 거래량을 보고 고침(버리지 않음) ──
+# Alpha Vantage 일정은 추정일일 수 있음. 예정일이 지나면 그날을 바로 지난 발표일에 적고(재무 새 분기 확인이 늦어지지 않게)
+# earnPending에 남겨 둠. 예정일 앞뒤 EARN_WIN거래일 뒤까지 시세가 쌓이면, 그 안에서 실적 반응 거래량이
+# 50일 평균의 EARN_SPIKE배 이상이고 예정일 반응의 EARN_REL배 이상인 날이 따로 있으면 그날로 옮김. 아니면 예정일 그대로.
+# 반응일: 장 전 발표는 그날, 장 마감 뒤 발표는 다음 거래일, 모르면 두 날 중 큰 쪽.
+# 같은 종목에 45일 안 발표가 둘이면(한 분기에 두 번은 없음) 거래량 반응이 작은 쪽을 지움.
+EARN_WIN, EARN_SPIKE, EARN_REL = 3, 1.3, 1.3   # 지난 발표일 459건 시험: 맞는 날을 옮긴 것 2.8%, 2거래일 어긋난 날 되찾기 71-80%
+EARN_PENDING_DAYS = 15     # 이 기간 안에 판단할 시세가 안 쌓이면 예정일 그대로 확정
+EARN_DUP_DAYS = 45
+
+
+def _earn_react(rows, k, when, base):
+    """k번째 날에 발표했다면 그 반응 거래량 ÷ 기준 평균"""
+    days = [k] if when == "pre-market" else [k + 1] if when == "post-market" else [k, k + 1]
+    vs = [rows[j][4] for j in days if 0 <= j < len(rows)]
+    return max(vs) / base if vs and base > 0 else 0.0
+
+
+def settle_earn_date(rows, date, when=""):
+    """예정일 date를 그대로 둘지 옮길지 → 확정 날짜. 판단할 시세가 아직 모자라면 None"""
+    if not rows:
+        return None
+    i = next((k for k, r in enumerate(rows) if r[0] >= date), None)
+    if i is None or len(rows) <= i + EARN_WIN + 1 or i - EARN_WIN - 50 < 0:
+        return None
+    s = i - EARN_WIN
+    base = sum(r[4] for r in rows[s - 50:s]) / 50
+    r0 = _earn_react(rows, i, when, base)
+    best, rb = i, r0
+    for k in range(i - EARN_WIN, i + EARN_WIN + 1):
+        rk = _earn_react(rows, k, when, base)
+        if rk > rb:
+            best, rb = k, rk
+    if best != i and rb >= EARN_SPIKE and rb >= r0 * EARN_REL:
+        return rows[best][0]
+    return date
+
+
+def earn_dedupe(hist, series):
+    """같은 종목에 EARN_DUP_DAYS일 안 발표가 둘이면 거래량 반응이 작은 쪽을 지움(판단 못 하면 둘 다 둠)"""
+    out = {}
+    for s, ds in hist.items():
+        rows, ds = series.get(s) or [], sorted(set(ds))
+        def react(x):
+            i = next((k for k, r in enumerate(rows) if r[0] >= x), None)
+            if i is None or i < 50 or i + 1 >= len(rows):
+                return None
+            return _earn_react(rows, i, "", sum(r[4] for r in rows[i - 50:i]) / 50)
+        keep = []
+        for x in ds:
+            if keep and (dt.date.fromisoformat(x) - dt.date.fromisoformat(keep[-1])).days < EARN_DUP_DAYS:
+                a, b = react(keep[-1]), react(x)
+                if a is not None and b is not None:
+                    drop = x if b < a else keep[-1]
+                    print(f"  실적 {s}: {keep[-1]}·{x} 45일 안 두 번 → {drop} 지움(거래량 반응 {a:.2f}배·{b:.2f}배)", flush=True)
+                    if drop == keep[-1]:
+                        keep[-1] = x
+                    continue
+            keep.append(x)
+        out[s] = keep
+    return out
+
+
+def settle_pending(hist, pending, series, today):
+    """earnPending(먼저 적어 둔 발표일)을 거래량으로 확인해 hist에서 고침 → (hist, 남은 pending)"""
+    hist = {s: list(v) for s, v in hist.items()}
+    left = {}
+    for s, p in (pending or {}).items():
+        d0, when = p.get("d"), p.get("w", "")
+        if not d0:
+            continue
+        got = settle_earn_date(series.get(s), d0, when)
+        if got is None:
+            if (today - dt.date.fromisoformat(d0)).days < EARN_PENDING_DAYS:
+                left[s] = p
+            continue
+        if got != d0:
+            hist[s] = sorted({x for x in hist.get(s, []) if x != d0} | {got})
+            print(f"  실적 {s}: 예정일 {d0} → 거래량으로 {got}에 옮김", flush=True)
+    return earn_dedupe(hist, series), left
+
 
 def main():
     if not KEY:
@@ -679,6 +760,12 @@ def main():
     notices = sorted(notices, key=lambda n: n.get("date", ""), reverse=True)[:30]
 
     today = dt.date.today()
+    pending = dict(prev.get("earnPending") or {})
+    if "earnPending" not in prev:   # 처음 한 번: Alpha Vantage로 바꾼 뒤(2026-11-11부터) 확인 없이 적힌 발표일도 거래량으로 확인
+        for s, v in (prev.get("earnHist") or {}).items():
+            for x in v:
+                if x >= "2026-11-11":
+                    pending[s] = {"d": x, "w": ""}
     print("실적 일정 받기 (Alpha Vantage)", flush=True)
     av = fetch_earnings_av(ALL)
     if av is not None:
@@ -687,7 +774,9 @@ def main():
         hist = {s: list(v) for s, v in (prev.get("earnHist") or {}).items()}
         for s, e in (prev.get("earnings") or {}).items():
             if e.get("date") and e["date"] < today.isoformat():
-                hist.setdefault(s, []).append(e["date"])
+                hist.setdefault(s, []).append(e["date"])        # 먼저 적고(재무 새 분기 확인용), 며칠 뒤 거래량으로 확인
+                if e["date"] not in (prev.get("earnHist") or {}).get(s, []):
+                    pending[s] = {"d": e["date"], "w": e.get("time", "")}
         hist = {s: sorted({x for x in v if x >= hist_from}) for s, v in hist.items()}
         hist = {s: v for s, v in hist.items() if v}
         earnings = {}
@@ -699,6 +788,9 @@ def main():
         print(f"  다가오는 실적 {len(earnings)}종목, 지난 실적 {sum(len(v) for v in hist.values())}건", flush=True)
     else:
         hist, earnings, upto_new = earnings_nasdaq(prev, today)
+    hist, pending = settle_pending(hist, pending, series, today)
+    if pending:
+        print(f"  거래량 확인 기다리는 발표일 {len(pending)}건: {pending}", flush=True)
 
     fund = update_fund(prev.get("fund"), hist, series, today.isoformat())
     curs = {f.get("cur") for f in fund.values() if re.fullmatch(r"[A-Z]{3}", f.get("cur") or "") and f.get("cur") != "USD"}
@@ -719,6 +811,7 @@ def main():
         "earnings": earnings,
         "earnHist": hist,
         "earnHistUpTo": upto_new,
+        "earnPending": pending,
         "fund": fund,
         "fx": fx,
         "series": series,

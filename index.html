@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-18 20:24</title>
+<title>추세 대시보드 v2026-11-18 20:50</title>
 <!-- 차트 라이브러리: 저장소 안 사본을 먼저(외부 CDN이 막혀도 열리게), 없으면 unpkg -->
 <script src="vendor/lightweight-charts-4.2.0.standalone.production.js"></script>
 <script>window.LightweightCharts || document.write('<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"><\/script>');</script>
@@ -312,7 +312,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-18 20:24</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-18 20:50</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -718,12 +718,13 @@ function analyzeMarket(d, e) {
 }
 
 // 오닐식 가중 상대강도 점수 (최근 3개월 2배 가중)
+// 12개월(252거래일) 전 종가가 있어야 계산: 상장 1년이 안 된 종목은 다른 종목과 같은 기준이 아니라 RS를 매기지 않음(순위에서도 빠짐)
+const RS_FULL = 252;
 function rsScore(d, shift) {
   const i = d.length - 1 - shift;
-  if (i < 63) return null;
-  const c = d[i].c; let s = 0, w = 0;
-  for (const [n, wt] of [[63, 0.4], [126, 0.2], [189, 0.2], [252, 0.2]]) if (i - n >= 0) { s += wt * (c / d[i - n].c); w += wt; }
-  return s / w;
+  if (i < RS_FULL) return null;
+  const c = d[i].c;
+  return 0.4 * (c / d[i - 63].c) + 0.2 * (c / d[i - 126].c) + 0.2 * (c / d[i - 189].c) + 0.2 * (c / d[i - 252].c);
 }
 function ratings(scores) {
   const arr = Object.entries(scores).filter(([, v]) => v != null).sort((a, b) => a[1] - b[1]);
@@ -773,7 +774,7 @@ function lastPivot(d, bases) {
 // 매물대 베이스: 2단계 종목의 지금 베이스(형성) 또는 방금 돌파한 베이스(돌파)가 1년 최대 매물대 띠(volProfile bands[0])를 VPB_OVERLAP 이상 품음
 // 근거: 5년 백테스트(backtest/, 2021-12부터 2026-11까지) 2단계 피벗 돌파 중 이런 경우 56건 모의 매매 평균 +15.6% · 중앙 +11.5%, 아닌 경우 169건 +4.1% · −5.8% (문턱 50%)
 function vpBaseOf(x) {
-  const c = x.cls; if (!c || (c.rg && c.rg.r !== 2) || c.pos === "out") return null;
+  const c = x.cls; if (!c || !c.rg || c.rg.r !== 2 || c.pos === "out") return null;   // 상장 초기 · 1·3·4단계 제외
   const b = c.pos === "break" ? (x.lp ? { top: x.lp.top, bottom: x.lp.bottom } : null) : c.box;
   if (!b) return null;
   const d = x.d, vp = volProfile(d, Math.max(0, d.length - 252)); if (!vp || !vp.bands[0]) return null;
@@ -836,7 +837,7 @@ function trendTemplate(d, rs) {
 const ttTip = (t) => (t ? "트렌드 템플릿 " + t.pass + "/8" + (t.ok ? " 통과" : " · 못 맞춘 것: " + TT_NAMES.filter((_, i) => !t.f[i]).join(", ")) : "트렌드 템플릿: 데이터 230일 미만");
 
 // 판정 근거 한 줄 (크게 보기 · 툴팁): 2단계는 위치 이유, 1·3·4단계는 200일선 이유
-const reasonOf = (x) => (x.cls.rg && x.cls.rg.r !== 2 ? regimeReason(x.cls) : x.cls.reason + rgNote(x.cls.rg && (x.cls.rg.cand || x.cls.rg.cross >= 4 || x.cls.rg.byBreakout) ? x.cls.rg : null));
+const reasonOf = (x) => (isYoung(x.cls) ? "<b>상장 초기 " + x.d.length + "일</b> · 단계는 " + YOUNG_DAYS + "일, RS는 1년이 쌓인 뒤 판단 · " + x.cls.reason : x.cls.rg.r !== 2 ? regimeReason(x.cls) : x.cls.reason + rgNote(x.cls.rg && (x.cls.rg.cand || x.cls.rg.cross >= 4 || x.cls.rg.byBreakout) ? x.cls.rg : null));
 const agoTxt = (lp) => (lp.ago === 0 ? "오늘" : lp.ago < 10 ? lp.ago + "일 전" : Math.round(lp.ago / 5) + "주 전");
 
 // 돌파일(최근 15거래일 중 피벗을 처음 넘어 마감한 날) 거래량을 50일 평균과 비교
@@ -972,21 +973,29 @@ function classify(d, rs) {
 
 // ═════ 단계·위치 이름과 표시 ═════
 const POS_NAME = { form: "형성", break: "돌파", out: "이탈" };
-const posKey = (c) => (c.rg && c.rg.r !== 2 ? "r" + c.rg.r : c.pos);          // r1·r3·r4 또는 form·break·out
-const posLabel = (c) => (c.rg && c.rg.r !== 2 ? c.rg.r + "단계 " + RG_NAME[c.rg.r] : POS_NAME[c.pos]);
-const posQual = (c) => (c.rg && c.rg.r !== 2 ? "" : c.pos === "break" ? (c.chase ? "추격 금지" : "매수 범위") : c.pos === "form" && c.near ? "임박" : "");
-// 할 일 순서(작을수록 먼저): 돌파·매수 범위 → 형성·임박 → 형성 → 돌파·추격 금지 → 이탈 → 1·3·4단계
-const ORDER_NAME = ["돌파 · 매수 범위", "형성 · 임박", "형성", "돌파 · 추격 금지", "이탈", "1단계 소외기", "3단계 천장기", "4단계 하락기"];
+// 상장 초기: 일봉이 200일선 + 60일(regimeOf가 쓰는 길이)만큼 쌓이기 전. 단계를 판단하지 않고 매수 후보·매물대 베이스·50일선 눌림에서 뺌.
+// 첫 베이스 돌파(오닐·미너비니의 IPO 베이스)만 3층 전환 후보에 따로 묶어 보여 줌. RS는 12개월 수익이 생길 때(RS_FULL)부터 매김
+const YOUNG_DAYS = RG_MA + 60;
+const isYoung = (c) => !!c && !c.rg;
+const YOUNG_TIP = "상장 초기: 일봉이 " + YOUNG_DAYS + "일(200일선 + 60일) 쌓이기 전이라 단계를 판단하지 않음 · 매수 후보에서 빠짐";
+const RS_NA_TIP = "상장 1년이 안 돼 RS를 매기지 않음 · 12개월 수익이 생겨 다른 종목과 같은 기준이 될 때부터 표시";
+const posKey = (c) => (isYoung(c) ? "young" : c.rg.r !== 2 ? "r" + c.rg.r : c.pos);          // young · r1·r3·r4 또는 form·break·out
+const posLabel = (c) => (isYoung(c) ? "상장 초기" : c.rg.r !== 2 ? c.rg.r + "단계 " + RG_NAME[c.rg.r] : POS_NAME[c.pos]);
+const posQual = (c) => (!c.rg || c.rg.r !== 2 ? "" : c.pos === "break" ? (c.chase ? "추격 금지" : "매수 범위") : c.pos === "form" && c.near ? "임박" : "");
+// 할 일 순서(작을수록 먼저): 돌파·매수 범위 → 형성·임박 → 형성 → 돌파·추격 금지 → 이탈 → 1·3·4단계 → 상장 초기
+const ORDER_NAME = ["돌파 · 매수 범위", "형성 · 임박", "형성", "돌파 · 추격 금지", "이탈", "1단계 소외기", "3단계 천장기", "4단계 하락기", "상장 초기"];
 function orderOf(c) {
-  if (c.rg && c.rg.r !== 2) return c.rg.r === 1 ? 5 : c.rg.r === 3 ? 6 : 7;
+  if (isYoung(c)) return 8;
+  if (c.rg.r !== 2) return c.rg.r === 1 ? 5 : c.rg.r === 3 ? 6 : 7;
   return c.pos === "break" ? (c.chase ? 3 : 0) : c.pos === "form" ? (c.near ? 1 : 2) : 4;
 }
 const pivDist = (x) => (x.cls && x.cls.pivot ? x.d[x.d.length - 1].c / x.cls.pivot - 1 : null);
-const stageDot = (r) => '<i class="sd s' + (r || 0) + '" title="' + (r ? r + "단계 " + RG_NAME[r] + " · " + STAGE_SUB[r] : "단계 판단 불가(데이터 부족)") + '"></i>';
+const stageDot = (r) => '<i class="sd s' + (r || 0) + '" title="' + (r ? r + "단계 " + RG_NAME[r] + " · " + STAGE_SUB[r] : YOUNG_TIP) + '"></i>';
 const qualHtml = (q) => (q ? '<span class="pq ' + (q === "추격 금지" ? "chase" : q === "임박" ? "near" : "buy") + '">' + q + "</span>" : "");
 // 단계·위치 칸: 단계 점 + 위치(형성·돌파·이탈) + 매수 범위·추격 금지·임박 + 피벗 대비
 function posCell(x) {
   const c = x.cls, g = c.rg, r = g ? g.r : null, mu = (s) => '<span class="muted">' + s + "</span>";
+  if (!g) return '<span title="' + YOUNG_TIP + '">' + stageDot(0) + "<b>상장 초기</b> " + mu(x.d.length + "일 · " + POS_NAME[c.pos]) + "</span>";
   if (r && r !== 2) return '<span title="200일선 대비 ' + pctf(g.dist) + " · 선 기울기 " + pctf(g.s) + '(20일)">' + stageDot(r) + "<b>" + r + "단계 " + RG_NAME[r] + "</b></span>";
   const v = pivDist(x), q = posQual(c);
   const vh = v == null ? " " + mu("피벗 없음") : ' <span class="' + (v > 0 ? "chg-up" : "") + '" title="피벗 ' + c.pivot.toFixed(2) + ' 대비">' + pctf(v) + "</span>";
@@ -1012,7 +1021,7 @@ function fillNow(x) {
   x.newHigh = d[nn - 1].h >= hi52 * 0.999; x.newLow = d[nn - 1].l <= lo52 * 1.001;
   x.rsChg = x.rsThen != null ? x.rs - x.rsThen : null;
   x.soundBase = x.cls.pos !== "out";        // 건전한 베이스: 이탈이 아님
-  x.pre = x.rs >= PRE_RS_MIN && x.rs < RS_LEADER && x.rsChg != null && x.rsChg >= PRE_RS_GAIN && x.above50 && x.soundBase;
+  x.pre = x.rs != null && x.rs >= PRE_RS_MIN && x.rs < RS_LEADER && x.rsChg != null && x.rsChg >= PRE_RS_GAIN && x.above50 && x.soundBase;
 }
 function computeView(k) {
   const cut = (d) => (k ? d.slice(0, d.length - k) : d);
@@ -1040,7 +1049,7 @@ function computeView(k) {
   if (hist.length) have.forEach((t) => { info[t].rsHist = hist.map((r) => r[t] ?? null); });
   const groups = UNIVERSE.map(([g, items]) => {
     const ts = items.map(([t]) => t).filter((t) => info[t]);
-    const avg = (f) => (ts.length ? ts.reduce((s, t) => s + (f(info[t]) ?? 0), 0) / ts.length : 0);
+    const avg = (f) => { const v = ts.map((t) => f(info[t])).filter((z) => z != null); return v.length ? v.reduce((s, z) => s + z, 0) / v.length : 0; };   // RS 없는 상장 초기 종목은 평균에서 뺌
     const h = hist.map((r) => { const v = ts.filter((t) => r[t] != null); return v.length ? v.reduce((s, t) => s + r[t], 0) / v.length : null; });
     return { g, n: ts.length, rs: avg((x) => x.rs), rsThen: avg((x) => x.rsThen ?? x.rs), hist: h,
              above: ts.filter((t) => info[t].above50).length, aboveThen: ts.filter((t) => info[t].above50Then).length,
@@ -1401,7 +1410,7 @@ function earnBadge(t) {
   return '<span class="badge earn' + (dd > EARN_WARN_DAYS ? " far" : "") + '" title="실적 발표 ' + md(EARN[t].date) + '">실적 D-' + dd + "</span>";
 }
 // 50일선 눌림: 2단계에서 돌파한 적이 있는 종목이 50일선 위 0-5%까지 눌림(매수 범위·임박이 아닐 때만)
-const pull50 = (x) => !!(x && x.cls && (!x.cls.rg || x.cls.rg.r === 2) && x.cls.pos !== "out" && !(x.cls.pos === "break" && !x.cls.chase) &&
+const pull50 = (x) => !!(x && x.cls && x.cls.rg && x.cls.rg.r === 2 && x.cls.pos !== "out" && !(x.cls.pos === "break" && !x.cls.chase) &&
   !(x.cls.pos === "form" && x.cls.near) && x.lp && x.dist50 != null && x.dist50 >= 0 && x.dist50 <= PULLBACK_NEAR);
 // 꼬리표 (모든 표 공통): NEW · 매물대 베이스 · 50일선 눌림 · 흔들림 · 실적 D-n
 function tagsOf(x) {
@@ -1563,14 +1572,14 @@ function holdWarns(t) {
   const hp = holdPlan(x);
   if (hp && price < hp.stop) w.push("손절선 아래");
   if (x.dist50 != null && x.dist50 < 0) w.push("50일선 아래");
-  if (x.rs < RS_LEADER) w.push("RS " + RS_LEADER + " 아래");
+  if (x.rs != null && x.rs < RS_LEADER) w.push("RS " + RS_LEADER + " 아래");
   if (x.lp && price < x.lp.top && c.pos !== "out") w.push("돌파 피벗 아래");
   if (x.lp && x.lp.ago <= 20 && x.below20 && c.pos !== "out") w.push("20일선 아래");
   const dd = earnDays(t);
   if (dd != null && dd >= 0 && dd <= EARN_WARN_DAYS) w.push("실적 D-" + dd);
   return w;
 }
-const rsCell = (x) => "<b>" + x.rs + "</b> " + (x.rsChg == null ? "" : x.rsChg > 0 ? '<span class="chg-up">▲' + x.rsChg + "</span>" : x.rsChg < 0 ? '<span class="chg-down">▼' + -x.rsChg + "</span>" : "");
+const rsCell = (x) => x.rs == null ? '<span class="muted" title="' + RS_NA_TIP + '">-</span>' : "<b>" + x.rs + "</b> " + (x.rsChg == null ? "" : x.rsChg > 0 ? '<span class="chg-up">▲' + x.rsChg + "</span>" : x.rsChg < 0 ? '<span class="chg-down">▼' + -x.rsChg + "</span>" : "");
 const pcCell = (t) => { const w = periodStats(t).pc; return w == null ? '<span class="muted">-</span>' : pctCell(w / 100); };   // 4주 등락률
 const pctCell = (v) => (v == null ? '<span class="muted">-</span>' : '<b class="' + (v >= 0 ? "chg-up" : "chg-down") + '">' + pctf(v) + "</b>");
 const STAR2 = '<span class="star lv2" style="cursor:default">★★</span>', STAR1 = '<span class="star lv1" style="cursor:default">★</span>';
@@ -1581,7 +1590,9 @@ function todoOf(x, ms) {
   const mu = (s) => '<span class="muted">' + s + "</span>";
   const ed = earnDays(x.t), eN = ed != null && ed >= 0 && ed <= EARN_WARN_DAYS ? " · 실적 D-" + ed + " 지난 뒤" : "";
   const MK = ms === "wait" ? "시장 대기" : ms === "stop" ? "시장 방어" : "시장 판정 전";
-  if (c.rg && c.rg.r !== 2) return mu(c.rg.r === 1 ? "사지 않음 · 2단계 전환 관찰" : c.rg.r === 3 ? "신규 매수 안 함 · 보유는 줄이기 검토" : "사지 않음 · 보유는 정리");
+  if (isYoung(c)) return youngBreak(x) ? (ms === "go" ? "<b>상장 초기 베이스 돌파</b> · 단계·RS 판단 전, 차트로 직접 판단" + stopTxt(c) + eN : mu("상장 초기 베이스 돌파 (" + MK + ")"))
+    : mu("상장 초기 · 첫 베이스 돌파 관찰 (" + x.d.length + "/" + YOUNG_DAYS + "일)");
+  if (c.rg.r !== 2) return mu(c.rg.r === 1 ? "사지 않음 · 2단계 전환 관찰" : c.rg.r === 3 ? "신규 매수 안 함 · 보유는 줄이기 검토" : "사지 않음 · 보유는 정리");
   if (c.pos === "out") return mu(c.state === "deep" ? "베이스 실패 · 새 베이스까지 제외" : "새 저점 확정(5% 반등)까지 제외");
   if (c.pos === "break" && !c.chase) return ms === "go" ? "<b>매수 검토</b> · 돌파 거래량 확인" + stopTxt(c) + eN : mu("사지 않음 (" + MK + ") · 회복 시 재검토");
   if (pull50(x)) return ms === "go" ? "<b>50일선 눌림</b> · 반등 시 매수 검토" + eN : mu("50일선 지지 관찰 (" + MK + ")");
@@ -1894,7 +1905,7 @@ function renderPhase() {
   el.title = "2층 흐름 꼬리표(유출 본격 산업 → 유입 본격 산업, 4주 기준)와 XLY/XLP 방향으로 자동으로 만든 요약";
   el.hidden = false;
 }
-// 단계별 종목 수 [판단 불가, 1, 2, 3, 4] (g를 주면 그 산업만). 4주 전 비교는 PREV_VIEW로
+// 단계별 종목 수 [상장 초기, 1, 2, 3, 4] (g를 주면 그 산업만). 4주 전 비교는 PREV_VIEW로
 const stageCounts = (v, g) => { const st = [0, 0, 0, 0, 0]; if (v) Object.values(v.info).forEach((x) => { if (!g || TICKERS[x.t].group === g) st[x.cls && x.cls.rg ? x.cls.rg.r : 0]++; }); return st; };
 const stageOfT = (v, t) => (v && v.info[t] && v.info[t].cls && v.info[t].cls.rg ? v.info[t].cls.rg.r : null);
 // 산업 안 종목의 단계 분포 막대 (1 회색 · 2 초록 · 3 주황 · 4 회청색)
@@ -1908,13 +1919,15 @@ function groupDetail(x) {
     const ys = members.filter((y) => y.cls.rg && y.cls.rg.r === r).sort((a, b) => orderOf(a.cls) - orderOf(b.cls) || b.rs - a.rs);
     return ys.length ? "<div>" + stageDot(r) + "<b>" + r + "단계 " + RG_NAME[r] + "</b> " + ys.map((y) => tk(y.t, r === 2 ? POS_NAME[y.cls.pos] + (posQual(y.cls) ? "·" + posQual(y.cls) : "") : "")).join(", ") + "</div>" : "";
   }).join("");
+  const yg = members.filter((y) => isYoung(y.cls));
+  const ygTxt = yg.length ? '<div title="' + YOUNG_TIP + '">' + stageDot(0) + "<b>상장 초기</b> " + yg.map((y) => tk(y.t, y.d.length + "일 · " + POS_NAME[y.cls.pos])).join(", ") + "</div>" : "";
   const ins = mv.filter((m) => m.kind === "in"), outs = mv.filter((m) => m.kind === "out"), mids = mv.filter((m) => m.kind === "mid");
   const mvTxt = (ins.length ? '<span class="chg-up">편입 ▲</span> ' + ins.map((m) => tk(m.t, "RS " + m.rs0 + "→" + m.rs1)).join(", ") : "") +
     (outs.length ? (ins.length ? " · " : "") + '<span class="chg-down">편출 ▼</span> ' + outs.map((m) => tk(m.t, "RS " + m.rs0 + "→" + m.rs1)).join(", ") : "") +
     (mids.length ? (ins.length || outs.length ? " · " : "") + "위치 바뀜 " + mids.map((m) => tk(m.t, m.what)).join(", ") : "");
   const sm = members.map((y) => [y.t, stageOfT(PREV_VIEW, y.t), stageOfT(VIEW, y.t)]).filter(([, a, b]) => a && b && a !== b);
   const smTxt = sm.length ? "<div>" + '<span class="muted">4주 전 대비 단계 바뀜:</span> ' + sm.map(([t, a, b]) => tk(t, a + "→" + b + "단계")).join(", ") + "</div>" : "";
-  return rows + smTxt + '<div class="muted">4주 주도주(RS ' + RS_LEADER + "+) 변화: " + (mvTxt ? "</div><div>" + mvTxt : "없음") + "</div>" +
+  return rows + ygTxt + smTxt + '<div class="muted">4주 주도주(RS ' + RS_LEADER + "+) 변화: " + (mvTxt ? "</div><div>" + mvTxt : "없음") + "</div>" +
     '<div class="muted">아래 3층 종목 표가 이 산업만 보여 줍니다 · 행을 다시 누르면 해제</div>';
 }
 function renderFlow() {
@@ -2004,7 +2017,7 @@ function breadthHtml() {
   const st = stageCounts(VIEW), st0 = PREV_VIEW ? stageCounts(PREV_VIEW) : null;
   const nh = all.filter((x) => x.newHigh).length, nl = all.filter((x) => x.newLow).length;
   return "<b>100종목 단계</b> " + stageBar(st, 140) + " " + [1, 2, 3, 4].map((r) => stageDot(r) + r + "단계 " + RG_NAME[r] + " <b>" + st[r] + "</b>" + (st0 ? " " + chgSpan(st[r] - st0[r], "±0") : "")).join(" · ") +
-    (st0 ? ' <span class="muted">(4주 전 대비)</span>' : "") + (st[0] ? ' · <span class="muted">판단 불가 ' + st[0] + "</span>" : "") + ' <span class="muted">· 52주 신고가 ' + nh + " · 신저가 " + nl + "</span>";
+    (st0 ? ' <span class="muted">(4주 전 대비)</span>' : "") + (st[0] ? ' · ' + stageDot(0) + '<span class="muted" title="' + YOUNG_TIP + '">상장 초기 ' + st[0] + "</span>" : "") + ' <span class="muted">· 52주 신고가 ' + nh + " · 신저가 " + nl + "</span>";
 }
 function updateBreadth() { const el = document.getElementById("breadth"); if (el) el.innerHTML = breadthHtml(); }
 
@@ -2021,7 +2034,7 @@ const ST_COLS = [   // [키, 제목, 정렬값(없으면 정렬 안 함), 첫 �
   ["pc", "4주 등락", (x) => periodStats(x.t).pc ?? -999, -1, "20거래일 등락률"],
   ["qw", "비중", (x) => NDXW[x.t] ?? -1, -1, "나스닥100(QQQ) 안 비중(%)"],
   ["qi", "영향", (x) => { const q = qqqImpact(x.t); return q && q.c != null ? q.c : -999; }, -1, "QQQ 영향: 비중 × 4주 등락률 = 이 종목이 지난 4주 동안 QQQ를 몇 %p 움직였나"],
-  ["rs", "RS (4주)", (x) => x.rs, -1, "RS 순위(1-99)와 4주 변화"],
+  ["rs", "RS (4주)", (x) => x.rs ?? -1, -1, "RS 순위(1-99)와 4주 변화 · 상장 1년이 안 된 종목은 -"],
   ["rev", "매출", (x) => { const f = fundOf(x.t); return f && f.g0 != null ? f.g0 : -999; }, -1, "최근 분기 매출 전년 대비(YoY) · 아래: 직전 분기 YoY와 차이(▲ 가속 · ▼ 감속)"],
   ["psr", "PSR", (x) => { const f = fundOf(x.t); return f && f.psr != null ? f.psr : -999; }, -1, "주가매출비율 = 오늘 시가총액 ÷ 최근 4개 분기 매출 합 · 아래: 직전 분기 실적 발표 다음 날 PSR과 차이"],
   ["bd", "꼬리표", null, 0, ""],
@@ -2072,7 +2085,7 @@ function extraInfo(t) {
   const memo = WHALE_INFO[t];
   if (memo && memo.asOf === VIEW.asOf && memo.n === d.length) return memo.x;
   const cl = d.map((r) => r.c), m50 = smaArr(cl, 50), nn = d.length;
-  const x = { t, d, rs: rsAmong(rsScore(d, 0), 0) ?? 50, rsThen: rsAmong(rsScore(d, 20), 20), above50: m50[nn - 1] != null && cl[nn - 1] > m50[nn - 1] };
+  const x = { t, d, rs: rsAmong(rsScore(d, 0), 0), rsThen: rsAmong(rsScore(d, 20), 20), above50: m50[nn - 1] != null && cl[nn - 1] > m50[nn - 1] };
   x.cls = classify(d, x.rs);
   fillNow(x);
   WHALE_INFO[t] = { asOf: VIEW.asOf, n: d.length, x };
@@ -2242,15 +2255,18 @@ function fitCols() {
 const VIEWS = [["buy", "매수 후보", "2단계 · RS 70 이상 · 돌파(매수 범위) · 형성(임박)"],
                ["vpb", "매물대 베이스", "2단계 중 1년 동안 거래가 가장 많이 쌓인 띠가 지금 베이스 안에 있는 종목 · 할 일 순서로 묶음"],
                ["lead", "주도주", "RS 80 이상 · 할 일 순서로 묶음 · 1·3·4단계는 접어 둠"],
-               ["turn", "전환 후보", "2단계로 넘어가는 종목(최근 돌파 · 2단계 후보) + 예비 주도주(RS 60-79, 4주 RS +10 이상, 4단계 제외)"],
+               ["turn", "전환 후보", "2단계로 넘어가는 종목(최근 돌파 · 2단계 후보) + 예비 주도주(RS 60-79, 4주 RS +10 이상, 4단계 제외) + 상장 초기 베이스 돌파"],
                ["all", "전체 100", "나스닥100 전체 · RS 순"]];
 let STOCK_VIEW = "buy", STOCK_Q = "";
 try { const v = localStorage.getItem("td2_view"); if (VIEWS.some((z) => z[0] === v)) STOCK_VIEW = v; } catch (e) {}
 const inGroup = (x) => !selectedGroup || TICKERS[x.t].group === selectedGroup;
-const is2 = (x) => !!(x.cls && (!x.cls.rg || x.cls.rg.r === 2));
+const is2 = (x) => !!(x.cls && x.cls.rg && x.cls.rg.r === 2);   // 상장 초기(단계 판단 전)는 2단계로 보지 않음
 const isBuy = (x) => is2(x) && x.rs >= BUY_RS_MIN && x.cls.pos !== "out" && ((x.cls.pos === "break" && !x.cls.chase) || (x.cls.pos === "form" && x.cls.near));
-function turnKind(x) {   // 0 최근 돌파로 2단계 · 1 1·3단계에서 2단계 후보 · 2 예비 주도주(4단계 제외)
+// 상장 초기 첫 베이스 돌파(매수 범위): 단계·RS가 없어 매수 후보에는 넣지 않고 여기 따로 보여 줌
+const youngBreak = (x) => isYoung(x.cls) && x.cls.pos === "break" && !x.cls.chase && x.cls.pivot != null;
+function turnKind(x) {   // 0 최근 돌파로 2단계 · 1 1·3단계에서 2단계 후보 · 2 예비 주도주(4단계 제외) · 3 상장 초기 베이스 돌파
   const g = x.cls && x.cls.rg;
+  if (youngBreak(x)) return 3;
   if (g && g.byBreakout) return 0;
   if (g && (g.r === 1 || g.r === 3) && g.cand === 2) return 1;
   if (x.pre && !(g && g.r === 4)) return 2;
@@ -2280,7 +2296,7 @@ const VIEW_OPTS = {
       : i === 3 ? (pull50(b) ? 1 : 0) - (pull50(a) ? 1 : 0) || (a.dist50 ?? 9) - (b.dist50 ?? 9) : b.rs - a.rs;
     return ORDER_NAME.map((nm, i) => ({ key: i, label: nm, items: (by[i] || []).sort(inSec(i)), collapsed: i >= 5, fold: i >= 4 })).filter((g) => g.items.length);
   } },
-  turn: { empty: "지금 전환 후보가 없습니다.", sections: (L) => ["최근 베이스 돌파로 2단계", "1·3단계 → 2단계 후보 (새 조건 " + RG_HOLD + "거래일 채우는 중)", "예비 주도주 (RS 60-79, 4주 RS +10 이상)"].map((label, k) => ({
+  turn: { empty: "지금 전환 후보가 없습니다.", sections: (L) => ["최근 베이스 돌파로 2단계", "1·3단계 → 2단계 후보 (새 조건 " + RG_HOLD + "거래일 채우는 중)", "예비 주도주 (RS 60-79, 4주 RS +10 이상)", "상장 초기 베이스 돌파 (단계·RS 판단 전)"].map((label, k) => ({
     key: k, label, items: L.filter((x) => turnKind(x) === k).sort(k === 1 ? (a, b) => b.cls.rg.days - a.cls.rg.days || b.rs - a.rs : (a, b) => (b.rsChg ?? 0) - (a.rsChg ?? 0)) })).filter((g) => g.items.length) },
   all: { cut: true, order: (x) => -x.rs },
 };
@@ -2372,7 +2388,7 @@ function openModal(t) {
   if (!x) return;
   const cls = x.cls || classify(x.d, x.rs);
   document.getElementById("mName").innerHTML = starHtml(t) + TICKERS[t].name + '<span class="ticker">' + t + "</span>" + tagsOf(x);
-  document.getElementById("mTag").innerHTML = TICKERS[t].group + " · RS <b>" + x.rs + "</b> · " + (cls.rg ? stageDot(cls.rg.r) + cls.rg.r + "단계 " + RG_NAME[cls.rg.r] : "") + (cls.rg && cls.rg.r !== 2 ? "" : " · <b>" + POS_NAME[cls.pos] + "</b> " + qualHtml(posQual(cls)));
+  document.getElementById("mTag").innerHTML = TICKERS[t].group + " · RS " + (x.rs == null ? '<span class="muted" title="' + RS_NA_TIP + '">-</span>' : "<b>" + x.rs + "</b>") + " · " + (isYoung(cls) ? stageDot(0) + "상장 초기 " + x.d.length + "일 · " + POS_NAME[cls.pos] : cls.rg ? stageDot(cls.rg.r) + cls.rg.r + "단계 " + RG_NAME[cls.rg.r] : "") + (!cls.rg || cls.rg.r !== 2 ? "" : " · <b>" + POS_NAME[cls.pos] + "</b> " + qualHtml(posQual(cls)));
   document.getElementById("mReason").innerHTML = x.cls ? reasonOf(x) : cls.reason;
   renderProfile(t);
   const tel = document.getElementById("mTT");
@@ -2704,7 +2720,7 @@ function buildHelp() {
 <tr><td>매수 후보</td><td>2단계 상승기 · RS ${BUY_RS_MIN} 이상 중에서 <b>돌파(매수 범위)</b>, <b>형성(임박)</b>. "피벗 위 · 매수 범위"와 "피벗 아래 · 돌파 대기"로 나누고, 각각 <b>매물대 베이스</b> 종목을 먼저, 그다음 피벗에 가까운 순으로 놓습니다. 처음 열면 이 보기가 나옵니다.</td></tr>
 <tr><td>매물대 베이스</td><td>2단계 종목 중 <b>매물대 베이스</b> 꼬리표가 붙은 종목만(RS 제한 없음). 할 일 순서(돌파·매수 범위 → 형성·임박 → 형성 → 돌파·추격 금지)로 묶고, 묶음 안은 피벗에 가까운 순입니다. 꼬리표 뜻과 근거는 아래 꼬리표 표를 보세요.</td></tr>
 <tr><td>주도주</td><td>RS ${RS_LEADER} 이상 전부. 할 일 순서(돌파·매수 범위 → 형성·임박 → 형성 → 돌파·추격 금지 → 이탈 → 1·3·4단계)로 묶습니다. 1·3·4단계 묶음은 접어 두고, 묶음 제목을 누르면 펼칩니다.</td></tr>
-<tr><td>전환 후보</td><td>2단계로 넘어가는 종목: ① 최근 20거래일 안에 베이스를 돌파해 2단계가 된 종목 ② 1·3단계에서 2단계 조건이 이어지는 중인 종목(${RG_HOLD}거래일을 채우는 중) ③ 예비 주도주(RS ${PRE_RS_MIN}-${RS_LEADER - 1}, 4주 사이 RS +${PRE_RS_GAIN} 이상, 50일선 위, 이탈 아님, 4단계 제외).</td></tr>
+<tr><td>전환 후보</td><td>2단계로 넘어가는 종목: ① 최근 20거래일 안에 베이스를 돌파해 2단계가 된 종목 ② 1·3단계에서 2단계 조건이 이어지는 중인 종목(${RG_HOLD}거래일을 채우는 중) ③ 예비 주도주(RS ${PRE_RS_MIN}-${RS_LEADER - 1}, 4주 사이 RS +${PRE_RS_GAIN} 이상, 50일선 위, 이탈 아님, 4단계 제외) ④ 상장 초기 베이스 돌파(단계·RS 판단 전 종목이 첫 베이스를 매수 범위로 돌파).</td></tr>
 <tr><td>전체 100</td><td>나스닥100 전부, RS 높은 순. 주황 구분선 위가 주도주(RS ${RS_LEADER} 이상)입니다.</td></tr>
 </table>
 <p><b>칸</b>: ★ · 티커 · 산업 · 단계·위치 · RS(4주) · 4주 등락 · 비중 · 영향 · 매출 · PSR · 6개월 · 다음 할 일 · 꼬리표. 4층 내 종목도 같은 칸입니다. 숫자 칸은 내용에 맞춘 고정 폭이고, 단계·위치 · 다음 할 일 · 꼬리표는 지금 보이는 글에 맞춰 폭이 바뀝니다(남는 폭은 맨 오른쪽 꼬리표 칸으로, 화면이 좁으면 넘치는 글은 말줄임). 칸 제목을 누르면 큰 순(글자 칸은 가나다순), 한 번 더 누르면 반대, 한 번 더 누르면 보기의 기본 순서로 돌아갑니다. 줄을 누르면 일봉 차트를 크게 보고, 마우스를 올리면 판정 근거가 보입니다.</p>
@@ -2727,6 +2743,7 @@ function buildHelp() {
 <tr><td>${stageDot(2)}2단계 상승기</td><td><b>매집.</b> 주가가 200일선 위이고 선이 오름. 큰손이 사 모으며 오르는 구간. 아래 위치(형성·돌파·이탈)로 나눕니다. <b>여기서만 매수.</b></td></tr>
 <tr><td>${stageDot(3)}3단계 천장기</td><td><b>분산.</b> 오름세가 멈추고 200일선이 평평해지거나 주가가 선 아래로 내려옴. 큰손이 팔아 넘기는 구간(1층 "분산일"과 같은 현상). <b>할 일: 신규 매수 안 함, 보유는 줄이기 검토.</b></td></tr>
 <tr><td>${stageDot(4)}4단계 하락기</td><td><b>투매.</b> 주가가 200일선 아래이고 선이 내림. <b>할 일: 사지 않음, 보유는 정리.</b> 이 단계로 내려가는 것은 날짜를 기다리지 않고 바로 반영합니다.</td></tr>
+<tr><td>${stageDot(0)}상장 초기</td><td>일봉이 ${YOUNG_DAYS}일(200일선 + 60일) 쌓이기 전이라 <b>단계를 판단하지 않습니다.</b> RS도 1년이 쌓인 뒤부터 매깁니다. 매수 후보 · 매물대 베이스 · 50일선 눌림에서 빠지고, 첫 베이스를 매수 범위로 돌파하면 3층 <b>전환 후보</b>의 "상장 초기 베이스 돌파"에 따로 보여 줍니다(오닐·미너비니의 IPO 베이스). 단계·RS 없이 차트로 직접 판단하세요.</td></tr>
 <tr><td>단계가 바뀌는 때</td><td>새 단계 조건이 <b>${RG_HOLD}거래일 연속</b> 이어져야 바뀝니다. 예외: 4단계로 내려가는 것, 그리고 1·3단계에서 최근 20거래일 안에 베이스를 돌파해 그 피벗 위에 있고 200일선이 위·상승 중이면 2단계로 바로 올림(와인스타인: 저항 구간 돌파가 2단계의 시작). 다른 단계 조건이 이어지는 중이면 "3단계 후보 6/10일"처럼 근거에 보여 줍니다. 최근 60거래일에 200일선을 4번 이상 넘나들면 <span class="badge tg">흔들림</span>이 붙습니다.</td></tr>
 </table>
 <h4>2단계 안의 위치 · 형성 → 돌파 → 형성 → 돌파 → … → 이탈 → 형성</h4>
@@ -2794,7 +2811,7 @@ function buildHelp() {
 <h3 id="h-rs">RS 계산법 <small>IBD RS 등급의 공개 근사식</small></h3>
 <p><b>1단계 · 점수</b>: 최근 3·6·9·12개월(63·126·189·252거래일) 수익을 가중 평균합니다.</p>
 <div class="q2">점수 = 0.4 × (오늘 ÷ 3개월 전) + 0.2 × (오늘 ÷ 6개월 전) + 0.2 × (오늘 ÷ 9개월 전) + 0.2 × (오늘 ÷ 12개월 전)</div>
-<p>최근 3개월은 네 구간 모두에 들어가므로 실제 비중이 가장 큽니다(대략 최근 분기 45% · 그 전 27% · 18% · 가장 오래된 분기 9%). 상장 1년이 안 된 종목은 있는 구간만으로 비중을 다시 맞추고, 최소 3개월은 있어야 계산합니다.</p>
+<p>최근 3개월은 네 구간 모두에 들어가므로 실제 비중이 가장 큽니다(대략 최근 분기 45% · 그 전 27% · 18% · 가장 오래된 분기 9%). 상장 1년(${RS_FULL}거래일)이 안 된 종목은 RS를 매기지 않고(<b>-</b>) 순위에서도 뺍니다. 12개월 수익이 생겨 다른 종목과 같은 기준이 될 때부터 표시합니다.</p>
 <p><b>2단계 · 순위</b>: 나스닥100 안에서 점수 순으로 줄 세워 1(맨 아래)-99(맨 위)로 고르게 매깁니다. <b>RS 4주 변화</b>는 20거래일 전 시점으로 같은 계산을 해서 뺀 값입니다.</p>
 <p><b>왜 이 방법인가</b>: IBD는 RS 등급을 "최근 12개월 주가 성과의 순위, 최근 3개월에 더 큰 비중"이라고만 밝히고 정확한 식은 공개하지 않습니다. 위 식은 그 정의를 옮긴 가장 널리 쓰이는 공개 근사식(트레이딩뷰·ThinkorSwim의 IBD식 RS 지표)입니다. 오닐·미너비니의 기준(RS ${RS_LEADER} 이상, 가급적 80-90대)을 그대로 쓸 수 있고, 최근 가속을 반영해 주도주 교체를 빨리 잡습니다. 단순 12개월 수익률은 오래전 급등이 남아 교체를 늦게 반영하고, 학술 모멘텀(최근 1개월 제외)은 돌파 매매에서 핵심인 최근 강세를 빼 버립니다.</p>
 <table>
@@ -2828,7 +2845,7 @@ function buildHelp() {
 
 <h3 id="h-limits">한계</h3>
 <p>분산일, 팔로스루 데이, 베이스, 단계는 모두 <b>정해진 규칙으로 계산한 근사치</b>입니다. 사람이 차트를 보고 긋는 베이스와 다를 수 있습니다. 이 화면은 후보를 걸러 주는 역할만 하고, 최종 판단은 차트로 직접 하세요.</p>
-<p>분산일은 IBD처럼 거래소 전체 거래량이 아니라 QQQ 자체 거래량으로 셉니다. 최근 상장 종목은 데이터가 짧아 RS와 200일선이 불완전할 수 있습니다. 나스닥100 구성종목이 바뀌면(매년 12월 정기 변경 등) 종목 목록을 고쳐야 합니다.</p>`;
+<p>분산일은 IBD처럼 거래소 전체 거래량이 아니라 QQQ 자체 거래량으로 셉니다. 상장 1년이 안 된 종목은 "상장 초기"로 따로 두고 단계·RS를 매기지 않습니다. 나스닥100 구성종목이 바뀌면(매년 12월 정기 변경 등) 종목 목록을 고쳐야 합니다.</p>`;
   document.getElementById("helpClose").addEventListener("click", closeHelp);
   document.querySelectorAll("#helpPanel .toc a").forEach((a) => a.addEventListener("click", (e) => {
     e.preventDefault(); jumpHelp(a.getAttribute("href").slice(1));
