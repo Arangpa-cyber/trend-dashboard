@@ -11,7 +11,7 @@ const D = {}; for (const t of Object.keys(SER)) D[t] = toD(SER[t]);
 const Q = D.QQQ, QE = D.QQQE, dates = Q.map((r) => r.t);
 const NS = A.DAYS_STOCK, NM = A.DAYS_MARKET;
 const START = +(process.argv[3] || Math.max(NS, 300));
-const HOLD = 60, HARD = 0.10, RS_MIN = A.BUY_RS_MIN ?? A.CHEAT_RS_MIN;
+const HOLD = 60, HARD = 0.10, RS_MIN = 70;   // 2026-11-16 시험 때 매수 후보 RS 하한(BUY_RS_MIN, 2026-11-19 화면에서는 주도 산업 · RS 80+로 바뀜). 예전 결과를 다시 낼 수 있게 고정
 const idxOf = {}; for (const t of TK) { idxOf[t] = {}; D[t].forEach((r, i) => (idxOf[t][r.t] = i)); }
 const qIdx = {}; Q.forEach((r, i) => (qIdx[r.t] = i));
 
