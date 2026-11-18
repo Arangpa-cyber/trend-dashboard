@@ -1,0 +1,11 @@
+{
+ "investors": [
+  {
+   "id": "duquesne",
+   "name": "드러켄밀러",
+   "fund": "Duquesne Family Office",
+   "cik": "1536411",
+   "latest": "duquesne/2026Q3.json"
+  }
+ ]
+}
