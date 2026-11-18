@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-18 12:40</title>
-<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<title>추세 대시보드 v2026-11-18 20:24</title>
+<!-- 차트 라이브러리: 저장소 안 사본을 먼저(외부 CDN이 막혀도 열리게), 없으면 unpkg -->
+<script src="vendor/lightweight-charts-4.2.0.standalone.production.js"></script>
+<script>window.LightweightCharts || document.write('<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"><\/script>');</script>
 <style>
   :root {
     --bg: #f6f6f4; --card: #ffffff; --text: #1a1a1a; --sub: #777; --line: #e3e3e0; --accent: #c2410c;
@@ -310,7 +312,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-18 12:40</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-18 20:24</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -483,9 +485,11 @@ function myLoad() {
   const m = location.hash.match(/my=([^&]*)/);    // 다른 기기에서 보낸 설정 링크
   if (m) {
     const [h, w, bs] = decodeURIComponent(m[1]).split(";");
-    const ok = (s) => (s || "").split(",").map((x) => x.trim().toUpperCase()).filter((x) => TICKERS[x]);
+    // 큰손(5층) 종목은 큰손 파일을 읽은 뒤에야 TICKERS에 들어오므로 티커 모양만 확인
+    const isTk = (x) => !!TICKERS[x] || /^[A-Z][A-Z0-9.\-]{0,6}$/.test(x);
+    const ok = (s) => (s || "").split(",").map((x) => x.trim().toUpperCase()).filter(isTk);
     MY = { hold: ok(h), watch: ok(w).filter((x) => !ok(h).includes(x)) };
-    if (bs != null) { BUY = {}; bs.split(",").forEach((z) => { const [t, pr, dt] = z.split("@"); if (TICKERS[t] && +pr > 0) BUY[t] = { p: +pr, d: /^\d{4}-\d\d-\d\d$/.test(dt || "") ? dt : "" }; }); buySave(); }
+    if (bs != null) { BUY = {}; bs.split(",").forEach((z) => { const [t, pr, dt] = z.split("@"); if (isTk(t || "") && +pr > 0) BUY[t] = { p: +pr, d: /^\d{4}-\d\d-\d\d$/.test(dt || "") ? dt : "" }; }); buySave(); }
     mySave(false);
     history.replaceState(null, "", location.pathname + location.search);
     setTimeout(() => toast("다른 기기의 내 종목을 불러왔어요: ★★ 보유 " + MY.hold.length + " · ★ 관심 " + MY.watch.length), 800);
@@ -1062,6 +1066,8 @@ function diffViews(cur, prev) {
 }
 
 // ═════════════ 6. 차트 ═════════════
+// 차트 라이브러리를 못 받았으면 차트만 빼고 신호등·표·판정은 그대로 그림
+const HAS_CHART = () => typeof LightweightCharts !== "undefined";
 function baseChart(el, bottomMargin) {
   if (el._chart) { el._chart.remove(); el._ro.disconnect(); }
   el.innerHTML = "";
@@ -1227,6 +1233,7 @@ function setVpMode(m) {
 const closeVpMenus = () => document.querySelectorAll(".vpmenu").forEach((m) => m.remove());
 document.addEventListener("click", closeVpMenus);
 function drawMarket(d, m) {
+  if (!HAS_CHART()) return;
   const chart = baseChart(document.getElementById("marketChart"), 0.24);
   const from = Math.max(0, d.length - SHOW_DAYS_MARKET);
   // 분산일: 신호등이 세는 것(최근 25거래일, 5% 상승으로 안 지워진 것)만 칠함
@@ -1252,12 +1259,14 @@ function drawRatio(elId, txtId, a, b, upWord, downWord) {
   if (rows.length < 60) return;
   const ma = smaArr(rows.map((r) => r.c), 50);
   const n = rows.length, from = Math.max(0, n - SHOW_DAYS);
-  const chart = baseChart(document.getElementById(elId), 0.08);
-  chart.applyOptions({ rightPriceScale: { visible: false } });
-  const ln = chart.addLineSeries({ color: DARK ? "#ddd" : "#333", lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
-  ln.setData(rows.slice(from).map((r) => ({ time: r.t, value: r.c })));
-  addLine(chart, rows, ma, from, "#9ca3af", 1, 2);
-  chart.timeScale().fitContent();
+  if (HAS_CHART()) {                  // 차트 라이브러리가 없어도 방향 글(▲·▼)은 씀
+    const chart = baseChart(document.getElementById(elId), 0.08);
+    chart.applyOptions({ rightPriceScale: { visible: false } });
+    const ln = chart.addLineSeries({ color: DARK ? "#ddd" : "#333", lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+    ln.setData(rows.slice(from).map((r) => ({ time: r.t, value: r.c })));
+    addLine(chart, rows, ma, from, "#9ca3af", 1, 2);
+    chart.timeScale().fitContent();
+  }
   const up = rows[n - 1].c > ma[n - 1] && ma[n - 1] > ma[n - 11];
   const down = rows[n - 1].c < ma[n - 1] && ma[n - 1] < ma[n - 11];
   RATIO_DIR[elId] = up ? 1 : down ? -1 : 0;
@@ -1265,6 +1274,7 @@ function drawRatio(elId, txtId, a, b, upWord, downWord) {
     : down ? '<b class="chg-down">▼ ' + downWord + "</b>" : '<span class="muted">방향 없음 (50일 평균 근처)</span>';
 }
 function drawDaily(el, d, cls, t, x) {
+  if (!HAS_CHART()) { el.innerHTML = '<div class="muted" style="padding:20px">차트 라이브러리를 불러오지 못해 차트만 빠졌습니다. 새로고침해 보세요.</div>'; return; }
   const chart = baseChart(el, 0.24);
   const from = Math.max(0, d.length - SHOW_DAYS_STOCK);
   const ed = earnDates(t);
@@ -1626,7 +1636,7 @@ function renderMyBox() {
   const el = document.getElementById("myBox");
   if (!el) return;
   let dirty = false; try { dirty = localStorage.getItem("td2_myDirty") === "1"; } catch (_) {}
-  const lst = (arr, lv) => arr.length ? arr.map((t) => '<span class="it">' + STAR_TXT[lv] + " <b>" + t + '</b> <span class="muted">' + TICKERS[t].name + (lv === 2 && BUY[t] ? " · 매수 " + BUY[t].p + (BUY[t].d ? " (" + BUY[t].d.slice(2).replace(/-/g, ".") + ")" : "") : "") +
+  const lst = (arr, lv) => arr.length ? arr.map((t) => '<span class="it">' + STAR_TXT[lv] + " <b>" + t + '</b> <span class="muted">' + (TICKERS[t] ? TICKERS[t].name : "") + (lv === 2 && BUY[t] ? " · 매수 " + BUY[t].p + (BUY[t].d ? " (" + BUY[t].d.slice(2).replace(/-/g, ".") + ")" : "") : "") +
     '</span><button data-rm="' + t + '" title="빼기">✕</button></span>').join("") : '<span class="muted">없음</span>';
   el.innerHTML = '<div class="row"><b>내 종목</b><span class="muted">보유 ★★ · 관심 ★ · 나스닥100 종목만 · 이 브라우저에만 저장됩니다</span></div>' +
     '<div class="row"><input id="myIn" list="tickerList" placeholder="티커 (예: NVDA)" autocomplete="off">' +
@@ -2042,6 +2052,9 @@ async function loadWhales() {
       if (!TICKERS[h.t]) { const pr = PROFILES && PROFILES.items[h.t]; TICKERS[h.t] = { name: h.name, group: pr ? pr.g : "큰손", extra: true }; }
     }));
     renderWhale();
+    // ★·★★로 고른 큰손 종목은 이제야 이름·데이터를 알 수 있으므로 내 종목 쪽도 다시 그림(data.json이 먼저 왔을 때)
+    renderMyBox();
+    if (VIEW) { renderMine(); renderSticky(); }
   } catch (e) {}
 }
 const whaleExtra = () => [...new Set(WHALES.flatMap((w) => w.f.top.map((h) => h.t)).filter((t) => !STOCKS.includes(t)))];
@@ -2372,7 +2385,7 @@ function openModal(t) {
       const save = (del) => {
         const pv = +document.getElementById("bP").value, dv = document.getElementById("bD").value;
         if (del) delete BUY[t]; else if (pv > 0) BUY[t] = { p: pv, d: dv || "" }; else return;
-        buySave(); Object.values(VIEW.info).forEach((y) => { delete y._hp; });
+        buySave(); Object.values(VIEW.info).concat(Object.values(WHALE_INFO).map((m) => m.x)).forEach((y) => { delete y._hp; });
         closeModal(); openModal(t); renderMine(); renderSticky(); renderMyBox();
         toast(t + (del ? " 매수가를 지웠어요" : " 매수가 " + pv + " 저장"));
       };
@@ -2847,7 +2860,8 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeHelp(
 try { if (!localStorage.getItem("td2_helpSeen")) { openHelp(); localStorage.setItem("td2_helpSeen", "1"); } } catch (e) {}
 
 // ═════════════ 10. 시작 ═════════════
-myLoad(); renderMine(); renderMyBox();
+// 내 종목 그리기에서 오류가 나도 아래 데이터 불러오기는 꼭 실행되게 따로 감쌈
+try { myLoad(); renderMine(); renderMyBox(); } catch (e) { console.error(e); }
 document.getElementById("tickerList").innerHTML = STOCKS.map((t) => '<option value="' + t + '">' + TICKERS[t].name + "</option>").join("");
 document.getElementById("key").value = getKey();
 document.getElementById("gear").addEventListener("click", () => { const s = document.getElementById("settings"); s.hidden = !s.hidden; });
@@ -2866,7 +2880,7 @@ document.addEventListener("visibilitychange", async () => {
   if (getKey() && (!meta.lastFull || (b && meta.lastFull < b))) loadAll(false);
 });
 (async () => {
-  if (typeof LightweightCharts === "undefined") { statusEl.textContent = "차트 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요."; return; }
+  const noChart = !HAS_CHART();
   if (await loadServer()) {
     document.getElementById("settingsNote").textContent = "서버 모드: GitHub가 매일 미국 시간외 거래가 끝난 뒤(한국시간 오전 10시 45분 무렵) 데이터를 갱신합니다. 이 화면에서는 키가 필요 없습니다. '새로 받기'는 서버의 최신 파일을 다시 읽습니다.";
     document.getElementById("key").style.display = "none"; document.getElementById("saveKey").style.display = "none";
@@ -2874,6 +2888,7 @@ document.addEventListener("visibilitychange", async () => {
     if (!getKey()) document.getElementById("settings").hidden = false;
     showRefreshInfo(); loadAll(false);
   }
+  if (noChart) statusEl.textContent = "차트 라이브러리를 불러오지 못해 차트만 빠졌습니다. 새로고침해 보세요." + (statusEl.textContent ? " · " + statusEl.textContent : "");
   scheduleAutoRefresh();
 })();
 </script>

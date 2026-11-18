@@ -27,6 +27,7 @@
 | `scripts/build_data.py` | 서버 데이터 수집 → `data.json`. 종목 목록·일봉 개수는 index.html의 `UNIVERSE`, `MARKET`, `DAYS_*`를 정규식으로 읽음 |
 | `.github/workflows/update-data.yml` | 예약 실행 `30 0 * * 2-6`(UTC) = 한국 화-토 09:30. 수동 실행(workflow_dispatch) 가능 |
 | `data.json` | 서버가 매일 커밋하는 결과(직접 고치지 않음) |
+| `vendor/` | 차트 라이브러리 사본(Lightweight Charts 4.2.0, Apache 2.0). index.html이 이것을 먼저 읽고 없으면 unpkg. 둘 다 못 받으면 차트만 빠지고 신호등·표는 나옴(`HAS_CHART`) |
 | `profiles.json` | 종목별 기업 프로필(산업·테마·세부 테마·하는 일·시장에 있는 이유·해자 유형·강점·해자 등급 `moat` 강/중/약 — 순위 아닌 절대 등급). 확대 차트 위 패널(`renderProfile`)이 읽음. 처음에는 구글 시트 `QQQ_구성종목_종합표`의 '기업 프로필' 탭에서 옮겼고 지금은 직접 편집함(옛 `pp` 가격결정력 순위는 화면에서 안 씀). 나스닥100 종목이나 큰손 상위 종목이 바뀌면 함께 고치고 `python3 scripts/check_profiles.py`로 `UNIVERSE`+큰손 종목과 맞는지 확인 |
 | `whales/` | 5층 큰손. `index.json`(큰손 목록: id·이름·SEC CIK·최신 파일), `<id>/<연도Q분기>.json`(13F 상위 10종목: 비중·변화·콜/풋·보유 분기), `cusip.json`(CUSIP→티커·종류, ETF는 `kind: etf`로 빼기). 반자동: 분기 공시(2·5·8·11월 중순) 뒤 `python3 scripts/build_whale.py <id>` 실행(SEC 접속, `SEC_UA` 환경변수). 모르는 CUSIP이 나오면 멈추니 `cusip.json`에 적고 다시. 큰손 추가 = `index.json`에 한 줄 + 같은 스크립트. UNIVERSE 밖 종목은 `build_data.py`가 `EXTRA`로 시세·실적·재무를 함께 받고, 화면은 `infoOf`/`extraInfo`로 같은 단계 계산(RS는 나스닥100 사이 순위) |
 | `scripts/backfill_history.py` | 백테스트용 긴 일봉(기본 1700개)을 한 번 받아 `backtest/prices.json.gz`에 저장. 화면은 안 씀. 키가 필요해 사용자가 직접 실행(GitHub 토큰에 workflow 권한이 없어 워크플로 파일은 못 올림) |

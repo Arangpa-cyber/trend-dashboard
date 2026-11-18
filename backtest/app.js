@@ -2,7 +2,7 @@
 const fs = require('fs'), vm = require('vm');
 module.exports = function load(htmlPath) {
   const html = fs.readFileSync(htmlPath, 'utf8');
-  const i = html.indexOf('<script>', html.indexOf('lightweight-charts')) + 8, j = html.indexOf('</script>', i);
+  const i = html.lastIndexOf('<script>') + 8, j = html.indexOf('</script>', i);   // 본문 스크립트 = 마지막 <script> (머리의 차트 라이브러리 줄은 건너뜀)
   let code = html.slice(i, j);
   const stub = new Proxy(function () {}, { get: (t, k) => k === Symbol.toPrimitive ? () => '' : k === 'then' ? undefined : stub, apply: () => stub, construct: () => stub, set: () => true });
   const ctx = { console, Math, JSON, Date, Intl, Number, String, Array, Object, Set, Map, Infinity, NaN, isFinite, parseFloat, parseInt, RegExp, Error, Promise,
