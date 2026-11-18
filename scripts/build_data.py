@@ -6,7 +6,8 @@
 - 시세: Twelve Data 무료 키 (분당 8회 제한에 맞춰 8초 간격, 약 15분)
 - 시작 시각: 예약은 00:30 UTC. 미국 동부 20:15(시간외 거래 마감 15분 뒤)보다 일찍 시작했으면 그때까지 기다립니다.
   (겨울에는 00:30 UTC가 동부 19:30이라 시간외 거래가 아직 진행 중)
-- 거래량 확정 확인: 시장 지표(QQQ 등)는 맨 처음에 받고, 종목을 다 받은 뒤(약 15분 뒤) 다시 받아 마지막 날 거래량을 비교합니다.
+- 시장 지표는 index.html의 MARKET(2026-11-19부터 QQQ 하나, 1층 판정이 QQQ만 씀).
+- 거래량 확정 확인(팔로스루 데이용): 시장 지표(QQQ)는 맨 처음에 받고, 종목을 다 받은 뒤(약 15분 뒤) 다시 받아 마지막 날 거래량을 비교합니다.
   1% 넘게 다르거나 최근 20일 평균의 25%도 안 되면 15분 뒤 또 받아, 두 번 연속 같아질 때까지 최대 4번 확인합니다.
   끝까지 안 맞으면 '잠정'으로 보고 data.json의 partial에 적습니다(화면은 그날 분산일·팔로스루 판정을 보류).
   (2026-11-02 QQQ 거래량이 79만 주로 들어온 일, 2026-11-05 QQQ 거래량이 동부 21시 넘어서도 바뀐 일 이후 추가)
@@ -48,8 +49,6 @@ NAMES = dict(re.findall(r'\["([A-Z][A-Z0-9.]*)",\s*"([^"]+)"\]', universe_block)
 MARKET = json.loads(re.search(r"const MARKET = (\[.*?\]);", HTML).group(1))
 DAYS_MARKET = int(re.search(r"const DAYS_MARKET = (\d+)", HTML).group(1))
 DAYS_STOCK = int(re.search(r"const DAYS_STOCK = (\d+)", HTML).group(1))
-# 2층 S&P 500 섹터 지도용 섹터 ETF(MARKET에 이미 있는 XLY·XLP는 빼고). 시세만 받고 거래량 확정 확인은 안 함
-SECTORS = [t for t in re.findall(r'\["([A-Z]+)",\s*"', HTML[HTML.index("const SECTORS"):HTML.index("];", HTML.index("const SECTORS"))]) if t not in MARKET]
 
 
 def whale_tickers():
@@ -712,11 +711,11 @@ def main():
     wait_for_settle()
 
     series, failed = {}, []
-    symbols = MARKET + SECTORS + ALL
+    symbols = MARKET + ALL
     print(f"시세 받기: {len(symbols)}종목 (약 {len(symbols) * GAP / 60:.0f}분)", flush=True)
     for i, s in enumerate(symbols, 1):
         t0 = time.time()
-        rows = fetch_series(s, DAYS_MARKET if s in MARKET or s in SECTORS else DAYS_STOCK)
+        rows = fetch_series(s, DAYS_MARKET if s in MARKET else DAYS_STOCK)
         if rows:
             series[s] = rows
         else:
