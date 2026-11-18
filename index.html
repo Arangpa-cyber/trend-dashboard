@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-17 21:04</title>
+<title>추세 대시보드 v2026-11-18 12:40</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
@@ -288,6 +288,14 @@
   #mProf .pf-k { color: var(--sub); font-size: 11px; margin-right: 3px; }
   #mProf .pf-sep { color: var(--sub); }
   #mProf .pf-pp { margin-left: auto; color: var(--sub); }
+  #whale .whd { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 12.5px; }
+  #whale .whd .wq { margin-left: auto; }
+  #whale .wb { color: var(--text); }
+  #whale .wchip { border: 1px solid var(--line); border-radius: 14px; padding: 2px 11px; background: var(--card); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+  #whale .wchip.on { background: var(--text); color: var(--card); border-color: var(--text); }
+  #whale .wmiss { font-size: 12px; margin-top: 6px; }
+  #mProf .pf-whale { grid-column: 1 / -1; border-top: 1px dashed var(--line); padding-top: 5px; display: flex; flex-wrap: wrap; gap: 2px 16px; }
+  .moat-s { color: var(--text); font-weight: 800; } .moat-m { color: var(--sub); } .moat-w { color: var(--warn); }
   #mProf .pf-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 16px; padding: 6px 10px 8px; border-top: 1px solid var(--line); }
   #mProf .pf-chip { display: inline-block; border: 1px solid var(--line); border-radius: 9px; padding: 0 7px; margin: 0 4px 2px 0; font-size: 11px; }
   #mProf .pf-chip.weak { color: var(--warn); border-color: var(--warn); }
@@ -302,7 +310,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-17 21:04</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-18 12:40</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -356,6 +364,10 @@
   <h2 id="sec-my">4. 내 종목 — ★★ 보유는 언제 파나, ★ 관심은 언제 사나 <button class="q" data-help="h-my" title="이 층 보는 법">?</button></h2>
   <div id="mine" class="mycard"></div>
   <div id="watch" class="mycard"></div>
+
+  <!-- 5층 큰손: 13F 보유 상위 종목 -->
+  <h2 id="sec-whale">5. 큰손 — 큰 자본은 무엇을 샀나 <button class="q" data-help="h-whale" title="이 층 보는 법">?</button></h2>
+  <div id="whale" class="mycard"></div>
 </main>
 
 <div id="help"><div class="panel" id="helpPanel"></div></div>
@@ -980,6 +992,24 @@ function posCell(x) {
 
 const HIST_W = 40;     // RS 흐름 그래프 길이(주)
 // k 거래일 전 시점으로 잘라서 전체를 계산 (k=0 지금, 20 4주 전)
+// 지금 시점 종목 정보(단계·베이스·피벗·52주 위치 등). x에는 t, d, rs, rsThen, cls가 있어야 함
+function fillNow(x) {
+  const d = x.d, cl = d.map((r) => r.c), m50 = smaArr(cl, 50), nn = d.length;
+  const c = cl[nn - 1], y1 = d.slice(-252), m200 = smaArr(cl, 200)[nn - 1], m20 = smaArr(cl, 20)[nn - 1];
+  x.above200 = m200 != null ? c > m200 : null;
+  x.dist50 = m50[nn - 1] ? c / m50[nn - 1] - 1 : null;
+  x.below20 = m20 != null && c < m20;
+  x.bases = findBasesD(d, x.cls.rg && x.cls.rg.hist);   // 최근 1년 돌파로 끝난 베이스(2단계)·저항선(1·3단계), 4단계 구간은 뺌
+  x.lp = lastPivot(d, x.bases);             // 마지막 돌파 피벗(돌파 위치 · 보유 경고 · 50일선 눌림)
+  x.vpb = vpBaseOf(x);                      // 매물대 베이스 꼬리표 · 매수 후보 정렬
+  const hi52 = Math.max(...y1.map((r) => r.h)), lo52 = Math.min(...y1.map((r) => r.l));
+  x.fromHi = c / hi52 - 1;
+  x.fromLo = c / lo52 - 1;
+  x.newHigh = d[nn - 1].h >= hi52 * 0.999; x.newLow = d[nn - 1].l <= lo52 * 1.001;
+  x.rsChg = x.rsThen != null ? x.rs - x.rsThen : null;
+  x.soundBase = x.cls.pos !== "out";        // 건전한 베이스: 이탈이 아님
+  x.pre = x.rs >= PRE_RS_MIN && x.rs < RS_LEADER && x.rsChg != null && x.rsChg >= PRE_RS_GAIN && x.above50 && x.soundBase;
+}
 function computeView(k) {
   const cut = (d) => (k ? d.slice(0, d.length - k) : d);
   const q = DATA.QQQ ? cut(DATA.QQQ) : null;
@@ -994,22 +1024,7 @@ function computeView(k) {
     const x = info[t] = { t, d, rs: rn[t], rsThen: rt[t], above50: m50[nn - 1] != null && cl[nn - 1] > m50[nn - 1] };
     if (!k && nn > 80) x.above50Then = m50[nn - 21] != null && cl[nn - 21] > m50[nn - 21];   // 2층용: 4주(20거래일) 전 50일선 위였나
     x.cls = classify(d, x.rs);                  // 모든 종목(4주 전 시점도): 단계별 종목 수 4주 변화에 씀
-    if (!k) {                                   // 2·3·4층용: 지금 시점만 계산
-      const c = cl[nn - 1], y1 = d.slice(-252), m200 = smaArr(cl, 200)[nn - 1], m20 = smaArr(cl, 20)[nn - 1];
-      x.above200 = m200 != null ? c > m200 : null;
-      x.dist50 = m50[nn - 1] ? c / m50[nn - 1] - 1 : null;
-      x.below20 = m20 != null && c < m20;
-      x.bases = findBasesD(d, x.cls.rg && x.cls.rg.hist);   // 최근 1년 돌파로 끝난 베이스(2단계)·저항선(1·3단계), 4단계 구간은 뺌
-      x.lp = lastPivot(d, x.bases);             // 마지막 돌파 피벗(돌파 위치 · 보유 경고 · 50일선 눌림)
-      x.vpb = vpBaseOf(x);                      // 매물대 베이스 꼬리표 · 매수 후보 정렬
-      const hi52 = Math.max(...y1.map((r) => r.h)), lo52 = Math.min(...y1.map((r) => r.l));
-      x.fromHi = c / hi52 - 1;
-      x.fromLo = c / lo52 - 1;
-      x.newHigh = d[nn - 1].h >= hi52 * 0.999; x.newLow = d[nn - 1].l <= lo52 * 1.001;
-      x.rsChg = x.rsThen != null ? x.rs - x.rsThen : null;
-      x.soundBase = x.cls.pos !== "out";        // 건전한 베이스: 이탈이 아님
-      x.pre = x.rs >= PRE_RS_MIN && x.rs < RS_LEADER && x.rsChg != null && x.rsChg >= PRE_RS_GAIN && x.above50 && x.soundBase;
-    }
+    if (!k) fillNow(x);                         // 2·3·4·5층용: 지금 시점만 계산
   });
   // 2·3층 40주 흐름: 1주(5거래일) 간격으로 40개 시점의 RS를 다시 매겨 산업 평균을 구함 (지금 시점 계산에서만)
   const hist = [];
@@ -1423,10 +1438,20 @@ function calcFund(t) {
     const r = d.find((z) => z.t > rep1);
     if (r) { psr1 = ok(((f.sh1 || f.sh) * r.c) / (t1 * fx)); at1 = r.t; }
   }
+  // 분기별 PSR(최근 4분기): 그 분기 실적 발표 다음 거래일 종가 기준. 주식 수는 그 분기 말 값(shq), 없으면 가장 가까운 분기 값
+  const shAt = (end) => { const L = f.shq && f.shq.length ? f.shq : [[q[0][0], f.sh], [q[1] ? q[1][0] : q[0][0], f.sh1 || f.sh]].filter((z) => z[1]);
+    let b = null; L.forEach((z) => { if (!b || Math.abs(dayGap(z[0], end)) < Math.abs(dayGap(b[0], end))) b = z; }); return b ? b[1] : null; };
+  const psrHist = [3, 2, 1, 0].map((i) => {
+    if (q.length <= i || !fx) return null;
+    const tt = ttm(i), rep = repOf(q[i][0]), sh = shAt(q[i][0]);
+    if (!tt || !rep || !sh) return null;
+    const r = d.find((z) => z.t > rep);
+    return r ? { e: q[i][0], at: r.t, v: ok((sh * r.c) / (tt * fx)) } : null;
+  }).filter((z) => z && z.v != null);
   // 가진 최근 분기 발표 뒤에 또 발표가 있었으면 새 분기가 아직 안 들어온 것
   const stale = hist.filter((x) => x > q[0][0] && x <= last.t).length >= 2;
   return { g0, g1, accel: g0 != null && g1 != null && g0 >= ACC_MIN && g0 > g1, psr, psr1, at1, q0: q[0][0], rep0, ttm: t0 && fx ? t0 * fx : null,
-           mc: f.sh ? f.sh * last.c : null, cur: f.cur, stale, hist: [0, 1, 2, 3].map((i) => (q.length > i ? { e: q[i][0], g: yoy(i) } : null)).filter((z) => z && z.g != null).reverse() };
+           mc: f.sh ? f.sh * last.c : null, cur: f.cur, stale, psrHist, hist: [0, 1, 2, 3].map((i) => (q.length > i ? { e: q[i][0], g: yoy(i) } : null)).filter((z) => z && z.g != null).reverse() };
 }
 const qName = (e) => e.slice(2, 4) + "년 " + e.slice(5, 7) + "월 끝 분기";
 function fundTip(t) {
@@ -1520,7 +1545,7 @@ function holdPlanHtml(pl) {
   return h + '<br><span class="muted">손절선은 처음 손절선 · 본전 · 매수 뒤 구조 손절선 중 가장 높은 값이라 내려가지 않습니다.</span>';
 }
 function holdWarns(t) {
-  const x = VIEW && VIEW.info[t], w = [];
+  const x = infoOf(t), w = [];
   if (!x || !x.cls) return w;
   const c = x.cls, price = x.d[x.d.length - 1].c;
   if (c.rg && c.rg.r !== 2) w.push(c.rg.r + "단계 " + RG_NAME[c.rg.r]);
@@ -1574,11 +1599,11 @@ function renderMine() {
   if (!el || !wl) return;
   const head = (star, ttl, sub) => '<div class="mh"><b>' + star + " " + ttl + '</b><span class="muted">' + sub + "</span></div>";
   const ms = MARKET_STATE ? MARKET_STATE.cls : null;
-  const miss = (arr) => { const m = arr.filter((t) => !VIEW.info[t] || !VIEW.info[t].cls); return m.length ? " · 데이터 없음: " + m.join(", ") : ""; };
+  const miss = (arr) => { const m = arr.filter((t) => !infoOf(t) || !infoOf(t).cls); return m.length ? " · 데이터 없음: " + m.join(", ") : ""; };
   if (!MY.hold.length) el.innerHTML = head(STAR2, "보유 점검", "보유 종목이 없습니다. 종목 맨 앞의 ☆을 눌러 ★★ 보유를 고르거나 ⚙ 설정의 '내 종목'에서 넣으세요.");
   else if (!VIEW) el.innerHTML = head(STAR2, "보유 점검", "데이터를 받으면 표시됩니다.");
   else {
-    const list = MY.hold.map((t) => VIEW.info[t]).filter((x) => x && x.cls);
+    const list = MY.hold.map(infoOf).filter((x) => x && x.cls);
     const nW = list.filter((x) => holdWarns(x.t).length).length;
     el.innerHTML = head(STAR2, "보유 점검", "언제 파나 · " + list.length + "종목 · " + (nW ? '<b class="warn">경고 ' + nW + "</b>" : "경고 없음") + " · " + md(VIEW.asOf) + " 마감 기준" + miss(MY.hold)) +
       '<div class="tblwrap" id="tb-hold"></div>';
@@ -1587,7 +1612,7 @@ function renderMine() {
   if (!MY.watch.length) wl.innerHTML = head(STAR1, "관심 점검", "관심 종목이 없습니다. 종목 맨 앞의 ☆을 눌러 ★ 관심을 고르세요.");
   else if (!VIEW) wl.innerHTML = head(STAR1, "관심 점검", "데이터를 받으면 표시됩니다.");
   else {
-    const list = MY.watch.map((t) => VIEW.info[t]).filter((x) => x && x.cls);
+    const list = MY.watch.map(infoOf).filter((x) => x && x.cls);
     const mtxt = MARKET_STATE ? '<span class="pill ' + ms + '" style="padding:1px 8px;font-size:11px">시장 ' + MARKET_STATE.verdict + "</span> 기준" : "시장 판정 전";
     wl.innerHTML = head(STAR1, "관심 점검", "언제 사나 · " + list.length + "종목 · 할 일 순서 · " + mtxt + " · " + md(VIEW.asOf) + " 마감 기준" + miss(MY.watch)) +
       '<div class="tblwrap" id="tb-watch"></div>';
@@ -1976,71 +2001,184 @@ function updateBreadth() { const el = document.getElementById("breadth"); if (el
 // ═════════════ 공통 종목 표 (3층 종목 · 4층 내 종목) ═════════════
 // 칸: ★ · 티커 · 산업 · 단계·위치 · RS(4주) · 4주 등락 · 비중 · 영향 · 매출 · PSR · 미니차트 · 다음 할 일 · 꼬리표
 // 칸 제목을 누르면 내림차순(글자 칸은 오름차순) → 반대 → 기본 순서
-const ST_COLS = [   // [키, 제목, 정렬값(없으면 정렬 안 함), 첫 방향, 머리 설명]
+const ST_COLS = [   // [키, 제목, 정렬값(없으면 정렬 안 함), 첫 방향, 머리 설명] — 이 순서가 곧 표 칸 순서(3층·4층·5층)
   ["my", "★", (x) => myLevel(x.t), -1, "★★ 보유 · ★ 관심"],
   ["t", "티커", (x) => x.t, 1, ""],
   ["grp", "산업", (x) => TICKERS[x.t].group, 1, ""],
+  ["sp", "6개월", null, 0, "종가 · 50일선(청록) · 200일선(보라) · 피벗(주황 점선)"],
   ["pos", "단계·위치", (x) => orderOf(x.cls) * 10 + Math.min(9, Math.abs(pivDist(x) ?? 9)), 1, "단계 점(1 회색 · 2 초록 · 3 주황 · 4 회청색) · 위치 · 숫자는 피벗 대비 · 누르면 할 일 순서(돌파·매수 범위 → 형성·임박 → 형성 → 돌파·추격 금지 → 이탈 → 1·3·4단계)"],
-  ["rs", "RS (4주)", (x) => x.rs, -1, "RS 순위(1-99)와 4주 변화"],
+  ["todo", "다음 할 일", (x) => { const hp = myLevel(x.t) === 2 ? holdPlan(x) : null; return hp ? x.d[x.d.length - 1].c / hp.stop - 1 : 9 + orderOf(x.cls); }, 1, "누르면 ★★ 보유는 손절선에 가까운 순(이미 아래면 맨 위), 나머지는 할 일 순서"],
   ["pc", "4주 등락", (x) => periodStats(x.t).pc ?? -999, -1, "20거래일 등락률"],
   ["qw", "비중", (x) => NDXW[x.t] ?? -1, -1, "나스닥100(QQQ) 안 비중(%)"],
   ["qi", "영향", (x) => { const q = qqqImpact(x.t); return q && q.c != null ? q.c : -999; }, -1, "QQQ 영향: 비중 × 4주 등락률 = 이 종목이 지난 4주 동안 QQQ를 몇 %p 움직였나"],
+  ["rs", "RS (4주)", (x) => x.rs, -1, "RS 순위(1-99)와 4주 변화"],
   ["rev", "매출", (x) => { const f = fundOf(x.t); return f && f.g0 != null ? f.g0 : -999; }, -1, "최근 분기 매출 전년 대비(YoY) · 아래: 직전 분기 YoY와 차이(▲ 가속 · ▼ 감속)"],
   ["psr", "PSR", (x) => { const f = fundOf(x.t); return f && f.psr != null ? f.psr : -999; }, -1, "주가매출비율 = 오늘 시가총액 ÷ 최근 4개 분기 매출 합 · 아래: 직전 분기 실적 발표 다음 날 PSR과 차이"],
-  ["sp", "6개월", null, 0, "종가 · 50일선(청록) · 200일선(보라) · 피벗(주황 점선)"],
-  ["todo", "다음 할 일", (x) => { const hp = myLevel(x.t) === 2 ? holdPlan(x) : null; return hp ? x.d[x.d.length - 1].c / hp.stop - 1 : 9 + orderOf(x.cls); }, 1, "누르면 ★★ 보유는 손절선에 가까운 순(이미 아래면 맨 위), 나머지는 할 일 순서"],
   ["bd", "꼬리표", null, 0, ""],
 ];
 const TABLE_SORT = {}, SEC_OPEN = {};
 const strip = (s) => String(s).replace(/<[^>]+>/g, "").replace(/"/g, "'");
+// ═════════════ 5층 큰손: 13F 보유 상위 종목 (whales/index.json → 큰손별 최신 분기 파일) ═════════════
+// 분기 공시가 나오면 scripts/build_whale.py 로 파일을 만들어 올림(반자동). UNIVERSE 밖 종목은 서버가 시세·재무를 함께 받음.
+let WHALES = [], WHALE_SEL = null;
+const WHALE_INFO = {};
+async function loadWhales() {
+  try {
+    const hr = Math.floor(Date.now() / 3600000);
+    const r = await fetch("whales/index.json?t=" + hr, { cache: "no-store" });
+    if (!r.ok) return;
+    const idx = await r.json(), out = [];
+    for (const inv of idx.investors || []) {
+      if (!inv.latest) continue;
+      const fr = await fetch("whales/" + inv.latest + "?t=" + hr, { cache: "no-store" });
+      if (fr.ok) out.push(Object.assign({}, inv, { f: await fr.json() }));
+    }
+    await PROF_P;
+    WHALES = out;
+    try { WHALE_SEL = localStorage.getItem("td2_whale"); } catch (e) {}
+    if (!WHALES.some((w) => w.id === WHALE_SEL)) WHALE_SEL = WHALES.length ? WHALES[0].id : null;
+    WHALES.forEach((w) => w.f.top.forEach((h, i) => {
+      h.rank = i + 1;
+      if (!TICKERS[h.t]) { const pr = PROFILES && PROFILES.items[h.t]; TICKERS[h.t] = { name: h.name, group: pr ? pr.g : "큰손", extra: true }; }
+    }));
+    renderWhale();
+  } catch (e) {}
+}
+const whaleExtra = () => [...new Set(WHALES.flatMap((w) => w.f.top.map((h) => h.t)).filter((t) => !STOCKS.includes(t)))];
+// UNIVERSE 밖 종목: 같은 계산(단계·베이스·피벗). RS는 나스닥100 100종목 사이에서 몇 등쯤인지(1-99)
+function rsAmong(score, shift) {
+  if (score == null || !VIEW) return null;
+  const arr = Object.values(VIEW.info).map((y) => rsScore(y.d, shift)).filter((v) => v != null);
+  if (arr.length < 2) return null;
+  const i = Math.min(arr.length - 1, arr.filter((v) => v < score).length);
+  return Math.round(1 + (98 * i) / (arr.length - 1));
+}
+function extraInfo(t) {
+  const d = DATA[t];
+  if (!VIEW || !d || d.length <= 63) return null;
+  const memo = WHALE_INFO[t];
+  if (memo && memo.asOf === VIEW.asOf && memo.n === d.length) return memo.x;
+  const cl = d.map((r) => r.c), m50 = smaArr(cl, 50), nn = d.length;
+  const x = { t, d, rs: rsAmong(rsScore(d, 0), 0) ?? 50, rsThen: rsAmong(rsScore(d, 20), 20), above50: m50[nn - 1] != null && cl[nn - 1] > m50[nn - 1] };
+  x.cls = classify(d, x.rs);
+  fillNow(x);
+  WHALE_INFO[t] = { asOf: VIEW.asOf, n: d.length, x };
+  return x;
+}
+const infoOf = (t) => (!VIEW ? null : VIEW.info[t] || (TICKERS[t] && TICKERS[t].extra ? extraInfo(t) : null));
+const whaleSel = () => WHALES.find((w) => w.id === WHALE_SEL) || null;
+const qLabel = (p) => p.slice(0, 4) + "년 " + (Math.floor((+p.slice(5, 7) - 1) / 3) + 1) + "분기";
+// 기준일(분기 말) 종가: 그날 또는 그 전 마지막 거래일
+function closeOn(d, day) { let r = null; for (const z of d || []) { if (z.t <= day) r = z; else break; } return r; }
+function sinceOf(t, day) {
+  const d = DATA[t], b = closeOn(d, day);
+  return b && d && d.length ? d[d.length - 1].c / b.c - 1 : null;
+}
+const chgTxt = (h) => (h.chg === "new" ? "신규" : h.chg === "same" ? "유지" : (h.chg === "add" ? "추가 +" : "축소 −") + Math.abs(Math.round(h.pct)) + "%");
+const chgCls = (h) => (h.chg === "new" || h.chg === "add" ? "chg-up" : h.chg === "trim" ? "chg-down" : "muted");
+const optTxt = (h) => (h.call ? " · 콜" : "") + (h.put ? " · 풋" : "");
+const heldTxt = (h, f) => (f.qMax && h.q >= f.qMax ? Math.floor(f.qMax / 4) + "년+" : h.q + "분기");
+function whaleLine(t) {
+  const hs = WHALES.map((w) => ({ w, h: w.f.top.find((z) => z.t === t) })).filter((z) => z.h);
+  if (!hs.length) return "";
+  return '<div class="pf-whale">' + hs.map(({ w, h }) => '<span><span class="pf-k">큰손</span> <b>' + pfEsc(w.name) + "</b> " + h.w.toFixed(1) + "% (" + h.rank + '위) · <span class="' + chgCls(h) + '">' + chgTxt(h) + "</span>" +
+    (h.call ? " · 콜옵션도 보유" : "") + (h.put ? " · 풋옵션도 보유" : "") + " · " + heldTxt(h, w.f) + (h.q >= (w.f.qMax || 99) ? "" : "째") + ' <span class="muted">· ' + md(w.f.period) + " 기준</span></span>").join("") + "</div>";
+}
+const WH_COLS = (() => {
+  const by = (k) => ST_COLS.find((c) => c[0] === k);
+  const pos = (t) => { const w = whaleSel(); return w && w.f.top.find((z) => z.t === t); };
+  const extra = [
+    ["wd", "기준일 등락", (x) => { const w = whaleSel(); const v = w ? sinceOf(x.t, w.f.period) : null; return v ?? -999; }, -1, "13F 기준일(분기 말) 종가 대비 지금 등락률 · 같은 기간 QQQ보다 많이 오른 종목은 빨강"],
+    ["ww", "비중", (x) => { const h = pos(x.t); return h ? h.w : -1; }, -1, "13F 전체 평가액(옵션 포함) 중 이 종목 보통주 비중 · 아래: 직전 분기 대비 주식 수 변화(신규 · 추가 · 축소 · 유지, ±1%는 유지)와 콜·풋 옵션"],
+    ["wq", "보유", (x) => { const h = pos(x.t); return h ? h.q : -1; }, -1, "끊기지 않고 들고 있던 분기 수(최근 12분기 안에서 · 다 들고 있었으면 3년+)"],
+  ];
+  return ["my", "t", "grp", "sp", "pos", "todo", "pc"].map(by).concat(extra, ["rev", "psr", "bd"].map(by));
+})();
+function renderWhale() {
+  const box = document.getElementById("whale");
+  if (!box) return;
+  const w = whaleSel();
+  if (!w) { box.innerHTML = '<div class="muted" style="padding:10px 14px">큰손 자료가 없습니다.</div>'; return; }
+  const f = w.f, qs = sinceOf("QQQ", f.period);
+  const chips = WHALES.map((z) => '<button class="wchip' + (z.id === w.id ? " on" : "") + '" data-w="' + z.id + '" title="' + pfEsc(z.fund || "") + '">' + pfEsc(z.name) + "</button>").join("");
+  const list = f.top.map((h) => infoOf(h.t)).filter((x) => x && x.cls);
+  const miss = f.top.filter((h) => !list.some((x) => x.t === h.t)).map((h) => h.t);
+  box.innerHTML = '<div class="whd">' + chips + '<span class="muted">' + qLabel(f.period) + ' 13F · <b class="wb">' + md(f.period) + " 기준</b> · " + md(f.filed) + " 공시 · 비중 상위 " + f.top.length +
+    (f.skipped && f.skipped.length ? " (ETF " + f.skipped.join(", ") + " 제외)" : "") + "</span>" +
+    (qs != null ? '<span class="wq">같은 기간 QQQ <b class="' + (qs >= 0 ? "chg-up" : "chg-down") + '">' + pctf(qs) + '</b> <span class="muted">· 이보다 많이 오른 종목은 빨강</span></span>' : "") + "</div>" +
+    (miss.length ? '<div class="muted wmiss">시세 아직 없음: ' + miss.join(", ") + " (서버가 다음 갱신 때 함께 받음)</div>" : "") +
+    '<div class="tblwrap" id="tb-whale"></div>';
+  box.querySelectorAll("[data-w]").forEach((b) => b.addEventListener("click", () => { WHALE_SEL = b.dataset.w; try { localStorage.setItem("td2_whale", WHALE_SEL); } catch (e) {} renderWhale(); }));
+  const rank = (t) => { const h = f.top.find((z) => z.t === t); return h ? h.rank : 99; };
+  stockTable("tb-whale", list, {
+    cols: WH_COLS, order: (x) => rank(x.t), empty: "시세가 아직 없습니다.",
+    cells: {
+      wd: (x) => { const v = sinceOf(x.t, f.period); if (v == null) return '<td class="num"><span class="muted">-</span></td>';
+        return '<td class="num" title="' + md(f.period) + " 종가 대비 · 같은 기간 QQQ " + (qs != null ? pctf(qs) : "-") + '"><b class="' + (qs != null && v > qs ? "chg-up" : v < 0 ? "chg-down" : "") + '">' + pctf(v) + "</b></td>"; },
+      ww: (x) => { const h = f.top.find((z) => z.t === x.t);
+        return '<td class="fd num" title="' + h.sh.toLocaleString() + "주" + (h.pct != null ? " · 직전 분기 대비 " + (h.pct > 0 ? "+" : "") + h.pct + "%" : "") + '"><b>' + h.w.toFixed(1) + '%</b><br><span class="fsub ' + chgCls(h) + '">' + chgTxt(h) + optTxt(h) + "</span></td>"; },
+      wq: (x) => { const h = f.top.find((z) => z.t === x.t); return '<td class="num">' + heldTxt(h, f) + "</td>"; },
+    },
+  });
+}
+
 function stockTable(id, list, o) {
   const wrap = document.getElementById(id);
   if (!wrap) return;
+  const COLS = o.cols || ST_COLS;
   disposeCharts(wrap);
   const ms = MARKET_STATE ? MARKET_STATE.cls : null;
   const todo = o.todo || ((x) => todoOf(x, ms));
   const srt = TABLE_SORT[id];
   let groups;
   if (srt) {
-    const f = ST_COLS.find((c) => c[0] === srt.k)[2];
+    const f = COLS.find((c) => c[0] === srt.k)[2];
     groups = [{ items: [...list].sort((a, b) => { const va = f(a), vb = f(b); return (typeof va === "string" ? va.localeCompare(vb) : va - vb) * srt.dir || b.rs - a.rs; }) }];
   } else if (o.sections) groups = o.sections(list);
   else groups = [{ items: [...list].sort((a, b) => o.order(a) - o.order(b) || b.rs - a.rs) }];
-  const head = "<colgroup>" + ST_COLS.map((c) => '<col class="c-' + c[0] + '">').join("") + "</colgroup><thead><tr>" +
-    ST_COLS.map((c) => '<th data-k="' + c[0] + '" class="' + (c[0] === "my" ? "stc" : c[0] === "t" ? "tkc" : "") + (["pc", "qw", "qi", "rev", "psr"].includes(c[0]) ? " num" : "") +
+  const head = "<colgroup>" + COLS.map((c) => '<col class="c-' + c[0] + '">').join("") + "</colgroup><thead><tr>" +
+    COLS.map((c) => '<th data-k="' + c[0] + '" class="' + (c[0] === "my" ? "stc" : c[0] === "t" ? "tkc" : "") + (["pc", "qw", "qi", "rev", "psr", "wd", "ww", "wq"].includes(c[0]) ? " num" : "") +
       (c[2] ? " sortable" : "") + (srt && srt.k === c[0] ? " on" : "") + '"' + (c[4] ? ' title="' + c[4] + '"' : "") + ">" + c[1] +
       (srt && srt.k === c[0] ? (srt.dir < 0 ? " ▼" : " ▲") : "") + "</th>").join("") + "</tr></thead>";
   const row = (x) => {
-    const w = o.warn ? holdWarns(x.t) : [], td = todo(x);
+    const w = o.warn ? holdWarns(x.t) : [], td = todo(x), ft = fundTip(x.t);
+    const cell = {
+      my: () => '<td class="stc">' + starHtml(x.t) + "</td>",
+      t: () => '<td class="tkc"><span class="tk">' + x.t + "</span></td>",
+      grp: () => '<td class="muted grp">' + TICKERS[x.t].group + "</td>",
+      sp: () => '<td class="sp">' + sparkSvg(x.d, 58, pivOf(x)) + "</td>",
+      pos: () => '<td class="pos">' + posCell(x) + "</td>",
+      todo: () => '<td class="todo" title="' + strip(td) + '">' + td + "</td>",
+      pc: () => '<td class="num">' + pcCell(x.t) + "</td>",
+      qw: () => '<td class="num">' + weightCell(x.t) + "</td>",
+      qi: () => '<td class="qi num" title="' + QI_TIP(x.t) + '">' + impactCell(x.t, true) + "</td>",
+      rs: () => "<td>" + rsCell(x) + "</td>",
+      rev: () => '<td class="fd num" title="' + ft + '">' + revCell(x.t) + "</td>",
+      psr: () => '<td class="fd num" title="' + ft + '">' + psrCell(x.t) + "</td>",
+      bd: () => '<td class="bd">' + w.filter((z) => !/단계|이탈/.test(z)).map((z) => '<span class="wtag">' + z + "</span>").join("") + (o.warn ? tagsOf(x).replace(/<span class="badge earn[^]*?<\/span>/, "") : tagsOf(x)) + "</td>",
+    };
     return '<tr data-t="' + x.t + '"' + (w.length ? ' class="mwarn"' : "") + ' title="' + TICKERS[x.t].name + " · " + strip(posLabel(x.cls) + " · " + reasonOf(x)) + '">' +
-      '<td class="stc">' + starHtml(x.t) + '</td><td class="tkc"><span class="tk">' + x.t + "</span></td>" +
-      '<td class="muted grp">' + TICKERS[x.t].group + '</td><td class="pos">' + posCell(x) + "</td>" +
-      "<td>" + rsCell(x) + '</td><td class="num">' + pcCell(x.t) + '</td><td class="num">' + weightCell(x.t) + "</td>" +
-      '<td class="qi num" title="' + QI_TIP(x.t) + '">' + impactCell(x.t, true) + "</td>" +
-      '<td class="fd num" title="' + fundTip(x.t) + '">' + revCell(x.t) + '</td><td class="fd num" title="' + fundTip(x.t) + '">' + psrCell(x.t) + "</td>" +
-      '<td class="sp">' + sparkSvg(x.d, 58, pivOf(x)) + "</td>" +
-      '<td class="todo" title="' + strip(td) + '">' + td + "</td>" +
-      '<td class="bd">' + w.filter((z) => !/단계|이탈/.test(z)).map((z) => '<span class="wtag">' + z + "</span>").join("") + (o.warn ? tagsOf(x).replace(/<span class="badge earn[^]*?<\/span>/, "") : tagsOf(x)) + "</td></tr>";
+      COLS.map((c) => ((o.cells && o.cells[c[0]]) || cell[c[0]])(x)).join("") + "</tr>";
   };
   let rows = "";
   groups.forEach((g) => {
     if (g.label != null) {
       const sk = id + "|" + g.key, open = sk in SEC_OPEN ? SEC_OPEN[sk] : !g.collapsed;
-      rows += '<tr class="sg' + (g.fold ? " fold" : "") + '" data-sec="' + sk + '"><td colspan="' + ST_COLS.length + '"><span class="sgl">' + g.label + " <b>" + g.items.length + "</b>" +
+      rows += '<tr class="sg' + (g.fold ? " fold" : "") + '" data-sec="' + sk + '"><td colspan="' + COLS.length + '"><span class="sgl">' + g.label + " <b>" + g.items.length + "</b>" +
         (g.note ? ' <span class="muted">' + g.note + "</span>" : "") + (g.fold ? ' <span class="muted">' + (open ? "▾ 접기" : "▸ 펼치기") + "</span>" : "") + "</span></td></tr>";
       if (g.fold && !open) return;
     }
     let prevRs = null;
     g.items.forEach((x) => {
       if (o.cut && (!srt || srt.k === "rs") && prevRs != null && ((prevRs >= RS_LEADER) !== (x.rs >= RS_LEADER)))
-        rows += '<tr class="cut"><td colspan="' + ST_COLS.length + '"><span class="cutl">' + (prevRs >= RS_LEADER ? "▲ 여기 위가 주도주 (RS " + RS_LEADER + " 이상)" : "▼ 여기 아래가 주도주 (RS " + RS_LEADER + " 이상)") + "</span></td></tr>";
+        rows += '<tr class="cut"><td colspan="' + COLS.length + '"><span class="cutl">' + (prevRs >= RS_LEADER ? "▲ 여기 위가 주도주 (RS " + RS_LEADER + " 이상)" : "▼ 여기 아래가 주도주 (RS " + RS_LEADER + " 이상)") + "</span></td></tr>";
       rows += row(x); prevRs = x.rs;
     });
   });
-  if (!list.length) rows = '<tr class="sg"><td colspan="' + ST_COLS.length + '" class="muted">' + (o.empty || "해당하는 종목이 없습니다.") + "</td></tr>";
+  if (!list.length) rows = '<tr class="sg"><td colspan="' + COLS.length + '" class="muted">' + (o.empty || "해당하는 종목이 없습니다.") + "</td></tr>";
   wrap.innerHTML = '<table class="ntable ltable">' + head + "<tbody>" + rows + "</tbody></table>";
   wrap.querySelectorAll("th.sortable").forEach((th) => th.addEventListener("click", () => {
-    const k = th.dataset.k, first = ST_COLS.find((c) => c[0] === k)[3], cur = TABLE_SORT[id];
+    const k = th.dataset.k, first = COLS.find((c) => c[0] === k)[3], cur = TABLE_SORT[id];
     TABLE_SORT[id] = !cur || cur.k !== k ? { k, dir: first } : cur.dir === first ? { k, dir: -first } : undefined;
     rerenderTable(id);
   }));
@@ -2052,14 +2190,14 @@ function stockTable(id, list, o) {
   wrap.querySelectorAll("tr[data-t]").forEach((tr) => tr.addEventListener("click", () => openModal(tr.dataset.t)));
   fitCols();
 }
-const rerenderTable = (id) => (id === "tb-stock" ? renderStocks() : renderMine());
+const rerenderTable = (id) => (id === "tb-stock" ? renderStocks() : id === "tb-whale" ? renderWhale() : renderMine());
 // 칸 폭: 숫자·짧은 칸은 고정(내용 폭 + 여백), 단계·위치 · 다음 할 일 · 꼬리표는 지금 보이는 글에 맞춤.
 // 다 들어가면 남는 폭은 맨 오른쪽 꼬리표가 가져가 줄 끝만 비고 칸 사이는 벌어지지 않음.
 // 모자라면 단계·위치(가장 긴 글이 드묾) → 다음 할 일 → 꼬리표 순서로 줄임(넘치는 글은 말줄임·마우스를 올리면 전체, 꼬리표는 두 줄)
-const COL_W = { my: 34, t: 58, grp: 136, rs: 60, pc: 64, qw: 52, qi: 74, rev: 54, psr: 50, sp: 66 };
+const COL_W = { my: 34, t: 58, grp: 136, rs: 66, pc: 64, qw: 52, qi: 74, rev: 54, psr: 50, sp: 66, wd: 70, ww: 112, wq: 52 };
 const COL_MIN = { pos: 134, todo: 112, bd: 72 };   // 1000px 화면(표 상자 966px)에서 가로 스크롤이 안 생기는 최소 폭
 // 3층·4층 표(보유·관심)는 모두 같은 칸 폭을 씀: 세 표의 글을 함께 재서 한 번에 정하므로 칸 위치가 정확히 맞음
-const TABLE_IDS = ["tb-stock", "tb-hold", "tb-watch"];
+const TABLE_IDS = ["tb-stock", "tb-hold", "tb-watch", "tb-whale"];   // 큰손 표도 앞 6칸(★·티커·산업·6개월·단계·할 일)과 꼬리표 위치가 같음
 function fitCols() {
   const wraps = TABLE_IDS.map((id) => document.getElementById(id)).filter((w) => w && w.querySelector("tbody tr[data-t]"));
   if (!wraps.length) return;
@@ -2177,7 +2315,8 @@ async function loadProfiles() {
     if (p && p.items) PROFILES = p;
   } catch (e) {}
 }
-loadProfiles();
+const PROF_P = loadProfiles();
+loadWhales();
 const pfEsc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 function renderProfile(t) {
   const box = document.getElementById("mProf");
@@ -2190,10 +2329,10 @@ function renderProfile(t) {
   if (p.sub) path.push('<span><span class="pf-k">세부</span>' + pfEsc(p.sub) + "</span>");
   const chips = (p.types || []).map((x) => '<span class="pf-chip' + (x === "약함" ? " weak" : "") + '">' + pfEsc(x) + "</span>").join("");
   box.innerHTML = '<details' + (open ? " open" : "") + '><summary>' + path.join('<span class="pf-sep">›</span>') +
-    (p.pp ? '<span class="pf-pp" title="' + pfEsc(p.ppWhy || "") + '">가격결정력 <b>' + p.pp + "</b>위</span>" : "") + "</summary>" +
+    (p.moat ? '<span class="pf-pp" title="' + pfEsc(p.moatWhy || "") + '">해자 <b class="moat-' + ({ "강": "s", "중": "m", "약": "w" }[p.moat] || "m") + '">' + pfEsc(p.moat) + "</b></span>" : "") + "</summary>" +
     '<div class="pf-grid"><div><span class="pf-k">하는 일</span><br>' + pfEsc(p.do) + "</div>" +
     '<div><span class="pf-k">시장에 있는 이유</span><br>' + pfEsc(p.why) + "</div>" +
-    '<div><span class="pf-k">해자</span> ' + chips + "<br>" + pfEsc(p.edge) + "</div></div></details>" + fh;
+    '<div><span class="pf-k">해자</span> ' + chips + "<br>" + pfEsc(p.edge) + "</div>" + whaleLine(t) + "</div></details>" + fh;
   const d = box.querySelector("details");
   d.addEventListener("toggle", () => { try { localStorage.setItem("td2_prof", d.open ? "1" : "0"); } catch (e) {} });
 }
@@ -2207,7 +2346,8 @@ function fundHtml(t) {
   let s = '<div class="pf-fund">';
   if (f.g0 != null) s += '<span><span class="pf-k">매출 YoY</span><b>' + pctI(f.g0) + "</b>" + (f.g1 != null ? ' <span class="' + cc(f.g0 - f.g1) + '">' + ppI(f.g0 - f.g1) + "</span>" : "") +
     (f.accel ? ' <span class="badge tg">매출 가속</span>' : "") + ' <span class="muted">· 최근 4분기 </span>' + bars + "</span>";
-  if (f.psr != null) s += '<span><span class="pf-k">PSR</span><b>' + psrF(f.psr) + "</b>" + (f.psr1 != null ? ' <span class="' + cc(f.psr - f.psr1) + '">' + (f.psr >= f.psr1 ? "▲" : "▼") + psrD(Math.abs(f.psr - f.psr1)) + '</span> <span class="muted">(직전 분기 실적 다음 날 ' + md(f.at1) + " " + psrF(f.psr1) + ")</span>" : "") + "</span>";
+  if (f.psr != null) s += '<span><span class="pf-k">PSR</span><b>' + psrF(f.psr) + "</b>" + (f.psr1 != null ? ' <span class="' + cc(f.psr - f.psr1) + '">' + (f.psr >= f.psr1 ? "▲" : "▼") + psrD(Math.abs(f.psr - f.psr1)) + "</span>" : "") +
+    (f.psrHist.length ? ' <span class="muted">· 최근 4분기 </span>' + f.psrHist.map((z) => '<span title="' + qName(z.e) + " · 실적 다음 날 " + md(z.at) + ' 종가 기준">' + psrF(z.v) + "</span>").join(' <span class="muted">→</span> ') : "") + "</span>";
   s += '<span class="muted">' + qName(f.q0) + (f.rep0 ? " · " + md(f.rep0) + " 발표" : "") + (f.ttm ? " · 4분기 매출 " + usdF(f.ttm) : "") + (f.mc ? " · 시총 " + usdF(f.mc) : "") + "</span>";
   if (f.stale) s += '<span class="wtag" title="실적 발표 뒤 Alpha Vantage에 새 분기가 아직 안 올라옴. 서버가 2일마다 다시 확인">새 분기 반영 대기</span>';
   return s + "</div>";
@@ -2215,7 +2355,7 @@ function fundHtml(t) {
 
 // 크게 보기
 function openModal(t) {
-  const x = VIEW && VIEW.info[t];
+  const x = infoOf(t);
   if (!x) return;
   const cls = x.cls || classify(x.d, x.rs);
   document.getElementById("mName").innerHTML = starHtml(t) + TICKERS[t].name + '<span class="ticker">' + t + "</span>" + tagsOf(x);
@@ -2255,7 +2395,7 @@ function refreshDiff() {
   const prev = computeView(CMP_K);
   PREV_ASOF = prev.asOf; PREV_VIEW = prev;
   DIFF = diffViews(VIEW, prev);
-  renderFlow(); renderStocks(); renderMine(); renderSticky();
+  renderFlow(); renderStocks(); renderMine(); renderSticky(); renderWhale();
 }
 function renderAll() {
   renderMarket();
@@ -2264,7 +2404,7 @@ function renderAll() {
     const prev = computeView(CMP_K);
     PREV_ASOF = prev.asOf; PREV_VIEW = prev;
     DIFF = diffViews(VIEW, prev);
-    renderFlow(); renderStocks(); renderMine(); renderSticky(); updateBreadth();
+    renderFlow(); renderStocks(); renderMine(); renderSticky(); updateBreadth(); renderWhale();
   }
 }
 
@@ -2393,7 +2533,7 @@ async function loadAll(force) {
   if (!key) { statusEl.textContent = "⚙ 설정에서 Twelve Data API 키를 넣어 주세요. (twelvedata.com 무료 가입 후 발급)"; document.getElementById("settings").hidden = false; return; }
   running = true;
   const boundary = closeBoundary(Date.now(), -1);
-  const all = MARKET.concat(STOCKS), todo = [];
+  const all = MARKET.concat(STOCKS, whaleExtra()), todo = [];
   for (const s of all) {
     const c = await dbGet("d_" + s);
     if (c && c.rows && !force && (!boundary || c.at >= boundary)) DATA[s] = unpack(c.rows);
@@ -2456,7 +2596,7 @@ function buildHelp() {
   document.getElementById("helpPanel").innerHTML = `
 <div class="phead"><b>이 대시보드 보는 법</b><button class="close" id="helpClose" title="닫기 (Esc)">✕</button></div>
 <div class="toc"><a href="#h-start">처음 오셨다면</a><a href="#h-signal">신호등</a><a href="#h-sticky">0층 고정 바</a>
-<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 산업</a><a href="#h-phase">국면 한 줄</a><a href="#h-groups">산업 분류</a><a href="#h-prof">기업 프로필</a><a href="#h-stocks">3층 종목</a><a href="#h-states">단계와 위치</a><a href="#h-cheat">치트 삭제</a><a href="#h-fund">매출 성장·PSR</a><a href="#h-my">4층 내 종목 ★</a>
+<a href="#h-market">1층 시장</a><a href="#h-ddftd">분산일·팔로스루</a><a href="#h-flow">2층 산업</a><a href="#h-phase">국면 한 줄</a><a href="#h-groups">산업 분류</a><a href="#h-prof">기업 프로필</a><a href="#h-stocks">3층 종목</a><a href="#h-states">단계와 위치</a><a href="#h-cheat">치트 삭제</a><a href="#h-fund">매출 성장·PSR</a><a href="#h-my">4층 내 종목 ★</a><a href="#h-whale">5층 큰손</a>
 <a href="#h-tags">꼬리표</a><a href="#h-rs">RS 계산법</a><a href="#h-charts">차트 읽는 법</a><a href="#h-data">데이터·갱신</a><a href="#h-limits">한계</a></div>
 
 <h3 id="h-start">처음 오셨다면</h3>
@@ -2542,8 +2682,8 @@ function buildHelp() {
 
 <h3 id="h-prof">기업 프로필 <small>확대 차트 위 설명 패널</small></h3>
 <p>종목을 눌러 확대 차트를 열면 위쪽에 <b>산업 › 테마 › 세부 테마</b>와 그 회사가 <b>하는 일</b>, <b>시장에 있는 이유</b>, <b>해자</b>(강점)가 나옵니다. 제목 줄을 누르면 접고 펼 수 있고, 고른 상태는 기억합니다.</p>
-<p><b>해자 유형</b>은 규모의 경제 · 네트워크 효과 · 전환비용 · 기술·특허 · 브랜드 · 규제·인허가 · 과점·독점 · 입지·자산 · 유통망 · 데이터 · 원가 우위 중 해당하는 것이고, 뚜렷한 해자가 없으면 주황색 <b>약함</b>입니다. <b>가격결정력 n위</b>는 100종목 중 순위(1이 가장 강함)이며 마우스를 올리면 근거가 나옵니다.</p>
-<p>내용은 <b>profiles.json</b>에 있고 구글 시트 "기업 프로필" 탭과 같습니다. 해자와 가격결정력은 사업·경쟁 환경이 바뀌면 달라지므로 방향을 보는 참고용입니다.</p>
+<p><b>해자 유형</b>은 규모의 경제 · 네트워크 효과 · 전환비용 · 기술·특허 · 브랜드 · 규제·인허가 · 과점·독점 · 입지·자산 · 유통망 · 데이터 · 원가 우위 중 해당하는 것이고, 뚜렷한 해자가 없으면 주황색 <b>약함</b>입니다. 오른쪽 위 <b>해자 강 · 중 · 약</b>은 다른 종목과 비교한 순위가 아니라 그 회사만 놓고 본 절대 등급입니다. <b>강</b>: 여러 해 지킬 수 있는 구조적 우위(경쟁자가 돈을 써도 따라오기 어려움) · <b>중</b>: 실제 우위는 있지만 좁거나 경쟁·사이클에 흔들림 · <b>약</b>: 뚜렷한 우위가 없거나 가격이 시장·원자재에 정해짐.</p>
+<p>내용은 <b>profiles.json</b>에 있습니다(처음에는 구글 시트 "기업 프로필" 탭에서 옮김, 해자 등급과 큰손 종목은 그 뒤 추가). 해자 등급은 사업·경쟁 환경이 바뀌면 달라지므로 방향을 보는 참고용입니다.</p>
 
 <h3 id="h-stocks">3층 · 종목 <small>무엇을 살까 · 보기 5개</small></h3>
 <p>나스닥100 종목을 <b>표 하나</b>로 보고, 위 버튼으로 보기만 바꿉니다. 버튼 옆 숫자는 그 보기의 종목 수입니다. 2층에서 산업을 고르면 모든 보기가 그 산업만 보여 줍니다. 오른쪽 칸에서 찾으면 보기와 상관없이 100종목 전체에서 찾습니다.</p>
@@ -2595,9 +2735,21 @@ function buildHelp() {
 <table>
 <tr><td>매출</td><td><b>위 숫자</b>: 실적을 발표한 가장 최근 분기 매출의 전년 같은 분기 대비 성장률(YoY). <b>아래 숫자</b>: 그 전 분기 YoY와의 차이(%p). <span class="chg-up">▲</span>면 성장이 빨라지는 중(가속), <span class="chg-down">▼</span>면 느려지는 중입니다. 오닐은 매출 25% 이상 성장, 또는 몇 분기 이어진 가속을 봅니다.</td></tr>
 <tr><td>PSR</td><td><b>위 숫자</b>: 오늘 시가총액 ÷ 최근 4개 분기 매출 합(TTM). 계절 영향이 없고 100종목을 같은 잣대로 비교하려고 TTM을 씁니다(고성장주는 과거 매출이 섞여 높게 나오는 약점). <b>아래 숫자</b>: 직전 분기 실적 발표 다음 거래일의 PSR(그날 종가 ÷ 그때의 4개 분기 매출)과의 차이. <span class="chg-up">▲</span>면 매출보다 주가가 더 올라 비싸진 것, <span class="chg-down">▼</span>면 싸진 것입니다.</td></tr>
-<tr><td>확대 차트</td><td>프로필 아래 한 줄: 매출 YoY와 가속, 최근 4분기 YoY 흐름, PSR과 직전 분기 PSR, 어느 분기인지·발표일·4분기 매출·시가총액. 칸에 마우스를 올려도 같은 내용이 보입니다.</td></tr>
+<tr><td>확대 차트</td><td>프로필 아래 한 줄: 매출 YoY와 가속, 최근 4분기 YoY 흐름, PSR과 직전 분기 대비 변화, 최근 4분기 PSR 흐름(각 분기 실적 발표 다음 거래일 종가 × 그 분기 말 주식 수 ÷ 그 분기까지 4개 분기 매출), 어느 분기인지·발표일·4분기 매출·시가총액. 칸에 마우스를 올려도 같은 내용이 보입니다.</td></tr>
 <tr><td>자료</td><td>서버가 Alpha Vantage에서 분기 매출과 분기 말 발행주식 수를 받습니다. 무료 키 한도 때문에 하루 11종목씩 받고(처음 100종목은 약 9일), 그 뒤로는 새 실적이 나온 종목만 다시 받습니다. 아직 못 받았으면 "-"입니다. 실적 발표 뒤 새 분기가 아직 안 올라왔으면 확대 차트에 <span class="wtag">새 분기 반영 대기</span>가 붙습니다.</td></tr>
 <tr><td>주의</td><td>시가총액 = 분기 말 발행주식 수 × 그날 종가입니다(지금 PSR은 최근 분기 말, 직전 분기 PSR은 그 전 분기 말 주식 수). 주식 종류가 여럿이거나(GOOGL 등) 미국 예탁증서(ADR)로 상장한 회사는 주식 수 기준이 달라 시가총액이 틀릴 수 있습니다. 달러가 아닌 통화로 실적을 내는 회사(예: ASML 유로)는 오늘 환율로 바꿉니다. 큰 인수합병이 있으면 YoY가 부풀고, 회계 분기가 달력과 다른 회사도 있습니다. 주도주는 늘 PSR이 높아 보이므로 PSR은 매수·매도 신호가 아니라 "너무 빨리 부풀었나"를 보는 참고값입니다.</td></tr>
+</table>
+
+<h3 id="h-whale">5층 · 큰손 <small>13F 보유 상위 10종목</small></h3>
+<p>미국에서 1억 달러 넘게 굴리는 기관은 분기가 끝나고 45일 안에 미국 상장 주식 보유 내역(13F)을 공개합니다. 큰 자본이 무엇을 샀는지 <b>후보를 찾는 자료</b>이고, 사고팔지는 다른 층처럼 차트(단계·위치·다음 할 일)로 정합니다.</p>
+<table>
+<tr><td>위 줄</td><td>큰손 이름(누르면 바꿈) · 어느 분기 자료인지 · <b>기준일</b>(분기 말) · 공시일 · 같은 기간 QQQ 등락. 13F는 기준일 뒤 최대 45일 늦게 나오므로 지금은 이미 팔았을 수도 있습니다.</td></tr>
+<tr><td>기준일 등락</td><td>기준일 종가 대비 지금 등락률. 같은 기간 QQQ보다 많이 오른 종목만 <span class="chg-up">빨강</span>입니다(산 뒤 큰 자본이 따라 들어왔는지).</td></tr>
+<tr><td>비중</td><td>13F 전체 평가액(옵션 포함) 중 이 종목 보통주 비중. 아래: 직전 분기 대비 주식 수 변화(신규 · 추가 · 축소 · 유지, ±1%는 유지)와 같은 종목 콜·풋 옵션 보유.</td></tr>
+<tr><td>보유</td><td>끊기지 않고 들고 있던 분기 수(최근 12분기 안에서, 내내 들고 있었으면 3년+).</td></tr>
+<tr><td>나머지 칸</td><td>3층과 같습니다. 나스닥100 밖 종목의 RS는 나스닥100 100종목 사이에서 몇 등쯤인지(1-99)입니다. ETF는 뺍니다.</td></tr>
+<tr><td>빠진 것</td><td>13F에는 공매도, 채권, 해외 상장 주식, 기준일 뒤 거래가 없습니다. 매크로 투자자는 이 빠진 부분이 큽니다.</td></tr>
+<tr><td>갱신</td><td>반자동: 분기 공시(2월·5월·8월·11월 중순)가 나오면 Claude에게 갱신을 맡기면 <code>scripts/build_whale.py</code>로 SEC 원본을 받아 <code>whales/</code> 파일을 바꿉니다. 큰손을 더하려면 <code>whales/index.json</code>에 한 줄(이름·SEC 번호)을 넣고 같은 스크립트를 돌리면 위 줄에 버튼이 생깁니다. 나스닥100 밖 종목의 시세·재무는 서버가 다음 갱신 때부터 함께 받습니다.</td></tr>
 </table>
 
 <h3 id="h-my">4층 · 내 종목 <small>★★ 보유 · ★ 관심</small></h3>
