@@ -25,6 +25,7 @@
   지난 400일 발표일은 처음 한 번만 다 받고(약 4분), 그 뒤로는 새 날짜만 이어 받습니다.
 - 매출 성장·PSR: Alpha Vantage 분기 매출(INCOME_STATEMENT)과 발행주식 수(BALANCE_SHEET)를 종목당 2회로 받아 fund에 쌓음.
   하루 11종목까지(처음 100종목 채우기 약 9일), 그 뒤로는 새 실적이 발표된 종목만. 달러가 아닌 매출은 Twelve Data 환율(fx).
+- 큰손(5층): whales/index.json 각 큰손 최신 13F 상위 종목 중 나스닥100 밖 종목도 시세·실적·재무를 함께 받음(EXTRA)
 - 결과: 저장소 맨 위의 data.json
 """
 import datetime as dt
@@ -47,6 +48,25 @@ NAMES = dict(re.findall(r'\["([A-Z][A-Z0-9.]*)",\s*"([^"]+)"\]', universe_block)
 MARKET = json.loads(re.search(r"const MARKET = (\[.*?\]);", HTML).group(1))
 DAYS_MARKET = int(re.search(r"const DAYS_MARKET = (\d+)", HTML).group(1))
 DAYS_STOCK = int(re.search(r"const DAYS_STOCK = (\d+)", HTML).group(1))
+
+
+def whale_tickers():
+    """5층 큰손: whales/index.json 의 각 큰손 최신 파일 상위 종목 중 UNIVERSE 밖 종목(시세·재무를 함께 받음)"""
+    try:
+        idx = json.load(open(os.path.join(ROOT, "whales", "index.json"), encoding="utf-8"))
+        out = []
+        for inv in idx.get("investors", []):
+            if inv.get("latest"):
+                f = json.load(open(os.path.join(ROOT, "whales", inv["latest"]), encoding="utf-8"))
+                out += [x["t"] for x in f.get("top", []) if x["t"] not in STOCKS and x["t"] not in out]
+        return out
+    except Exception as e:
+        print(f"큰손 종목 읽기 실패 - {e}", flush=True)
+        return []
+
+
+EXTRA = whale_tickers()
+ALL = STOCKS + EXTRA          # 시세·실적·재무를 받을 개별 종목(QQQ 비중·구성 비교는 STOCKS만)
 
 KEY = os.environ.get("TWELVE_DATA_KEY", "").strip()
 GAP = 8.0  # 초. 무료 키 분당 8회
@@ -369,7 +389,7 @@ def earnings_nasdaq(prev, today):
         start = max(hist_from, dt.date.fromisoformat(upto) - dt.timedelta(days=5))   # 며칠 겹쳐서 다시 확인
         hist = {s: [x for x in v if x < start.isoformat()] for s, v in hist.items()}
     print(f"실적 일정 받기: {start} - {today + dt.timedelta(days=AHEAD_DAYS)}", flush=True)
-    found = fetch_earnings(STOCKS, start, today + dt.timedelta(days=AHEAD_DAYS))
+    found = fetch_earnings(ALL, start, today + dt.timedelta(days=AHEAD_DAYS))
     earnings = {}
     for s, rows in found.items():
         for r in rows:
@@ -480,6 +500,7 @@ def fetch_fund_av(sym, close):
             out["sh"] = round(sh[0][1])
             q1 = rows[1][0] if len(rows) > 1 else None
             out["sh1"] = next((round(v) for d, v in sh if d == q1), None)
+            out["shq"] = [[d, round(v)] for d, v in sh[:5]]   # 분기별 PSR(확대 차트 최근 4분기)용 분기 말 주식 수
         return out
     except Exception as e:
         print(f"  재무 {sym}: 실패 - {e}", flush=True)
@@ -504,10 +525,10 @@ def fund_need(s, f, hist, today_s):
 
 
 def update_fund(prev_fund, hist, series, today_s):
-    fund = {s: v for s, v in (prev_fund or {}).items() if s in STOCKS}
+    fund = {s: v for s, v in (prev_fund or {}).items() if s in ALL}
     if not AV_KEY:
         return fund
-    todo = sorted((p, s) for s in STOCKS if s in series and (p := fund_need(s, fund.get(s), hist, today_s)) is not None)
+    todo = sorted((p, s) for s in ALL if s in series and (p := fund_need(s, fund.get(s), hist, today_s)) is not None)
     todo = todo[:FUND_BUDGET // 2]
     print(f"재무 받기 (Alpha Vantage): {len(todo)}종목 {[s for _, s in todo]}", flush=True)
     for (pri, _), s in todo:
@@ -523,7 +544,7 @@ def update_fund(prev_fund, hist, series, today_s):
             print(f"  재무 {s}: 새 분기가 아직 없음({got['q'][0][0]}) — {FUND_RETRY_DAYS}일 뒤 다시", flush=True)
             fund[s] = dict(old, sh=got["sh"] or old.get("sh"), tried=today_s)
             continue
-        fund[s] = {"cur": got["cur"], "q": got["q"] or old.get("q", []), "sh": got["sh"] or old.get("sh"), "sh1": got.get("sh1") or old.get("sh1"), "at": today_s}
+        fund[s] = {"cur": got["cur"], "q": got["q"] or old.get("q", []), "sh": got["sh"] or old.get("sh"), "sh1": got.get("sh1") or old.get("sh1"), "shq": got.get("shq") or old.get("shq"), "at": today_s}
         q = fund[s]["q"]
         print(f"  재무 {s}: 분기 {len(q)}개, 최근 {q[0][0] if q else '-'} ({got['cur']}), 주식 수 환산 {fund[s]['sh']}", flush=True)
         if got.get("limit"):
@@ -567,7 +588,7 @@ def main():
     wait_for_settle()
 
     series, failed = {}, []
-    symbols = MARKET + STOCKS
+    symbols = MARKET + ALL
     print(f"시세 받기: {len(symbols)}종목 (약 {len(symbols) * GAP / 60:.0f}분)", flush=True)
     for i, s in enumerate(symbols, 1):
         t0 = time.time()
@@ -659,7 +680,7 @@ def main():
 
     today = dt.date.today()
     print("실적 일정 받기 (Alpha Vantage)", flush=True)
-    av = fetch_earnings_av(STOCKS)
+    av = fetch_earnings_av(ALL)
     if av is not None:
         # 지난 발표일: 전에 받아 둔 것 + 전에 '다가오는 일정'이었는데 이제 지나간 날
         hist_from = (today - dt.timedelta(days=HIST_DAYS)).isoformat()
