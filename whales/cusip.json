@@ -1,0 +1,67 @@
+{
+ "632307104": {
+  "t": "NTRA",
+  "name": "Natera"
+ },
+ "G7997R103": {
+  "t": "STX",
+  "name": "Seagate"
+ },
+ "023135106": {
+  "t": "AMZN",
+  "name": "Amazon"
+ },
+ "35137L105": {
+  "t": "FOXA",
+  "name": "Fox (A)"
+ },
+ "984245100": {
+  "t": "YPF",
+  "name": "YPF"
+ },
+ "91332U101": {
+  "t": "U",
+  "name": "Unity Software"
+ },
+ "81141R100": {
+  "t": "SE",
+  "name": "Sea"
+ },
+ "464286400": {
+  "t": "EWZ",
+  "name": "iShares MSCI Brazil",
+  "kind": "etf"
+ },
+ "457669307": {
+  "t": "INSM",
+  "name": "Insmed"
+ },
+ "76155X100": {
+  "t": "RVMD",
+  "name": "Revolution Medicines"
+ },
+ "G0896C103": {
+  "t": "TBBB",
+  "name": "BBB Foods"
+ },
+ "861012102": {
+  "t": "STM",
+  "name": "STMicroelectronics"
+ },
+ "N62509109": {
+  "t": "NAMS",
+  "name": "NewAmsterdam Pharma"
+ },
+ "12514G108": {
+  "t": "CDW",
+  "name": "CDW"
+ },
+ "88023U101": {
+  "t": "SGI",
+  "name": "Somnigroup"
+ },
+ "651639106": {
+  "t": "NEM",
+  "name": "Newmont"
+ }
+}
