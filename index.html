@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-22 13:45</title>
+<title>추세 대시보드 v2026-11-24 00:27</title>
 <!-- 차트 라이브러리: 저장소 안 사본을 먼저(외부 CDN이 막혀도 열리게), 없으면 unpkg -->
 <script src="vendor/lightweight-charts-4.2.0.standalone.production.js"></script>
 <script>window.LightweightCharts || document.write('<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"><\/script>');</script>
@@ -157,7 +157,8 @@
 
   /* 1층 차트 */
   #marketChart { height: 42vh; min-height: 280px; position: relative; }
-  .vpbtn { position: absolute; left: 8px; top: 6px; z-index: 5; font-size: 11px; padding: 2px 8px; border: 1px solid var(--line, #ccc); border-radius: 6px; background: var(--card, #fff); color: var(--sub, #666); cursor: pointer; }
+  .cbtns { position: absolute; left: 8px; top: 6px; z-index: 5; display: flex; gap: 4px; }
+  .vpbtn { font-size: 11px; white-space: nowrap; padding: 2px 8px; border: 1px solid var(--line, #ccc); border-radius: 6px; background: var(--card, #fff); color: var(--sub, #666); cursor: pointer; }
   .vpmenu { position: absolute; left: 8px; top: 28px; z-index: 6; display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.15); padding: 3px 0; }
   .vpmenu button { font-size: 11px; text-align: left; padding: 4px 12px 4px 8px; background: none; border: 0; color: var(--text); cursor: pointer; white-space: nowrap; }
   .vpmenu button:hover { background: var(--line); }
@@ -339,7 +340,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-22 13:45</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-24 00:27</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -1096,7 +1097,7 @@ function baseChart(el, bottomMargin) {
     if (w && w !== lastW) { lastW = w; requestAnimationFrame(() => fitChart(chart)); }
   });
   ro.observe(el);
-  el._chart = chart; el._ro = ro;
+  el._chart = chart; el._ro = ro; chart._el = el;
   return chart;
 }
 // 일봉 차트는 오른쪽 끝에 RIGHT_PAD일만큼 빈 칸을 둠: 마지막 봉이 가격축 라벨·매물대 막대에 가리지 않게
@@ -1108,8 +1109,46 @@ function fitChart(chart) {
 function disposeCharts(root) {
   root.querySelectorAll("*").forEach((el) => { if (el._chart) { el._chart.remove(); el._ro.disconnect(); el._chart = null; } });
 }
-// 오닐·미너비니식 바 (고가-저가 + 종가 눈금), 전일(전주) 종가 대비 색
+// ═════ 가격 보기: 바 / 종가 선. 모든 차트(1층 QQQ · 크게 보기)에 같이 적용하고 브라우저에 기억 ═════
+let PX_MODE = "bar";
+try { if (localStorage.getItem("td2_px") === "line") PX_MODE = "line"; } catch (e) {}
+const PX_LABEL = { bar: "가격: 바 ▾", line: "가격: 종가 선 ▾" };
+const PX_MENU = [["bar", "바 (고가-저가 + 종가 눈금)"], ["line", "종가 선 (종가를 이은 선)"]];
+const PX_ELS = new Set();   // 지금 그려진 차트 상자: 보기를 바꾸면 el._redraw로 다시 그림(손절선·상자·매물대가 모두 가격 시리즈에 붙어 있어서)
+function setPxMode(m) {
+  if (m === PX_MODE) return;
+  PX_MODE = m;
+  try { localStorage.setItem("td2_px", m); } catch (e) {}
+  PX_ELS.forEach((el) => { if (!el.isConnected || !el._chart || !el._redraw) { PX_ELS.delete(el); return; } el._redraw(); });
+}
+// 차트 왼쪽 위 버튼 줄(가격 · 매물대). 누르면 그 버튼 바로 아래에 메뉴
+function chartBtn(el, label, menu, cur, pick) {
+  let w = el.querySelector(".cbtns");
+  if (!w) { w = document.createElement("div"); w.className = "cbtns"; el.appendChild(w); }
+  const btn = document.createElement("button");
+  btn.className = "vpbtn"; btn.type = "button"; btn.textContent = label;
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    const open = el.querySelector(".vpmenu"), same = open && open._btn === btn;
+    closeVpMenus(); if (same) return;
+    const m = document.createElement("div"); m.className = "vpmenu"; m._btn = btn;
+    m.style.left = w.offsetLeft + btn.offsetLeft + "px";
+    m.innerHTML = menu.map(([k, l]) => '<button type="button" data-m="' + k + '"><i>' + (k === cur() ? "✓" : "") + "</i>" + l + "</button>").join("");
+    m.onclick = (ev) => { ev.stopPropagation(); const b = ev.target.closest("[data-m]"); if (!b) return; closeVpMenus(); pick(b.dataset.m); };
+    el.appendChild(m);
+  };
+  w.appendChild(btn);
+  return btn;
+}
+// 가격 시리즈. 바 = 오닐·미너비니식(고가-저가 + 종가 눈금), 전일(전주) 종가 대비 색
+// 종가 선 = 종가를 이은 선 하나. 빨강·파랑은 등락 색이라 쓰지 않고 중립색
 function addBars(chart, rows, from) {
+  if (chart._el) { PX_ELS.add(chart._el); chartBtn(chart._el, PX_LABEL[PX_MODE], PX_MENU, () => PX_MODE, setPxMode); }
+  if (PX_MODE === "line") {
+    const s = chart.addLineSeries({ color: DARK ? "#e5e7eb" : "#111827", lineWidth: 2, priceLineWidth: 1 });
+    s.setData(rows.filter((r, i) => i >= from).map((r) => ({ time: r.t, value: r.c })));
+    return s;
+  }
   const s = chart.addBarSeries({ openVisible: false, thinBars: false, upColor: C.barUp, downColor: C.barDown, priceLineWidth: 1 });
   s.setData(rows.map((r, i) => ({ r, i })).filter(({ i }) => i >= from).map(({ r, i }) => ({
     time: r.t, open: r.c, high: r.h, low: r.l, close: r.c, color: i > 0 && r.c < rows[i - 1].c ? C.barDown : C.barUp })));
@@ -1219,17 +1258,7 @@ function addVolProfile(chart, series, el, d, from, hl) {   // hl: 매물대 베�
     attached({ requestUpdate }) { req = requestUpdate; },
   };
   series.attachPrimitive(prim);
-  const btn = document.createElement("button");
-  btn.className = "vpbtn"; btn.type = "button"; btn.textContent = VP_LABEL[VP_MODE];
-  btn.onclick = (e) => {                             // 누르면 보기 방식을 고르는 메뉴
-    e.stopPropagation();
-    const open = el.querySelector(".vpmenu"); closeVpMenus(); if (open) return;
-    const m = document.createElement("div"); m.className = "vpmenu";
-    m.innerHTML = VP_MENU.map(([k, l]) => '<button type="button" data-m="' + k + '"><i>' + (k === VP_MODE ? "✓" : "") + "</i>" + l + "</button>").join("");
-    m.onclick = (ev) => { ev.stopPropagation(); const b = ev.target.closest("[data-m]"); if (!b) return; setVpMode(b.dataset.m); closeVpMenus(); };
-    el.appendChild(m);
-  };
-  el.appendChild(btn);
+  const btn = chartBtn(el, VP_LABEL[VP_MODE], VP_MENU, () => VP_MODE, setVpMode);   // 누르면 보기 방식을 고르는 메뉴
   VP_INST.add({ btn, req: () => req() });
 }
 // 매물대 보기 방식: 모든 차트(1층 QQQ · 크게 보기)에 같이 적용하고 브라우저에 기억
@@ -1242,7 +1271,7 @@ function setVpMode(m) {
 const closeVpMenus = () => document.querySelectorAll(".vpmenu").forEach((m) => m.remove());
 document.addEventListener("click", closeVpMenus);
 // 가격 선 이름은 차트 왼쪽 끝, 선 바로 위에 씀(오른쪽에 두면 최근 일봉을 가림). 가격 값은 오른쪽 축에 그대로
-function addLeftLabels(series, items, el) {   // el: 차트 상자(왼쪽 위 매물대 버튼과 겹치면 버튼 옆으로)
+function addLeftLabels(series, items, el) {   // el: 차트 상자(왼쪽 위 버튼 줄과 겹치면 버튼 옆으로)
   if (!items.length) return;
   series.attachPrimitive({
     paneViews() {
@@ -1252,7 +1281,7 @@ function addLeftLabels(series, items, el) {   // el: 차트 상자(왼쪽 위 �
           items.forEach((z) => {
             const yy = series.priceToCoordinate(z.p);
             if (yy == null) return;
-            const b = el && el.querySelector(".vpbtn");
+            const b = el && el.querySelector(".cbtns");
             const x = b && yy - 14 < b.offsetTop + b.offsetHeight ? b.offsetLeft + b.offsetWidth + 6 : 8;
             g.fillStyle = z.color; g.fillText(z.text, x, yy - 2);
           });
@@ -1264,6 +1293,7 @@ function addLeftLabels(series, items, el) {   // el: 차트 상자(왼쪽 위 �
 }
 function drawMarket(d, m) {
   if (!HAS_CHART()) return;
+  document.getElementById("marketChart")._redraw = () => drawMarket(d, m);   // 가격 보기(바·종가 선)를 바꾸면 다시 그림
   const chart = baseChart(document.getElementById("marketChart"), 0.24);
   const from = Math.max(0, d.length - SHOW_DAYS_MARKET);
   // 팔로스루 데이는 초록 배경. 배경은 가장 먼저 추가해서 바 뒤에 깔리게 함
@@ -1285,6 +1315,7 @@ function drawMarket(d, m) {
 }
 function drawDaily(el, d, cls, t, x) {
   if (!HAS_CHART()) { el.innerHTML = '<div class="muted" style="padding:20px">차트 라이브러리를 불러오지 못해 차트만 빠졌습니다. 새로고침해 보세요.</div>'; return; }
+  el._redraw = () => drawDaily(el, d, cls, t, x);   // 가격 보기(바·종가 선)를 바꾸면 다시 그림
   const chart = baseChart(el, 0.24);
   const from = Math.max(0, d.length - SHOW_DAYS_STOCK);
   const ed = earnDates(t);
@@ -2565,7 +2596,7 @@ function buildHelp() {
 <tr><td style="color:#7c3aed">━ 200일선</td><td>장기 추세. 판정 조건 ①·②: 종가가 이 선 아래이거나 선이 내려가면 방어.</td></tr>
 <tr><td style="color:#ca8a04">━ 21일 EMA</td><td>단기 추세선(짙은 노랑). 강한 주도 구간에서는 가격이 이 선 근처에서 받쳐지는지 봅니다.</td></tr>
 <tr><td style="color:#0f172a">━ 거래량 50일 평균</td><td>아래 거래량 막대 위의 가는 선. 막대가 이 선보다 높으면 평소보다 많이 거래된 날입니다.</td></tr>
-<tr><td style="color:#2a78d6">▇ 매물대</td><td>1년 동안 거래량이 많이 쌓인 가격대. 가격축 바로 옆에 파란색으로 그립니다. 왼쪽 위 버튼을 누르면 <b>핵심 띠 · 50칸 전체 · 끔</b> 중에서 고릅니다. 고른 것은 1층과 크게 보기 차트에 함께 적용되고 브라우저에 기억됩니다. <b>50칸</b>: 가격을 50칸으로 나눈 전체 분포(막대 길이 = 가장 큰 칸 대비). <b>핵심</b>: 거래가 몰린 <b>구간</b>을 띠로 그립니다. 앞뒤 칸과 평균 낸 거래량이 가장 많은 곳의 ${Math.round(VP_BAND * 100)}% 이상인 칸이 이어진 곳을 한 띠로 묶고(최대 ${VP_MAX_BANDS}개, 기준에 못 미치면 더 적게), 띠 안에서 가장 많은 칸을 진하게, 왼쪽 끝 숫자는 1년 거래량 중 그 띠의 몫(%)입니다. ${Math.round(VP_BAND * 100)}%는 책에 없는 이 대시보드의 값입니다(5년 시험에서 40-80% 모두 결과가 비슷했고, 띠가 너무 넓지도 좁지도 않은 값으로 고름). 현재가 위의 띠는 저항, 아래는 지지 후보입니다. 일봉 기준 근사입니다(하루 거래량을 그날 저가-고가에 똑같이 나눠 담음). <b>매물대 베이스</b> 종목은 지금 베이스와 겹친 가장 큰 띠를 더 진하게 칠하고 "· 베이스"를 붙입니다. 종목 크게 보기 차트에도 같은 버튼이 있습니다.</td></tr>
+<tr><td style="color:#2a78d6">▇ 매물대</td><td>1년 동안 거래량이 많이 쌓인 가격대. 가격축 바로 옆에 파란색으로 그립니다. 왼쪽 위 <b>매물대</b> 버튼을 누르면 <b>핵심 띠 · 50칸 전체 · 끔</b> 중에서 고릅니다. 고른 것은 1층과 크게 보기 차트에 함께 적용되고 브라우저에 기억됩니다. <b>50칸</b>: 가격을 50칸으로 나눈 전체 분포(막대 길이 = 가장 큰 칸 대비). <b>핵심</b>: 거래가 몰린 <b>구간</b>을 띠로 그립니다. 앞뒤 칸과 평균 낸 거래량이 가장 많은 곳의 ${Math.round(VP_BAND * 100)}% 이상인 칸이 이어진 곳을 한 띠로 묶고(최대 ${VP_MAX_BANDS}개, 기준에 못 미치면 더 적게), 띠 안에서 가장 많은 칸을 진하게, 왼쪽 끝 숫자는 1년 거래량 중 그 띠의 몫(%)입니다. ${Math.round(VP_BAND * 100)}%는 책에 없는 이 대시보드의 값입니다(5년 시험에서 40-80% 모두 결과가 비슷했고, 띠가 너무 넓지도 좁지도 않은 값으로 고름). 현재가 위의 띠는 저항, 아래는 지지 후보입니다. 일봉 기준 근사입니다(하루 거래량을 그날 저가-고가에 똑같이 나눠 담음). <b>매물대 베이스</b> 종목은 지금 베이스와 겹친 가장 큰 띠를 더 진하게 칠하고 "· 베이스"를 붙입니다. 종목 크게 보기 차트에도 같은 버튼이 있습니다.</td></tr>
 <tr><td style="color:#f59e0b">┅ 52주 고점 −${P(CORR_52W)}</td><td>판정 조건 ③. 종가가 이 주황 점선 아래면 대기(보통보다 깊은 조정). 이름은 차트 왼쪽 끝, 값은 오른쪽 가격축에 나옵니다.</td></tr>
 <tr><td><span style="background:rgba(22,163,74,0.30);padding:0 8px">초록 배경</span></td><td>팔로스루 데이. 조정 뒤 상승 전환 확인(판정에는 쓰지 않음, 아래 설명).</td></tr>
 </table>
@@ -2744,7 +2775,8 @@ function buildHelp() {
 </table>
 <h3 id="h-charts">차트 읽는 법</h3>
 <table>
-<tr><td>바 차트</td><td>오닐·미너비니식. 세로선은 고가-저가, 오른쪽 짧은 눈금이 종가(시가 눈금 없음).</td></tr>
+<tr><td>바 차트</td><td>오닐·미너비니식. 세로선은 고가-저가, 오른쪽 짧은 눈금이 종가(시가 눈금 없음). 차트 왼쪽 위 <b>가격</b> 버튼으로 <b>바 · 종가 선</b> 중에서 고릅니다. 고른 것은 1층과 크게 보기 차트에 함께 적용되고 브라우저에 기억됩니다.</td></tr>
+<tr><td>종가 선</td><td>종가만 이은 선(다크 모드는 밝은 회색). 큰 흐름과 종가가 촘촘히 모이는 수축 구간이 잘 보이고, 돌파·이탈 판정(종가 기준)과 그대로 맞습니다. 대신 장중 흔들림, 하루 폭, 그날 종가가 폭의 위쪽인지 아래쪽인지는 바에서만 보입니다. 베이스 상자·피벗·손절선은 고가·저가로 정하므로 선 보기에서는 상자 윗선이 선보다 조금 위에, 손절선은 선보다 조금 아래에 보입니다.</td></tr>
 <tr><td><span style="color:#dc2626">붉은</span> / <span style="color:#1d4ed8">파란</span> 바</td><td>전일 종가보다 올랐으면 붉은색, 내렸으면 파란색. 아래 거래량 막대도 같은 기준.</td></tr>
 <tr><td style="color:#0d9488">━ 50일선</td><td>중기 추세선(청록). 추세 종목은 이 선을 타고 오릅니다.</td></tr>
 <tr><td style="color:#7c3aed">━ 200일선</td><td>장기 추세선.</td></tr>
