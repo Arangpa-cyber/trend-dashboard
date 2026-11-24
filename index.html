@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-24 00:27</title>
+<title>추세 대시보드 v2026-11-24 12:35</title>
 <!-- 차트 라이브러리: 저장소 안 사본을 먼저(외부 CDN이 막혀도 열리게), 없으면 unpkg -->
 <script src="vendor/lightweight-charts-4.2.0.standalone.production.js"></script>
 <script>window.LightweightCharts || document.write('<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"><\/script>');</script>
+<script defer src="vendor/supabase-js-2.119.0.umd.js"></script>
 <style>
   :root {
     --bg: #f6f6f4; --card: #ffffff; --text: #1a1a1a; --sub: #777; --line: #e3e3e0; --accent: #c2410c;
@@ -184,6 +185,8 @@
   .muted { color: var(--sub); }
   .buyf { font-size: 12px; } .buyf input { font: inherit; width: 96px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); } .buyf input[type=date] { width: 130px; }
   .buyf button { font: inherit; font-size: 12px; padding: 2px 10px; border: 1px solid var(--accent); border-radius: 6px; background: transparent; color: var(--accent); }
+  .murec { font-size: 12px; flex-basis: 100%; } .murec summary { cursor: pointer; color: var(--sub); } .murec summary b { color: var(--text); font-weight: 600; }
+  .murec div { padding: 1px 0 1px 14px; } .murec .lb { display: inline-block; min-width: 30px; font-weight: 600; }
   .stoptip { position: absolute; z-index: 6; max-width: 360px; background: var(--card); border: 1px solid var(--warn); border-radius: 8px; padding: 7px 10px; font-size: 12px; line-height: 1.55; box-shadow: 0 4px 14px rgba(0,0,0,0.15); pointer-events: none; }
   .placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 13px; text-align: center; padding: 0 16px; }
 
@@ -270,6 +273,7 @@
   .starmenu button.on { font-weight: 700; }
   .starmenu button i { display: inline-block; width: 16px; font-style: normal; color: var(--go); }
   .starmenu .g { color: var(--gold); letter-spacing: -2px; display: inline-block; min-width: 22px; }
+  .starmenu .smn { font-size: 12px; color: var(--sub); padding: 4px 12px 6px; line-height: 1.5; white-space: nowrap; }
   .mycard { margin-top: 10px; border-radius: 10px; padding: 10px 14px; border: 1px solid var(--line); background: var(--card); font-size: 13px; scroll-margin-top: 60px; overflow: hidden; }
   .mycard .mh { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
   .mycard .tblwrap { margin: 8px -14px -10px; border-top: 1px solid var(--line); }   /* 카드 여백을 넘어 테두리까지: 3층 표와 폭·칸 위치가 같게 */
@@ -340,7 +344,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-24 00:27</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-24 12:35</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -406,11 +410,11 @@
   <div class="mcharts">
     <div><div class="mc" id="mDaily"></div>
       <div class="legend"><i style="color:#ca8a04">━</i> 21 EMA &nbsp; <i style="color:#0d9488">━</i> 50 SMA &nbsp; <i style="color:#7c3aed">━</i> 200 SMA &nbsp; <i style="color:#0d9488">━</i> 거래량 50 SMA &nbsp;
-        <i style="color:#f59e0b">━</i> 베이스 상단·하단 · 저항선 &nbsp; <i style="background:rgba(250,204,21,0.38);color:transparent;padding:0 5px">■</i> 실적 발표일</div></div>
+        <i style="color:#f59e0b">━</i> 베이스 상단·하단 · 저항선 &nbsp; <i style="background:rgba(250,204,21,0.38);color:transparent;padding:0 5px">■</i> 실적 발표일 &nbsp; <b>▲▼</b> 무살 매수·매도</div></div>
   </div></div></div>
 
 <footer>
-  데이터 <a href="https://twelvedata.com/" target="_blank" rel="noopener">Twelve Data</a> · 실적 일정 Nasdaq(서버 모드에서만) · 차트 <a href="https://www.tradingview.com/lightweight-charts/" target="_blank" rel="noopener">TradingView Lightweight Charts</a><br>
+  데이터 <a href="https://twelvedata.com/" target="_blank" rel="noopener">Twelve Data</a> · 실적 일정 Nasdaq(서버 모드에서만) · 차트 <a href="https://www.tradingview.com/lightweight-charts/" target="_blank" rel="noopener">TradingView Lightweight Charts</a> · 매매 기록 트레이딩:무살(로그인 시)<br>
   나스닥100 구성종목: 2026-10-30 기준. 지수 정기 변경(매년 12월)이나 수시 변경이 있으면 아래 UNIVERSE 목록을 고쳐야 합니다.<br>
   팔로스루 데이·베이스는 정해진 규칙으로 계산한 근사치입니다. 최종 판단은 차트로 하세요.
 </footer>
@@ -491,7 +495,7 @@ const STOCKS = Object.keys(TICKERS);
 // 이 브라우저에만 저장(공개 저장소로 보내지 않음). 다른 기기로는 '설정 링크'(#my=…)로 옮김.
 // 보유와 관심은 겹치지 않음. 별을 누르면 메뉴에서 ★★ 보유 · ★ 관심 · 해제를 고름
 let MY = { hold: [], watch: [] };
-const myLevel = (t) => (MY.hold.includes(t) ? 2 : MY.watch.includes(t) ? 1 : 0);
+const myLevel = (t) => (MY.hold.includes(t) || muHeld(t) ? 2 : MY.watch.includes(t) ? 1 : 0);
 const STAR_TXT = ["☆", "★", "★★"], LV_NAME = ["지정 안 함", "★ 관심", "★★ 보유"];
 function starHtml(t) {
   const lv = myLevel(t);
@@ -528,6 +532,166 @@ function myLink() {
   const bs = Object.entries(BUY).filter(([t]) => MY.hold.includes(t)).map(([t, b]) => t + "@" + b.p + "@" + (b.d || "")).join(",");
   return location.origin + location.pathname + "#my=" + encodeURIComponent(MY.hold.join(",") + ";" + MY.watch.join(",") + ";" + bs);
 }
+// ═════════════ 무살 매매 기록 연결 (구글 로그인 · 읽기만) ═════════════
+// 트레이딩:무살(같은 주소 arangpa-cyber.github.io의 매매 일지 웹앱)과 같은 Supabase 프로젝트를 씀.
+// 같은 주소라 같은 브라우저에서 무살에 로그인돼 있으면 여기서도 로그인 상태(로그인 정보를 함께 씀). 로그아웃도 함께.
+// 주소·publishable 키는 원래 웹페이지에 공개되는 값이고, 데이터는 DB의 RLS가 본인 기록만 읽게 막음. 무살 기록을 읽기만 하고 쓰지 않음.
+// 달러 종목만, 자산명 = 티커(앞의 영문 티커만 봄). 매수 건(N-n, 무살과 같은 이름)마다 매수가·매수일·손절가(무살 값 그대로), 매도는 판 건과 연결.
+// 무살에 안 판 건이 있는 종목은 ★★ 보유로 넣고(다 팔면 빠짐), 4층 팔기 = 그 건의 무살 손절가 아래(대시보드가 올리지 않음, +2R 도달·구조 손절선은 알림만).
+const SB_URL = "https://vwwrazzwzbaqfvsasvhb.supabase.co", SB_KEY = "sb_publishable_R2wol6cddrX_LKVn0vWUhw_THQ8AUic";
+let SB = null, MU = null, MU_USER = null, MU_EMAIL = "", MU_ERR = "", MU_BUSY = false;
+const MU_WHY = { stopLossHit: "손절가 도달", rangeBreakdown: "박스권 이탈", maBreakdown: "이평선 이탈", strengthSell: "강세 매도" };
+const muWhy = (s) => (s.sellReasons || []).map((k) => MU_WHY[k]).filter(Boolean).join(" · ") || s.legacyReason || "";
+const muKey = (name) => { const m = String(name || "").trim().toUpperCase().match(/^[A-Z][A-Z0-9.\-]{0,6}(?![A-Z0-9])/); return m ? m[0] : ""; };
+// 무살 buys·sells → {pos: {티커: {trades: [{n, lots, sells}]}}, miss: [티커로 못 읽은 달러 자산명]}
+function muBuild(buys, sells) {
+  const tr = {};
+  const add = (r, k) => { (tr[r.tradeId] = tr[r.tradeId] || { id: r.tradeId, name: String(r.assetName || "").trim(), cur: r.currency, buys: [], sells: [] })[k].push(r); };
+  buys.forEach((b) => add(b, "buys")); sells.forEach((x) => add(x, "sells"));
+  // N-n의 N: 같은 자산명 거래를 첫 매수일 순으로 셈(무살과 같게, 통화 구분 없이)
+  const byName = {};
+  Object.values(tr).forEach((t) => { t.first = t.buys.length ? Math.min(...t.buys.map((b) => b.date)) : Infinity; (byName[t.name] = byName[t.name] || []).push(t); });
+  Object.values(byName).forEach((g) => g.sort((a, b) => a.first - b.first || (a.id < b.id ? -1 : 1)).forEach((t, i) => (t.n = i + 1)));
+  const pos = {}, miss = new Set();
+  Object.values(tr).forEach((t) => {
+    if ((t.buys[0] || t.sells[0] || {}).currency !== "USD") return;
+    const sym = muKey(t.name); if (!sym) { miss.add(t.name); return; }
+    const ob = [...t.buys].sort((a, b) => a.date - b.date || (a.id < b.id ? -1 : 1));
+    const lots = ob.map((b, i) => ({ id: b.id, label: t.n + "-" + (i + 1), ms: b.date, price: +b.unitPrice, qty: +b.quantity || 0,
+      stop: +b.stopLossPrice || 0, stop0: +b.initialStopLossPrice || +b.stopLossPrice || 0, sold: false, sell: null }));
+    const byId = {}; lots.forEach((l) => (byId[l.id] = l));
+    const sl = [...t.sells].sort((a, b) => a.date - b.date).map((x) => {
+      const ls = (x.soldBuyIds || []).map((id) => byId[id]).filter(Boolean);
+      const base = ls.length ? ls : lots, q = base.reduce((a, l) => a + l.qty, 0), avg = q ? base.reduce((a, l) => a + l.price * l.qty, 0) / q : 0;
+      const o = { ms: x.date, price: +x.unitPrice, qty: +x.quantity || 0, labels: ls.map((l) => l.label).join(", "), ret: avg ? +x.unitPrice / avg - 1 : null, why: muWhy(x) };
+      ls.forEach((l) => { l.sold = true; l.sell = o; });
+      return o;
+    });
+    // 판 건이 적히지 않은 옛 매도: 판 수량이 산 수량 이상이면 모두 판 것으로
+    const sq = t.sells.reduce((a, x) => a + (+x.quantity || 0), 0), bq = lots.reduce((a, l) => a + l.qty, 0);
+    if (t.sells.some((x) => !(x.soldBuyIds || []).length) && sq >= bq - 1e-9) lots.forEach((l) => { if (!l.sold) { l.sold = true; l.sell = sl[sl.length - 1] || null; } });
+    (pos[sym] = pos[sym] || { trades: [] }).trades.push({ n: t.n, lots, sells: sl });
+  });
+  return { pos, miss: [...miss] };
+}
+const muOnDash = (t) => !!(TICKERS[t] || DATA[t]);
+const muHeld = (t) => !!(MU && MU.pos[t] && muOnDash(t) && MU.pos[t].trades.some((tr) => tr.lots.some((l) => !l.sold)));
+const holdAll = () => { const mu = MU ? Object.keys(MU.pos).filter(muHeld) : []; return MY.hold.concat(mu.filter((t) => !MY.hold.includes(t))); };
+const watchAll = () => MY.watch.filter((t) => !muHeld(t));
+// 무살 날짜(기기 시간대, 한국) → 미국 거래일: 그 날짜 또는 바로 전 거래일(한국 밤에 열리는 장이라 날짜가 하루 넘어감) 중
+// 체결가가 그날 고가-저가 안에 드는 쪽. 둘 다 들거나 둘 다 아니면 전 거래일(미국 장 6.5시간 중 6시간이 한국 자정 뒤). 아직 데이터에 없는 날이면 null
+const ymdLocal = (ms) => { const z = new Date(ms); return z.getFullYear() + "-" + String(z.getMonth() + 1).padStart(2, "0") + "-" + String(z.getDate()).padStart(2, "0"); };
+function muDay(ms, price, d) {
+  const D = ymdLocal(ms); let i = d.findIndex((r) => r.t >= D); if (i < 0) i = d.length;
+  const c = []; if (i < d.length && d[i].t === D) c.push(i); if (i >= 1) c.push(i - 1);
+  const fit = c.filter((k) => price >= d[k].l * 0.995 && price <= d[k].h * 1.005);
+  const k = fit.length ? fit[fit.length - 1] : c.length && i < d.length ? c[c.length - 1] : null;
+  return k == null ? null : d[k].t;
+}
+// 종목의 무살 기록(거래일을 그 종목 일봉에 맞춰 붙임)
+function muOf(t) {
+  const p = MU && MU.pos[t], x = p && infoOf(t), d = x && x.d;
+  if (!d || !d.length) return null;
+  const key = d.length + d[d.length - 1].t;
+  if (p._k !== key) { p._k = key; p.trades.forEach((tr) => { tr.lots.forEach((l) => (l.day = muDay(l.ms, l.price, d))); tr.sells.forEach((z) => (z.day = muDay(z.ms, z.price, d))); }); }
+  return p;
+}
+// 보유 계획(무살): 안 판 건마다 손절선 = 무살 손절가 그대로. 1R = 매수가 − 진입 때 손절가, +2R 도달은 알림만
+function muPlan(x) {
+  const p = muOf(x.t); if (!p) return null;
+  const open = p.trades.flatMap((tr) => tr.lots.filter((l) => !l.sold)); if (!open.length) return null;
+  const d = x.d, price = d[d.length - 1].c;
+  const lots = open.map((l) => {
+    const R = l.price - l.stop0, beAt = R > 0 ? l.price + BE_R * R : null;
+    let beT = null;
+    if (beAt != null && l.day) for (let i = d.findIndex((r) => r.t >= l.day); i >= 0 && i < d.length; i++) if (d[i].c >= beAt) { beT = d[i].t; break; }
+    return Object.assign({}, l, { R, beAt, beT, pnl: price / l.price - 1, rMul: R > 0 ? (price - l.price) / R : null });
+  });
+  const top = lots.reduce((a, l) => (l.stop > a.stop ? l : a));   // 가장 먼저 걸리는 건
+  const q = lots.reduce((a, l) => a + l.qty, 0), avg = q ? lots.reduce((a, l) => a + l.price * l.qty, 0) / q : top.price;
+  return { mu: true, lots, stop: top.stop, top, avg, pnl: price / avg - 1, price, hs: holdStopOf(x), below: lots.filter((l) => l.stop > 0 && price < l.stop) };
+}
+function muPlanHtml(pl) {
+  const f = (v) => v.toFixed(2), pr = pl.price;
+  let h = "<b>무살 기록</b> · 지금 " + f(pr) + (pl.lots.length > 1 ? " · 평균 매수가 " + f(pl.avg) : "") + ' · 손익 <b class="' + (pl.pnl >= 0 ? "chg-up" : "chg-down") + '">' + pctf(pl.pnl) + "</b>";
+  pl.lots.forEach((l) => {
+    h += "<br><b>" + l.label + "</b> 매수 " + f(l.price) + (l.day ? " (" + md(l.day) + ")" : "") + " · 손절 " + f(l.stop) + " (" + (pr < l.stop ? '<b class="warn">이미 아래</b>' : pctf(l.stop / pr - 1)) + ")" +
+      (l.R > 0 ? " · " + (l.rMul >= 0 ? "+" : "") + l.rMul.toFixed(1) + "R · " + (l.beT ? "<b>+" + BE_R + "R 도달</b>(" + md(l.beT) + ")" : "+" + BE_R + "R 자리 " + f(l.beAt)) : "");
+  });
+  const hs = pl.hs;
+  if (hs && hs.stop > pl.stop && hs.stop < pr && (!pl.top.day || hs.t >= pl.top.day)) h += "<br><b>참고</b> 지금 구조 손절선 " + f(hs.stop) + "(" + hs.kind + ", " + md(hs.t) + ")이 무살 손절가보다 높습니다";
+  return h + '<br><span class="muted">팔기 판정은 무살 손절가 그대로입니다(대시보드가 올리지 않음). +' + BE_R + "R 도달과 구조 손절선은 알림만 합니다.</span>";
+}
+// 크게 보기 머리글: 이 종목의 무살 기록(건마다 매수 → 매도)
+function muRecHtml(t) {
+  const p = muOf(t); if (!p) return "";
+  const f = (v) => v.toFixed(2), dy = (day, ms) => (day || ymdLocal(ms)).slice(2).replace(/-/g, ".");
+  const rows = [], open = [];
+  p.trades.slice().sort((a, b) => b.n - a.n).forEach((tr) => tr.lots.forEach((l) => {
+    const z = l.sell;
+    if (!l.sold) open.push(l.label + " " + f(l.price) + " · 손절 " + f(l.stop));
+    rows.push('<div><span class="lb">' + l.label + "</span> " + dy(l.day, l.ms) + " 매수 " + f(l.price) + " · 손절 " + f(l.stop) +
+      (l.sold ? (z ? " → " + dy(z.day, z.ms) + " 매도 " + f(z.price) + ' <b class="' + (z.price >= l.price ? "chg-up" : "chg-down") + '">' + pctf(z.price / l.price - 1) + "</b>" + (z.why ? ' <span class="muted">' + pfEsc(z.why) + "</span>" : "") : " → 매도") : " → <b>보유 중</b>") + "</div>");
+  }));
+  return '<details class="murec"><summary>무살 기록 ' + rows.length + "건" + (open.length ? " · <b>보유 " + open.join(" / ") + "</b>" : "") + "</summary>" + rows.join("") + "</details>";
+}
+function muInit() {
+  try { if (typeof window.supabase !== "object" || typeof window.supabase.createClient !== "function") return; SB = window.supabase.createClient(SB_URL, SB_KEY); }
+  catch (e) { SB = null; return; }
+  SB.auth.onAuthStateChange((ev, ses) => setTimeout(() => muSession(ses), 0));   // 콜백 안에서 바로 다른 요청을 하지 않음(라이브러리 권고)
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && MU_USER && MU && Date.now() - MU.at > 60000) muLoad(); });   // 무살에서 기록하고 돌아오면 다시 읽음
+}
+addEventListener("DOMContentLoaded", muInit);
+function muSession(ses) {
+  const uid = ses && ses.user ? ses.user.id : null;
+  MU_EMAIL = uid ? ses.user.email || "" : "";
+  if (!uid) { if (MU_USER || MU) { MU_USER = null; MU = null; MU_ERR = ""; muChanged(); } else renderMyBox(); return; }
+  if (uid !== MU_USER) { MU_USER = uid; muLoad(); }
+}
+async function muLoad() {
+  if (!SB || MU_BUSY) return;
+  MU_BUSY = true; MU_ERR = ""; renderMyBox();
+  try {
+    const all = async (tb) => { const out = []; for (let f = 0; ; f += 1000) {
+      const { data, error } = await SB.from(tb).select("data").order("id").range(f, f + 999);
+      if (error) throw error; out.push(...data.map((r) => r.data)); if (data.length < 1000) return out; } };
+    const [b, x] = await Promise.all([all("buys"), all("sells")]);
+    MU = muBuild(b, x); MU.at = Date.now(); MU.nb = b.length; MU.ns = x.length;
+  } catch (e) { MU_ERR = (e && e.message) || String(e); }
+  MU_BUSY = false; muChanged();
+}
+function muChanged() {
+  if (VIEW) Object.values(VIEW.info).concat(Object.values(WHALE_INFO).map((m) => m.x)).forEach((y) => { delete y._hp; });
+  if (VIEW) myRefresh(); else renderMyBox();
+  const mo = document.getElementById("modal");
+  if (mo && mo.classList.contains("open") && MODAL_T) { closeModal(); openModal(MODAL_T); }
+}
+async function muLogin() {
+  if (!SB) return;
+  const { error } = await SB.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
+  if (error) toast("로그인을 시작하지 못했어요: " + pfEsc(error.message));
+}
+async function muLogout() {
+  if (!SB) return;
+  await SB.auth.signOut({ scope: "local" });
+  toast("로그아웃했어요 (이 브라우저의 무살도 함께)");
+}
+// ⚙ 설정의 무살 연결 줄
+function muBoxHtml() {
+  if (!SB) return "";
+  const hm = (ms) => { const z = new Date(ms); return z.getHours() + ":" + String(z.getMinutes()).padStart(2, "0"); };
+  if (!MU_USER) return '<div class="row"><b>무살 연결</b><button class="btn ghost" id="muIn">Google로 로그인</button><span class="muted">트레이딩:무살 매매 기록(달러 종목, 자산명 = 티커)을 차트에 표시하고 보유 종목을 ★★로</span></div>';
+  let h = '<div class="row"><b>무살 연결</b><span class="muted">' + pfEsc(MU_EMAIL) + "</span>";
+  if (MU_BUSY) h += '<span class="muted">불러오는 중…</span>';
+  else if (MU_ERR) h += '<span class="warn">불러오지 못함: ' + pfEsc(MU_ERR) + "</span>";
+  else if (MU) { const held = Object.keys(MU.pos).filter(muHeld); h += "<span>보유 <b>" + held.length + "</b>종목 · 매수 " + MU.nb + "건 · 매도 " + MU.ns + '건 <span class="muted">(' + hm(MU.at) + " 불러옴)</span></span>"; }
+  h += '<button class="btn ghost" id="muRe">다시 불러오기</button><button class="btn ghost" id="muOut">로그아웃</button></div>';
+  if (MU) {
+    const off = Object.keys(MU.pos).filter((t) => !muOnDash(t)).concat(MU.miss);
+    if (off.length) h += '<div class="row"><span class="muted">대시보드에 없는 이름(차트 없음): ' + off.slice(0, 12).map(pfEsc).join(", ") + (off.length > 12 ? " 외 " + (off.length - 12) : "") + "</span></div>";
+  }
+  return h;
+}
 let toastTimer = null;
 function toast(html, undo) {
   const el = document.getElementById("toast");
@@ -552,6 +716,7 @@ function openStarMenu(st) {
   const m = document.createElement("div"); m.id = "starMenu"; m.className = "starmenu"; m.dataset.t = t;
   m.innerHTML = '<div class="smh">' + t + "</div>" + [[2, "★★", "보유"], [1, "★", "관심"], [0, "☆", "해제"]]
     .map(([k, s1, l]) => '<button type="button" data-lv="' + k + '"' + (k === lv ? ' class="on"' : "") + '><i>' + (k === lv ? "✓" : "") + '</i><span class="g">' + s1 + "</span> " + l + "</button>").join("");
+  if (muHeld(t)) m.innerHTML = '<div class="smh">' + t + '</div><div class="smn">★★ 무살 보유 중<br>무살에서 다 팔면 빠집니다</div>';
   document.body.appendChild(m); starMenuY = scrollY;
   const w = m.offsetWidth, h = m.offsetHeight;
   m.style.left = Math.max(4, Math.min(r.left, innerWidth - w - 4)) + "px";
@@ -1343,6 +1508,23 @@ function drawDaily(el, d, cls, t, x) {
   if (cls && cls.box && cls.state !== "deep" && (!cls.rg || cls.rg.r === 2) && !bxs.some((b) => b.from === cls.box.from))
     bxs.push({ from: cls.box.from, to: null, top: cls.box.top, bottom: cls.box.bottom, depth: (cls.box.top - cls.box.bottom) / cls.box.top, weeks: cls.weeks, open: true });
   const marks = [];
+  // 무살 매매 기록: 건마다 ▲ 매수 · ▼ 매도(가격, 판 건의 손익) · 판 건은 들고 있던 기간에 매수가 점선
+  const mup = muOf(t), myC = DARK ? "#d1d5db" : "#374151";
+  if (mup) {
+    const inR = (day) => day && day >= d[from].t;
+    mup.trades.forEach((tr) => {
+      tr.lots.forEach((l) => {
+        if (inR(l.day)) marks.push({ time: l.day, position: "belowBar", shape: "arrowUp", color: myC, text: l.label + " 매수 " + l.price.toFixed(2) });
+        const end = l.sold && l.sell ? l.sell.day : null;
+        if (l.day && end) {
+          const span = d.filter((r, i) => i >= from && r.t >= l.day && r.t <= end);
+          if (span.length >= 2) chart.addLineSeries({ color: myC, lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
+            .setData(span.map((r) => ({ time: r.t, value: l.price })));
+        }
+      });
+      tr.sells.forEach((z) => { if (inR(z.day)) marks.push({ time: z.day, position: "aboveBar", shape: "arrowDown", color: myC, text: (z.labels ? z.labels + " " : "") + "매도 " + z.price.toFixed(2) + (z.ret != null ? " " + pctf(z.ret) : "") }); });
+    });
+  }
   if (cls && cls.rg && cls.rg.r === 1) {          // 1단계: 상자 대신 저점(지지선)과 저점 대비 상승률
     const sp = d.filter((r, i) => i >= from);
     mkLine(sp, cls.rg.lo, 2);
@@ -1378,7 +1560,16 @@ function drawDaily(el, d, cls, t, x) {
   const LS = LightweightCharts.LineStyle;
   // ★★ 보유: 손절선 · 매수가 · 다음 올릴 자리(+2R)
   const hp = x && myLevel(t) === 2 ? holdPlan(x) : null;
-  if (hp) {
+  if (hp && hp.mu) {   // 무살 보유: 안 판 건마다 손절(무살 손절가) · 매수 · +2R(닿으면 그날 점으로 알림만)
+    const html = muPlanHtml(hp), multi = hp.lots.length > 1;
+    hp.lots.forEach((l) => {
+      const sx = multi ? " " + l.label : "";
+      if (l.stop > 0) { pline(l.stop, "#c2410c", LS.Dashed, "손절" + sx); tips.push({ p: l.stop, html }); }
+      pline(l.price, myC, LS.Solid, "매수" + sx, 1); tips.push({ p: l.price, html });
+      if (l.beAt != null && !l.beT) { pline(l.beAt, "#9ca3af", LS.Dotted, "+" + BE_R + "R" + sx, 1); tips.push({ p: l.beAt, html }); }
+      if (l.beT && l.beT >= d[from].t) marks.push({ time: l.beT, position: "aboveBar", shape: "circle", color: "#9ca3af", text: (multi ? l.label + " " : "") + "+" + BE_R + "R 도달" });
+    });
+  } else if (hp) {
     const html = holdPlanHtml(hp);
     pline(hp.stop, "#c2410c", LS.Dashed, hp.by === "be" ? "손절(본전)" : "손절");
     tips.push({ p: hp.stop, html });
@@ -1565,6 +1756,7 @@ const BE_R = 2;   // 이익이 손절 거리의 2배가 되면 손절선을 본�
 function holdPlan(x) {
   if (!x || !x.cls) return null;
   if (x._hp !== undefined) return x._hp;
+  const mp = muPlan(x); if (mp) return (x._hp = mp);   // 무살에 안 판 건이 있으면 무살 기록이 우선
   const hs = holdStopOf(x), b = BUY[x.t], d = x.d, price = d[d.length - 1].c;
   if (!b || !(b.p > 0)) return (x._hp = hs ? { stop: hs.stop, by: "struct", hs, price } : null);
   let bi = d.length - 1;
@@ -1586,6 +1778,7 @@ function holdPlan(x) {
 }
 // 보유 손절선 근거 글(차트 상자 · 툴팁)
 function holdPlanHtml(pl) {
+  if (pl.mu) return muPlanHtml(pl);
   const pr = pl.price, below = pr < pl.stop, f = (v) => v.toFixed(2);
   const hsTxt = (h) => h.src + "의 " + h.kind + " " + f(h.low) + "(" + md(h.t) + ") 바로 아래 1%";
   let h = "<b>손절선 " + f(pl.stop) + "</b> · 지금 가격 대비 " + (below ? '<b class="warn">' + pctf(pl.stop / pr - 1) + " (이미 아래)</b>" : pctf(pl.stop / pr - 1));
@@ -1604,7 +1797,8 @@ function holdPlanHtml(pl) {
 //   50일선 아래(다음 60일 +2.1% 대 +4.0%) · 20일선 아래(+9.7% 대 +3.1%, 반대) · 돌파 피벗 아래(+5.7% 대 +4.6%)는 다음 수익을 가르지 못해 경고에서 뺌.
 function holdState(x) {
   const c = x.cls, price = x.d[x.d.length - 1].c, hp = holdPlan(x), why = [];
-  if (hp && price < hp.stop) return { k: "sell", why: ["손절선 아래"], hp };
+  if (hp && hp.mu ? hp.below.length : hp && price < hp.stop)
+    return { k: "sell", why: [hp.mu && hp.lots.length > 1 ? hp.below.map((l) => l.label).join("·") + " 손절선 아래" : "손절선 아래"], hp };
   if (c.rg && c.rg.r !== 2) why.push(c.rg.r + "단계 " + RG_NAME[c.rg.r]);
   else if (c.pos === "out") why.push("베이스 이탈");
   if (x.rs != null && x.rs < RS_LEADER) why.push("RS " + RS_LEADER + " 아래");
@@ -1654,6 +1848,14 @@ function todoOf(x, ms) {
 // 다음 할 일 (보유): 언제 파나
 function holdTodo(x) {
   const st = holdState(x), hp = st.hp, price = x.d[x.d.length - 1].c, mu = (s) => '<span class="muted">' + s + "</span>";
+  if (hp && hp.mu) {   // 무살 기록: 건마다 손절(여러 건이면 건 이름을 붙임)
+    const multi = hp.lots.length > 1, f = (v) => v.toFixed(2), r1 = !multi && hp.top.rMul != null ? " " + (hp.top.rMul >= 0 ? "+" : "") + hp.top.rMul.toFixed(1) + "R" : "";
+    const pm = " · " + pctf(hp.pnl) + r1, be = hp.lots.filter((l) => l.beT), bt = be.length ? " · " + (multi ? be.map((l) => l.label).join("·") + " " : "") + "+" + BE_R + "R 도달" : "";
+    if (st.k === "sell") return "<b>팔기</b> · " + hp.below.map((l) => (multi ? l.label + " " : "") + "손절 " + f(l.stop)).join(" · ") + " 아래" + pm;
+    const sl2 = "손절 " + f(hp.stop) + " (" + pctf(hp.stop / price - 1) + (multi ? ", " + hp.top.label : "") + ")" + pm + bt;
+    if (st.k === "trim") return "<b>정리 검토</b> · " + st.why.join(" · ") + " · " + sl2;
+    return mu("보유 유지 · " + sl2);
+  }
   const pl = hp && hp.buy != null ? " · " + pctf(hp.pnl) + " " + (hp.rMul >= 0 ? "+" : "") + hp.rMul.toFixed(1) + "R" : "";
   if (st.k === "sell") return "<b>팔기</b> · 손절선 " + hp.stop.toFixed(2) + " 아래" + pl;
   const sl = hp ? "손절 " + hp.stop.toFixed(2) + " (" + pctf(hp.stop / price - 1) + ")" + (hp.by === "be" ? " 본전" : "") + pl : "";
@@ -1667,12 +1869,13 @@ function renderMine() {
   const head = (star, ttl, sub) => '<div class="mh"><b>' + star + " " + ttl + '</b><span class="muted">' + sub + "</span></div>";
   const ms = MARKET_STATE ? MARKET_STATE.cls : null;
   const miss = (arr) => { const m = arr.filter((t) => !infoOf(t) || !infoOf(t).cls); return m.length ? " · 데이터 없음: " + m.join(", ") : ""; };
-  if (!MY.hold.length) el.innerHTML = head(STAR2, "보유 점검", "보유 종목이 없습니다. 종목 맨 앞의 ☆을 눌러 ★★ 보유를 고르거나 ⚙ 설정의 '내 종목'에서 넣으세요.");
+  const HOLD = holdAll(), WATCH = watchAll();
+  if (!HOLD.length) el.innerHTML = head(STAR2, "보유 점검", "보유 종목이 없습니다. 종목 맨 앞의 ☆을 눌러 ★★ 보유를 고르거나 ⚙ 설정의 '내 종목'에서 넣으세요.");
   else if (!VIEW) el.innerHTML = head(STAR2, "보유 점검", "데이터를 받으면 표시됩니다.");
   else {
-    const list = MY.hold.map(infoOf).filter((x) => x && x.cls);
+    const list = HOLD.map(infoOf).filter((x) => x && x.cls);
     const nS = list.filter((x) => holdState(x).k === "sell").length, nT = list.filter((x) => holdState(x).k === "trim").length;
-    el.innerHTML = head(STAR2, "보유 점검", "언제 파나 · " + list.length + "종목 · " + (nS || nT ? '<b class="warn">' + [nS ? "팔기 " + nS : "", nT ? "정리 검토 " + nT : ""].filter(Boolean).join(" · ") + "</b>" : "모두 보유 유지") + " · " + md(VIEW.asOf) + " 마감 기준" + miss(MY.hold)) +
+    el.innerHTML = head(STAR2, "보유 점검", "언제 파나 · " + list.length + "종목 · " + (nS || nT ? '<b class="warn">' + [nS ? "팔기 " + nS : "", nT ? "정리 검토 " + nT : ""].filter(Boolean).join(" · ") + "</b>" : "모두 보유 유지") + " · " + md(VIEW.asOf) + " 마감 기준" + miss(HOLD)) +
       '<div class="tblwrap" id="tb-hold"></div>';
     const room = (x) => { const hp = holdPlan(x); return hp ? x.d[x.d.length - 1].c / hp.stop - 1 : 9; };   // 손절선까지 남은 거리
     const g = (k) => list.filter((x) => holdState(x).k === k).sort((a, b) => room(a) - room(b));
@@ -1681,12 +1884,12 @@ function renderMine() {
       { key: "trim", label: "정리 검토", items: g("trim"), note: "RS " + RS_LEADER + " 아래 · 3·4단계 · 이탈 · 손절선에 가까운 순" },
       { key: "keep", label: "보유 유지", items: g("keep"), note: "손절선에 가까운 순" }].filter((z) => z.items.length) });
   }
-  if (!MY.watch.length) wl.innerHTML = head(STAR1, "관심 점검", "관심 종목이 없습니다. 종목 맨 앞의 ☆을 눌러 ★ 관심을 고르세요.");
+  if (!WATCH.length) wl.innerHTML = head(STAR1, "관심 점검", "관심 종목이 없습니다. 종목 맨 앞의 ☆을 눌러 ★ 관심을 고르세요.");
   else if (!VIEW) wl.innerHTML = head(STAR1, "관심 점검", "데이터를 받으면 표시됩니다.");
   else {
-    const list = MY.watch.map(infoOf).filter((x) => x && x.cls);
+    const list = WATCH.map(infoOf).filter((x) => x && x.cls);
     const mtxt = MARKET_STATE ? '<span class="pill ' + ms + '" style="padding:1px 8px;font-size:11px">시장 ' + MARKET_STATE.verdict + "</span> 기준" : "시장 판정 전";
-    wl.innerHTML = head(STAR1, "관심 점검", "언제 사나 · " + list.length + "종목 · " + mtxt + " · " + md(VIEW.asOf) + " 마감 기준" + miss(MY.watch)) +
+    wl.innerHTML = head(STAR1, "관심 점검", "언제 사나 · " + list.length + "종목 · " + mtxt + " · " + md(VIEW.asOf) + " 마감 기준" + miss(WATCH)) +
       '<div class="tblwrap" id="tb-watch"></div>';
     // 3층 매수 후보와 같은 조건으로 나눔: 매수 후보 → 자리 기다림(조건은 맞음) → 조건 기다림(주도 산업 밖 · RS 80 아래) → 사지 않음
     const wk = (x) => (buyKind(x) ? "buy" : !is2(x) || x.cls.pos === "out" ? "no" : LEAD_OK(x) ? "spot" : "cond");
@@ -1706,16 +1909,17 @@ function renderMyBox() {
   const el = document.getElementById("myBox");
   if (!el) return;
   let dirty = false; try { dirty = localStorage.getItem("td2_myDirty") === "1"; } catch (_) {}
-  const lst = (arr, lv) => arr.length ? arr.map((t) => '<span class="it">' + STAR_TXT[lv] + " <b>" + t + '</b> <span class="muted">' + (TICKERS[t] ? TICKERS[t].name : "") + (lv === 2 && BUY[t] ? " · 매수 " + BUY[t].p + (BUY[t].d ? " (" + BUY[t].d.slice(2).replace(/-/g, ".") + ")" : "") : "") +
-    '</span><button data-rm="' + t + '" title="빼기">✕</button></span>').join("") : '<span class="muted">없음</span>';
+  const lst = (arr, lv) => arr.length ? arr.map((t) => { const mu = lv === 2 && muHeld(t);   // 무살 보유는 무살에서 팔아야 빠짐(✕ 없음)
+    return '<span class="it">' + STAR_TXT[lv] + " <b>" + t + '</b> <span class="muted">' + (TICKERS[t] ? TICKERS[t].name : "") + (mu ? " · 무살 보유" : lv === 2 && BUY[t] ? " · 매수 " + BUY[t].p + (BUY[t].d ? " (" + BUY[t].d.slice(2).replace(/-/g, ".") + ")" : "") : "") +
+    "</span>" + (mu ? "" : '<button data-rm="' + t + '" title="빼기">✕</button>') + "</span>"; }).join("") : '<span class="muted">없음</span>';
   el.innerHTML = '<div class="row"><b>내 종목</b><span class="muted">보유 ★★ · 관심 ★ · 나스닥100 종목만 · 이 브라우저에만 저장됩니다</span></div>' +
     '<div class="row"><input id="myIn" list="tickerList" placeholder="티커 (예: NVDA)" autocomplete="off">' +
     '<button class="btn" data-add="2">★★ 보유에 넣기</button><button class="btn ghost" data-add="1">★ 관심에 넣기</button><span class="msg" id="myMsg"></span></div>' +
-    '<div class="lst"><b style="color:var(--gold)">★★</b> 보유 ' + lst(MY.hold, 2) + "</div>" +
-    '<div class="lst"><b style="color:var(--gold)">★</b> 관심 ' + lst(MY.watch, 1) + "</div>" +
+    '<div class="lst"><b style="color:var(--gold)">★★</b> 보유 ' + lst(holdAll(), 2) + "</div>" +
+    '<div class="lst"><b style="color:var(--gold)">★</b> 관심 ' + lst(watchAll(), 1) + "</div>" +
     '<div class="row"><button class="btn ghost" id="myCopy">🔗 설정 링크 복사 (다른 기기로 옮기기)</button>' +
     '<button class="btn ghost" id="myClear">' + (myClearArm ? "한 번 더 누르면 모두 지웁니다" : "전체 지우기") + "</button>" +
-    (dirty ? '<span class="dirty">바뀐 내용이 있어요 · 다른 기기에 반영하려면 링크를 복사해 그 기기에서 여세요</span>' : "") + "</div>";
+    (dirty ? '<span class="dirty">바뀐 내용이 있어요 · 다른 기기에 반영하려면 링크를 복사해 그 기기에서 여세요</span>' : "") + "</div>" + muBoxHtml();
   const msg = (t) => (document.getElementById("myMsg").textContent = t);
   const add = (lv) => {
     const t = document.getElementById("myIn").value.trim().toUpperCase();
@@ -1730,6 +1934,8 @@ function renderMyBox() {
     const t = b.dataset.rm, before = myLevel(t); mySet(t, 0); myRefresh();
     toast(t + " 해제", () => { mySet(t, before); myRefresh(); });
   }));
+  const mi = document.getElementById("muIn"), mr = document.getElementById("muRe"), mo = document.getElementById("muOut");
+  if (mi) mi.onclick = muLogin; if (mr) mr.onclick = () => muLoad(); if (mo) mo.onclick = muLogout;
   document.getElementById("myCopy").addEventListener("click", async () => {
     const link = myLink();
     try { await navigator.clipboard.writeText(link); toast("설정 링크를 복사했어요. 다른 기기에서 열면 그대로 들어갑니다."); }
@@ -1780,10 +1986,10 @@ function renderSticky() {
     const nB = viewList("buy").length;
     html += sep + '<a class="chip' + (nB ? " hot" : "") + '" href="#sec-stocks" data-view="buy">매수 후보 <b>' + nB + "</b></a>";
     if (selectedGroup) html += sep + '<span class="chip">' + selectedGroup + "만 보는 중</span>";
-    if (MY.hold.length || MY.watch.length) {
-      const hs = MY.hold.map(infoOf).filter((x) => x && x.cls).map(holdState), nS = hs.filter((z) => z.k === "sell").length, nT = hs.filter((z) => z.k === "trim").length;
-      html += sep + '<a class="chip' + (nS + nT ? " hot" : "") + '" href="#sec-my"><span style="color:var(--gold);letter-spacing:-2px">★★</span> 보유 <b>' + MY.hold.length + "</b>" +
-              (nS ? ' · <b class="warn">팔기 ' + nS + "</b>" : "") + (nT ? ' · <b class="warn">정리 ' + nT + "</b>" : "") + ' · <span style="color:var(--gold)">★</span> 관심 <b>' + MY.watch.length + "</b></a>";
+    if (holdAll().length || watchAll().length) {
+      const hs = holdAll().map(infoOf).filter((x) => x && x.cls).map(holdState), nS = hs.filter((z) => z.k === "sell").length, nT = hs.filter((z) => z.k === "trim").length;
+      html += sep + '<a class="chip' + (nS + nT ? " hot" : "") + '" href="#sec-my"><span style="color:var(--gold);letter-spacing:-2px">★★</span> 보유 <b>' + holdAll().length + "</b>" +
+              (nS ? ' · <b class="warn">팔기 ' + nS + "</b>" : "") + (nT ? ' · <b class="warn">정리 ' + nT + "</b>" : "") + ' · <span style="color:var(--gold)">★</span> 관심 <b>' + watchAll().length + "</b></a>";
     }
   }
   el.innerHTML = html;
@@ -2323,9 +2529,11 @@ function fundHtml(t) {
 }
 
 // 크게 보기
+let MODAL_T = null;   // 지금 크게 보기 종목(무살 기록을 다시 읽으면 다시 그림)
 function openModal(t) {
   const x = infoOf(t);
   if (!x) return;
+  MODAL_T = t;
   const cls = x.cls || classify(x.d, x.rs);
   document.getElementById("mName").innerHTML = starHtml(t) + TICKERS[t].name + '<span class="ticker">' + t + "</span>" + tagsOf(x);
   document.getElementById("mTag").innerHTML = TICKERS[t].group + " · RS " + (x.rs == null ? '<span class="muted" title="' + RS_NA_TIP + '">-</span>' : "<b>" + x.rs + "</b>") + " · " + (isYoung(cls) ? stageDot(0) + "상장 초기 " + x.d.length + "일 · " + POS_NAME[cls.pos] : cls.rg ? stageDot(cls.rg.r) + cls.rg.r + "단계 " + RG_NAME[cls.rg.r] : "") + (!cls.rg || cls.rg.r !== 2 ? "" : " · <b>" + POS_NAME[cls.pos] + "</b> " + qualHtml(posQual(cls)));
@@ -2333,7 +2541,7 @@ function openModal(t) {
   renderProfile(t);
   const tel = document.getElementById("mTT");
   tel.innerHTML = "";
-  if (myLevel(t) === 2) {
+  if (myLevel(t) === 2 && !muHeld(t)) {
     const b = BUY[t] || {};
     tel.innerHTML += '<span class="buyf">매수가 <input id="bP" type="number" step="0.01" min="0" value="' + (b.p || "") + '"> 매수일 <input id="bD" type="date" value="' + (b.d || "") + '">' +
       ' <button id="bSave">저장</button>' + (b.p ? ' <button id="bDel">지우기</button>' : "") + ' <span class="muted">이 브라우저에만 저장</span></span>';
@@ -2349,6 +2557,7 @@ function openModal(t) {
       const del = document.getElementById("bDel"); if (del) del.onclick = () => save(true);
     }, 0);
   }
+  tel.innerHTML += muRecHtml(t);
   document.getElementById("modal").classList.add("open");
   requestAnimationFrame(() => {
     drawDaily(document.getElementById("mDaily"), x.d, cls, t, x);
@@ -2745,6 +2954,11 @@ function buildHelp() {
 <tr><td>★ 관심 점검</td><td><b>언제 사나.</b> 3층 매수 후보와 같은 조건으로 네 묶음: ① <b>매수 후보</b>(3층 매수 후보와 같음: 돌파 → 50일선 눌림 → 임박) ② <b>자리 기다림</b>(주도 산업의 주도주인데 아직 살 자리 전, 피벗에 가까운 순) ③ <b>조건 기다림</b>(2단계지만 주도 산업 밖이거나 RS ${RS_LEADER} 아래, 다음 할 일에 빠진 조건) ④ <b>사지 않음</b>(1·3·4단계 · 이탈 · 상장 초기, 눌러서 접기).</td></tr>
 <tr><td>⚙ 설정 › 내 종목</td><td>티커로 넣고 빼기(나스닥100 종목만), 전체 지우기, <b>설정 링크 복사</b>.</td></tr>
 <tr><td>저장과 기기 간 이동</td><td>내 종목은 <b>이 브라우저에만</b> 저장되고 GitHub(공개 저장소)로는 보내지 않습니다. 바꾼 뒤 '설정 링크 복사'로 만든 링크를 다른 기기에서 한 번 여세요. 링크의 # 뒤 내용은 서버로 전송되지 않습니다. 링크를 연 기기의 내 종목은 링크 내용으로 바뀝니다.</td></tr>
+<tr><td>무살 연결</td><td>⚙ 설정 › 내 종목 아래 <b>Google로 로그인</b>. 매매 일지 웹앱 <b>트레이딩:무살</b>과 같은 계정이고 같은 주소(arangpa-cyber.github.io)라, 이 브라우저에서 무살에 로그인돼 있으면 여기서도 이미 로그인 상태입니다(로그아웃도 함께). 무살 기록은 <b>읽기만</b> 합니다. 달러 종목만, 자산명을 티커로 적은 기록만 맞춥니다(앞의 영문 티커만 봄, 대시보드에 없는 종목은 설정에 이름만 나옴).<br>
+① 무살에 안 판 매수 건이 있는 종목은 <b>★★ 보유</b>로 들어가고 다 팔면 빠집니다(별 메뉴로는 못 뺌). 직접 고른 ★★과 매수가는 그대로입니다.<br>
+② 크게 보기 차트에 건(N-n, 무살과 같은 이름)마다 <b>▲ 매수 가격</b> · <b>▼ 매도 가격과 손익</b>, 판 건은 들고 있던 기간에 매수가 점선. 머리글 '무살 기록'을 누르면 건별 매수 → 매도와 매도 이유.<br>
+③ 안 판 건은 <b>손절(무살 손절가) · 매수 · +${BE_R}R</b> 선. 4층 <b>팔기</b> = 종가가 어느 건이든 그 건의 무살 손절가 아래(여러 건이면 "1-2 손절선 아래"). 대시보드는 손절선을 올리지 않고 <b>+${BE_R}R 도달</b>(차트 점 · 다음 할 일)과 더 높은 구조 손절선(선 근처에 마우스)만 알려 줍니다. 1R = 매수가 − 진입 때 손절가.<br>
+날짜: 무살 날짜(한국)와 그 전 거래일 중 체결가가 그날 고가-저가 안에 드는 미국 거래일에 놓습니다. 둘 다 들거나 둘 다 안 들면 전 거래일입니다(한국 밤에 열리는 미국 장은 대부분 자정 뒤라 날짜가 하루 넘어가서). 무살에서 기록하고 이 화면으로 돌아오면 다시 읽습니다.</td></tr>
 </table>
 
 <h3 id="h-tags">꼬리표 <small>모든 표 공통</small></h3>
