@@ -30,6 +30,7 @@
 | `data.json` | 서버가 매일 커밋하는 결과(직접 고치지 않음) |
 | `vendor/` | `supabase-js-2.119.0.umd.js`(MIT, `LICENSE-supabase-js.txt`, 무살 node_modules에서 복사, `defer`로 읽어 첫 화면을 막지 않음, 못 받으면 무살 연결만 빠짐) · 차트 라이브러리 사본(Lightweight Charts 4.2.0, Apache 2.0). index.html이 이것을 먼저 읽고 없으면 unpkg. 둘 다 못 받으면 차트만 빠지고 신호등·표는 나옴(`HAS_CHART`) |
 | `profiles.json` | 종목별 기업 프로필(산업·테마·세부 테마·하는 일·시장에 있는 이유·해자 유형·강점·해자 등급 `moat` 강/중/약 — 순위 아닌 절대 등급). 확대 차트 위 패널(`renderProfile`)이 읽음. 처음에는 구글 시트 `QQQ_구성종목_종합표`의 '기업 프로필' 탭에서 옮겼고 지금은 직접 편집함(옛 `pp` 가격결정력 순위는 화면에서 안 씀). 나스닥100 종목이나 큰손 상위 종목이 바뀌면 함께 고치고 `python3 scripts/check_profiles.py`로 `UNIVERSE`+큰손 종목과 맞는지 확인 |
+| `supabase/td_memos.sql` | 일봉 메모 표(무살과 같은 Supabase, 종목·날짜마다 한 줄, RLS 본인만). 바꾸면 Supabase SQL Editor에서 다시 Run(여러 번 실행해도 안전) |
 | `tickers.json` | 무살 웹앱 매수 화면의 자산명 자동완성용 UNIVERSE(나스닥100) 티커·이름. `python3 scripts/check_profiles.py`가 UNIVERSE에서 다시 씀(UNIVERSE를 고치면 함께 커밋). 무살이 `https://arangpa-cyber.github.io/trend-dashboard/tickers.json`을 읽음 |
 | `whales/` | 5층 큰손. `index.json`(큰손 목록: id·이름·SEC CIK·최신 파일), `<id>/<연도Q분기>.json`(13F 상위 10종목: 비중·변화·콜/풋·보유 분기), `cusip.json`(CUSIP→티커·종류, ETF는 `kind: etf`로 빼기). 반자동: 분기 공시(2·5·8·11월 중순) 뒤 `python3 scripts/build_whale.py <id>` 실행(SEC 접속, `SEC_UA` 환경변수). 모르는 CUSIP이 나오면 멈추니 `cusip.json`에 적고 다시. 큰손 추가 = `index.json`에 한 줄 + 같은 스크립트. UNIVERSE 밖 종목은 `build_data.py`가 `EXTRA`로 시세·실적·재무를 함께 받고, 화면은 `infoOf`/`extraInfo`로 같은 단계 계산(RS는 나스닥100 사이 순위) |
 | `scripts/backfill_history.py` · `.github/workflows/backfill-history.yml` | 백테스트용 긴 일봉(기본 1700개)을 한 번 받아 `backtest/prices.json.gz`에 저장. 화면은 안 씀. Actions → "백테스트용 긴 일봉 받기" → Run workflow(수동 전용, 매일 갱신과 같은 concurrency 묶음) |
@@ -84,6 +85,8 @@
   ③ 4층 판정(`muPlan`, `holdPlan`이 무살 우선): 손절선 = 그 건의 무살 손절가 그대로(대시보드가 올리지 않음, 사용자 결정). 1R = 매수가 − `initialStopLossPrice`(없으면 손절가). 건마다 따로: 어느 건이든 종가 < 그 건 손절가면 팔기("1-2 손절선 아래"), 정리 검토 조건은 그대로. +2R 도달과 더 높은 구조 손절선(`holdStopOf`)은 다음 할 일·선 근처 툴팁에서 알림만.
   다시 읽기: "다시 불러오기" 버튼, 탭으로 돌아왔을 때 1분 넘었으면(`visibilitychange`). 실시간 반영 없음. 백테스트 로더(`backtest/app.js`)에서는 `DOMContentLoaded`가 안 와서 연결 코드가 돌지 않음.
   약점: 무살 손절가를 무살에서 올리지 않으면 대시보드도 그대로(의도). 주식 분할이 있으면 무살 가격(분할 전)과 일봉(분할 반영)이 어긋남. 자산명을 티커로 적지 않은 기록은 못 맞춤.
+- **일봉 메모**(2026-11-24, 사용자 결정): 1층 QQQ 차트·크게 보기에서 **봉을 누르면 바로** 그날 메모 칸(`addMemo`): 날짜·종가·등락·거래량 50일 평균 배수, 저장·지우기·◀ ▶ 하루 이동, 칸 밖 누르면 저장, Esc는 저장 안 하고 닫기, 저장 뒤 토스트 되돌리기. 메모 있는 날은 봉 위 분홍 점(`--memo`, 메모만의 색), 마우스를 올리면 내용. **QQQ 메모는 QQQ 차트에만**(키 "QQQ"), 종목 메모는 그 종목 크게 보기(`#mMemo` 목록: 1년 밖 메모는 회색, 누르면 그날 칸).
+  저장(`memoPut`·`memoLoad`): 무살 계정으로 로그인하면 Supabase `td_memos`(PC·휴대폰 같음), 아니면 이 브라우저 `td2_memo`. 처음 로그인하면 브라우저 메모를 계정으로 올리고(같은 날 계정 메모가 있으면 계정 것) 브라우저 쪽은 비움. 계정 저장 실패는 `td2_memo_q`에 두었다가 다음 불러오기에서 먼저 보냄. 탭으로 돌아왔을 때 1분 넘었으면 다시 읽음(쓰는 중이면 건너뜀). 설정 링크에는 안 실음(한글 메모가 링크를 너무 길게 만듦). 표 안 1년 미니차트에는 표시 안 함.
 - **기간은 그 기간에 가장 자연스러운 단위로**(모두 '일'로 통일하지 않음, 사용자 결정): 1년 등락 · 1년 미니차트 · RS 4주 전 → 지금(`CMP_K`=20) · 2층 평균 RS 200일 변화 · 주도 산업 N일.
 
 ## 화면 규칙 (새 기능을 넣을 때도 지킬 것)

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v2026-11-24 12:35</title>
+<title>추세 대시보드 v2026-11-24 13:58</title>
 <!-- 차트 라이브러리: 저장소 안 사본을 먼저(외부 CDN이 막혀도 열리게), 없으면 unpkg -->
 <script src="vendor/lightweight-charts-4.2.0.standalone.production.js"></script>
 <script>window.LightweightCharts || document.write('<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"><\/script>');</script>
@@ -16,13 +16,13 @@
     --up: #c62828; --down: #1565c0;
     --go: #15803d; --go-bg: #dcfce7; --wait: #b45309; --wait-bg: #fef3c7; --stop: #dc2626; --stop-bg: #fee2e2;
     --warn: #c2410c; --warn-bg: #fff1e6; --gold: #c99a06;
-    --s0: #d4d4d4; --s1: #9ca3af; --s2: #16a34a; --s3: #ea8a0c; --s4: #5b6b85;
+    --s0: #d4d4d4; --s1: #9ca3af; --s2: #16a34a; --s3: #ea8a0c; --s4: #5b6b85; --memo: #db2777;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #131313; --card: #1c1c1c; --text: #eee; --sub: #999; --line: #2c2c2c; --accent: #fb923c;
             --up: #ef5350; --down: #64b5f6;
             --go: #4ade80; --go-bg: #12301d; --wait: #fbbf24; --wait-bg: #33280c; --stop: #f87171; --stop-bg: #3a1616; --gold: #f5c542;
-            --warn: #fb923c; --warn-bg: #3a2210; --s0: #444; --s1: #8b929c; --s2: #4ade80; --s3: #fb9a2c; --s4: #8a9bb8; }
+            --warn: #fb923c; --warn-bg: #3a2210; --s0: #444; --s1: #8b929c; --s2: #4ade80; --s3: #fb9a2c; --s4: #8a9bb8; --memo: #f472b6; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
@@ -183,6 +183,29 @@
   table.flow .gt { font-weight: 700; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
   .chg-up { color: var(--up); font-weight: 700; } .chg-down { color: var(--down); font-weight: 700; }
   .muted { color: var(--sub); }
+  /* 일봉 메모: 마우스 올림 상자 · 쓰기 칸 · 크게 보기 아래 목록 (분홍 = 메모 하나의 뜻) */
+  .memotip { position: absolute; z-index: 6; max-width: 280px; background: var(--card); border: 1px solid var(--memo); border-radius: 8px; padding: 6px 9px; font-size: 12px; line-height: 1.5; box-shadow: 0 4px 14px rgba(0,0,0,0.15); pointer-events: none; }
+  .memotip b { color: var(--memo); font-weight: 600; }
+  .memopop { position: absolute; z-index: 7; width: 300px; max-width: calc(100% - 8px); background: var(--card); border: 1px solid var(--memo); border-radius: 8px; padding: 8px 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.2); font-size: 12px; line-height: 1.5; }
+  .memopop .mp-h { margin-bottom: 6px; }
+  .memopop .mp-h b { color: var(--memo); }
+  .memopop .mp-nav { float: right; display: flex; gap: 2px; }
+  .memopop .mp-nav button { border: 1px solid var(--line); background: var(--card); color: var(--sub); border-radius: 5px; font-size: 11px; padding: 1px 7px; cursor: pointer; }
+  .memopop textarea { display: block; width: 100%; font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); resize: vertical; }
+  .memopop .mp-f { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
+  .memopop .mp-f button { font-size: 12px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--memo); background: var(--memo); color: #fff; cursor: pointer; }
+  .memopop .mp-f button.ghost { background: transparent; color: var(--memo); }
+  .memopop .mp-f .muted { margin-left: auto; font-size: 11px; }
+  #mMemo { font-size: 12px; padding: 0 10px 6px; }
+  #mMemo:empty { display: none; }
+  #mMemo summary { cursor: pointer; color: var(--sub); list-style: none; }
+  #mMemo summary::-webkit-details-marker { display: none; }
+  #mMemo summary i { color: var(--memo); font-style: normal; }
+  #mMemo .it { display: flex; gap: 10px; padding: 2px 0; cursor: pointer; }
+  #mMemo .it:hover { background: var(--line); }
+  #mMemo .it span:first-child { color: var(--memo); white-space: nowrap; }
+  #mMemo .it.old span:first-child { color: var(--sub); }
+  @media (max-width: 640px) { .memopop textarea { font-size: 16px; } }
   .buyf { font-size: 12px; } .buyf input { font: inherit; width: 96px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); } .buyf input[type=date] { width: 130px; }
   .buyf button { font: inherit; font-size: 12px; padding: 2px 10px; border: 1px solid var(--accent); border-radius: 6px; background: transparent; color: var(--accent); }
   .murec { font-size: 12px; flex-basis: 100%; } .murec summary { cursor: pointer; color: var(--sub); } .murec summary b { color: var(--text); font-weight: 600; }
@@ -344,7 +367,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-24 12:35</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v2026-11-24 13:58</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -369,7 +392,7 @@
   <div class="card">
     <div id="marketChart"><div class="placeholder">QQQ 데이터를 기다리는 중</div></div>
     <div class="legend"><i style="color:#ca8a04">━</i> 21 EMA &nbsp; <i style="color:#0d9488">━</i> 50 SMA &nbsp; <i style="color:#7c3aed">━</i> 200 SMA &nbsp; <i style="color:#0d9488">━</i> 거래량 50 SMA &nbsp;
-      <i style="color:#f59e0b">┅</i> 52주 고점 −12%(아래면 대기) &nbsp; <i style="background:rgba(22,163,74,0.30);color:transparent;padding:0 5px">■</i> 팔로스루 데이</div>
+      <i style="color:#f59e0b">┅</i> 52주 고점 −12%(아래면 대기) &nbsp; <i style="background:rgba(22,163,74,0.30);color:transparent;padding:0 5px">■</i> 팔로스루 데이 &nbsp; <i style="color:var(--memo)">●</i> 메모(봉을 누르면 쓰기)</div>
   </div>
 
   <!-- 2층 산업: 돈이 어디로 가나 -->
@@ -410,7 +433,7 @@
   <div class="mcharts">
     <div><div class="mc" id="mDaily"></div>
       <div class="legend"><i style="color:#ca8a04">━</i> 21 EMA &nbsp; <i style="color:#0d9488">━</i> 50 SMA &nbsp; <i style="color:#7c3aed">━</i> 200 SMA &nbsp; <i style="color:#0d9488">━</i> 거래량 50 SMA &nbsp;
-        <i style="color:#f59e0b">━</i> 베이스 상단·하단 · 저항선 &nbsp; <i style="background:rgba(250,204,21,0.38);color:transparent;padding:0 5px">■</i> 실적 발표일 &nbsp; <b>▲▼</b> 무살 매수·매도</div></div>
+        <i style="color:#f59e0b">━</i> 베이스 상단·하단 · 저항선 &nbsp; <i style="background:rgba(250,204,21,0.38);color:transparent;padding:0 5px">■</i> 실적 발표일 &nbsp; <b>▲▼</b> 무살 매수·매도 &nbsp; <i style="color:var(--memo)">●</i> 메모(봉을 누르면 쓰기)</div><div id="mMemo"></div></div>
   </div></div></div>
 
 <footer>
@@ -639,22 +662,29 @@ function muInit() {
   try { if (typeof window.supabase !== "object" || typeof window.supabase.createClient !== "function") return; SB = window.supabase.createClient(SB_URL, SB_KEY); }
   catch (e) { SB = null; return; }
   SB.auth.onAuthStateChange((ev, ses) => setTimeout(() => muSession(ses), 0));   // 콜백 안에서 바로 다른 요청을 하지 않음(라이브러리 권고)
-  document.addEventListener("visibilitychange", () => { if (!document.hidden && MU_USER && MU && Date.now() - MU.at > 60000) muLoad(); });   // 무살에서 기록하고 돌아오면 다시 읽음
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && MU_USER && MU && Date.now() - MU.at > 60000) { muLoad(); if (!document.querySelector(".memopop")) memoLoad(); } });   // 무살에서 기록하거나 다른 기기에서 메모하고 돌아오면 다시 읽음
 }
 addEventListener("DOMContentLoaded", muInit);
 function muSession(ses) {
   const uid = ses && ses.user ? ses.user.id : null;
   MU_EMAIL = uid ? ses.user.email || "" : "";
-  if (!uid) { if (MU_USER || MU) { MU_USER = null; MU = null; MU_ERR = ""; muChanged(); } else renderMyBox(); return; }
-  if (uid !== MU_USER) { MU_USER = uid; muLoad(); }
+  if (!uid) { if (MU_USER || MU) { MU_USER = null; MU = null; MU_ERR = ""; memoReset(); muChanged(); } else renderMyBox(); return; }
+  if (uid !== MU_USER) { MU_USER = uid; muLoad(); memoLoad(); }
+}
+// 내 줄 전부(1,000줄씩 나눠 읽음)
+async function sbAll(tb, cols, ord) {
+  const out = [];
+  for (let f = 0; ; f += 1000) {
+    let q = SB.from(tb).select(cols); (ord || []).forEach((c) => (q = q.order(c)));
+    const { data, error } = await q.range(f, f + 999);
+    if (error) throw error; out.push(...data); if (data.length < 1000) return out;
+  }
 }
 async function muLoad() {
   if (!SB || MU_BUSY) return;
   MU_BUSY = true; MU_ERR = ""; renderMyBox();
   try {
-    const all = async (tb) => { const out = []; for (let f = 0; ; f += 1000) {
-      const { data, error } = await SB.from(tb).select("data").order("id").range(f, f + 999);
-      if (error) throw error; out.push(...data.map((r) => r.data)); if (data.length < 1000) return out; } };
+    const all = async (tb) => (await sbAll(tb, "data", ["id"])).map((r) => r.data);
     const [b, x] = await Promise.all([all("buys"), all("sells")]);
     MU = muBuild(b, x); MU.at = Date.now(); MU.nb = b.length; MU.ns = x.length;
   } catch (e) { MU_ERR = (e && e.message) || String(e); }
@@ -680,11 +710,13 @@ async function muLogout() {
 function muBoxHtml() {
   if (!SB) return "";
   const hm = (ms) => { const z = new Date(ms); return z.getHours() + ":" + String(z.getMinutes()).padStart(2, "0"); };
-  if (!MU_USER) return '<div class="row"><b>무살 연결</b><button class="btn ghost" id="muIn">Google로 로그인</button><span class="muted">트레이딩:무살 매매 기록(달러 종목, 자산명 = 티커)을 차트에 표시하고 보유 종목을 ★★로</span></div>';
+  if (!MU_USER) return '<div class="row"><b>무살 연결</b><button class="btn ghost" id="muIn">Google로 로그인</button><span class="muted">트레이딩:무살 매매 기록(달러 종목, 자산명 = 티커)을 차트에 표시하고 보유 종목을 ★★로 · 메모를 계정에 저장(PC·휴대폰 같이)</span></div>';
   let h = '<div class="row"><b>무살 연결</b><span class="muted">' + pfEsc(MU_EMAIL) + "</span>";
   if (MU_BUSY) h += '<span class="muted">불러오는 중…</span>';
   else if (MU_ERR) h += '<span class="warn">불러오지 못함: ' + pfEsc(MU_ERR) + "</span>";
   else if (MU) { const held = Object.keys(MU.pos).filter(muHeld); h += "<span>보유 <b>" + held.length + "</b>종목 · 매수 " + MU.nb + "건 · 매도 " + MU.ns + '건 <span class="muted">(' + hm(MU.at) + " 불러옴)</span></span>"; }
+  if (MEMO_SRV) h += "<span>메모 <b>" + memoCount() + "</b>개(계정)</span>";
+  else if (MEMO_ERR) h += '<span class="warn">메모 불러오지 못함: ' + pfEsc(MEMO_ERR) + "</span>";
   h += '<button class="btn ghost" id="muRe">다시 불러오기</button><button class="btn ghost" id="muOut">로그아웃</button></div>';
   if (MU) {
     const off = Object.keys(MU.pos).filter((t) => !muOnDash(t)).concat(MU.miss);
@@ -1456,6 +1488,153 @@ function addLeftLabels(series, items, el) {   // el: 차트 상자(왼쪽 위 �
     updateAllViews() {},
   });
 }
+// ═════ 일봉 메모: 봉을 누르면 그날 메모를 쓰고, 쓴 날은 봉 위 분홍 점 · 마우스를 올리면 내용 ═════
+// {티커: {"YYYY-MM-DD": "메모"}} · 1층 QQQ 차트 = "QQQ"(QQQ 차트에만 보임), 크게 보기 = 그 종목
+// 저장: 로그인(무살 계정)하면 Supabase 표 td_memos(종목·날짜마다 한 줄, 본인 것만, supabase/td_memos.sql) → PC·휴대폰 같음.
+//   로그인 안 하면 이 브라우저에만(localStorage td2_memo). 처음 로그인하면 이 브라우저 메모를 계정으로 올리고
+//   (같은 날 계정 메모가 있으면 계정 것) 브라우저 쪽은 비움. 계정에 못 보낸 것은 td2_memo_q에 두었다가 다음에 불러올 때 먼저 보냄
+const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v == null ? d : v; } catch (_) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
+let MEMO = lsGet("td2_memo", {}), MEMO_SRV = false, MEMO_ERR = "";
+const MEMO_C = DARK ? "#f472b6" : "#db2777";
+const dayLabel = (t) => t.slice(2).replace(/-/g, ".") + " (" + "일월화수목금토"[new Date(t + "T00:00:00Z").getUTCDay()] + ")";
+const memoCount = () => Object.values(MEMO).reduce((a, m) => a + Object.keys(m).length, 0);
+function memoApply(map, sym, day, txt) {
+  if (txt) (map[sym] = map[sym] || {})[day] = txt;
+  else if (map[sym]) { delete map[sym][day]; if (!Object.keys(map[sym]).length) delete map[sym]; }
+}
+async function memoSend(sym, day, txt) {
+  try {
+    const q = SB.from("td_memos");
+    const { error } = txt ? await q.upsert({ sym, day, text: txt, updated_at: new Date().toISOString() }, { onConflict: "user_id,sym,day" })
+      : await q.delete().eq("sym", sym).eq("day", day);
+    return !error;
+  } catch (_) { return false; }
+}
+// 메모 쓰기·지우기(빈 글 = 지우기). 화면은 바로 바뀌고 계정 저장은 뒤에서. 바꾸기 전 글을 돌려줌(되돌리기용)
+function memoPut(sym, day, txt) {
+  const before = (MEMO[sym] || {})[day] || "";
+  txt = (txt || "").trim().slice(0, 1000);
+  memoApply(MEMO, sym, day, txt);
+  if (SB && MU_USER) {
+    const u = MU_USER;
+    memoSend(sym, day, txt).then((ok) => {
+      if (ok) return;
+      const q = lsGet("td2_memo_q", []); q.push({ u, sym, day, text: txt }); lsSet("td2_memo_q", q);
+      toast('<span class="warn">메모를 계정에 저장하지 못했어요</span> · 이 브라우저에 두었다가 다음에 다시 보냅니다');
+    });
+  } else { const loc = lsGet("td2_memo", {}); memoApply(loc, sym, day, txt); lsSet("td2_memo", loc); }
+  return before;
+}
+// 로그인하면: 못 보낸 것 먼저 보내고 → 계정 메모를 읽고 → 이 브라우저에만 있던 메모를 올림
+async function memoLoad() {
+  if (!SB || !MU_USER) return;
+  const u = MU_USER;
+  try {
+    const q = lsGet("td2_memo_q", []);
+    for (const z of q.filter((z) => z.u === u)) if (!(await memoSend(z.sym, z.day, z.text))) throw new Error("못 보낸 메모를 보내지 못함");
+    lsSet("td2_memo_q", q.filter((z) => z.u !== u));
+    const rows = await sbAll("td_memos", "sym,day,text", ["sym", "day"]);
+    if (u !== MU_USER) return;
+    const srv = {}; rows.forEach((r) => memoApply(srv, r.sym, r.day, r.text));
+    const loc = lsGet("td2_memo", {}), up = [];
+    Object.entries(loc).forEach(([sy, m]) => Object.entries(m).forEach(([dy, tx]) => { if (!(srv[sy] && srv[sy][dy])) { up.push({ sym: sy, day: dy, text: tx }); memoApply(srv, sy, dy, tx); } }));
+    if (up.length) {
+      const { error } = await SB.from("td_memos").upsert(up, { onConflict: "user_id,sym,day" }); if (error) throw error;
+      toast("이 브라우저의 메모 " + up.length + "개를 계정으로 올렸어요");
+    }
+    if (Object.keys(loc).length) lsSet("td2_memo", {});
+    MEMO = srv; MEMO_SRV = true; MEMO_ERR = "";
+  } catch (e) { MEMO_ERR = (e && e.message) || String(e); }
+  memoRedraw(); renderMyBox();
+}
+function memoReset() { MEMO = lsGet("td2_memo", {}); MEMO_SRV = false; MEMO_ERR = ""; memoRedraw(); }
+// 메모가 바뀌면 그려진 차트(1층 QQQ · 크게 보기)를 다시 그림. 쓰는 중이면 쓰던 글이 사라지지 않게 건너뜀
+function memoRedraw() {
+  if (document.querySelector(".memopop")) return;
+  PX_ELS.forEach((el) => { if (el.isConnected && el._chart && el._redraw) el._redraw(); });
+  const mo = document.getElementById("modal"), x = MODAL_T && infoOf(MODAL_T);
+  if (mo && mo.classList.contains("open") && x) renderMemoList(MODAL_T, x.d, Math.max(0, x.d.length - SHOW_DAYS_STOCK));
+}
+function memoMarks(sym, d, from) {
+  const m = MEMO[sym]; if (!m) return [];
+  return d.filter((r, i) => i >= from && m[r.t]).map((r) => ({ time: r.t, position: "aboveBar", shape: "circle", size: 1, color: MEMO_C }));
+}
+function memoClose(save) {
+  const p = document.querySelector(".memopop"); if (!p) return;
+  p.remove(); if (save) p._commit(false);
+}
+document.addEventListener("click", (e) => { const p = document.querySelector(".memopop"); if (p && !p.contains(e.target) && !p._el.contains(e.target)) memoClose(true); });
+// 차트에 메모 붙이기: 마우스 올림 상자 + 봉 누르기 = 그날 메모 칸
+function addMemo(chart, series, el, sym, d, from) {
+  const rowAt = (pm) => { if (pm.logical == null) return null; const i = from + Math.round(pm.logical); return i >= from && i < d.length ? i : null; };
+  const tip = document.createElement("div"); tip.className = "memotip"; tip.hidden = true; el.appendChild(tip);
+  const ts = chart.timeScale();
+  chart.subscribeCrosshairMove((pm) => {
+    const i = pm.point ? rowAt(pm) : null, txt = i != null && (MEMO[sym] || {})[d[i].t];
+    const busy = el.querySelector(".memopop") || [...el.querySelectorAll(".stoptip")].some((z) => !z.hidden);
+    if (!txt || busy) { tip.hidden = true; return; }
+    tip.innerHTML = "<b>" + dayLabel(d[i].t) + "</b><br>" + pfEsc(txt).replace(/\n/g, "<br>");
+    tip.hidden = false;
+    const x = ts.logicalToCoordinate(i - from), y = series.priceToCoordinate(d[i].h);
+    tip.style.left = Math.max(4, Math.min(x - tip.offsetWidth / 2, el.clientWidth - tip.offsetWidth - 70)) + "px";
+    tip.style.top = (y - tip.offsetHeight - 22 > 30 ? y - tip.offsetHeight - 22 : y + 40) + "px";
+  });
+  const open = (i) => {
+    const p0 = document.querySelector(".memopop");
+    if (p0) { p0.remove(); if (p0._commit(false) && p0._el === el) { setTimeout(() => el._memoOpen(d[i].t), 0); return; } }   // 앞 메모를 저장하면 차트를 다시 그리므로 새 차트에서 엶
+    tip.hidden = true;
+    const r = d[i], prev = i > 0 ? d[i - 1] : null, cur = (MEMO[sym] || {})[r.t] || "";
+    const ch = prev ? r.c / prev.c - 1 : null;
+    const v50 = i >= 50 ? d.slice(i - 50, i).reduce((a, y) => a + y.v, 0) / 50 : null;
+    const p = document.createElement("div"); p.className = "memopop"; p._el = el;
+    p.innerHTML = '<div class="mp-h"><b>' + sym + " " + dayLabel(r.t) + '</b><span class="mp-nav"><button type="button" data-a="prev" title="하루 앞">◀</button><button type="button" data-a="next" title="하루 뒤">▶</button></span><br><span class="muted">종가 ' + r.c.toFixed(2) +
+      (ch != null ? ' <span class="' + (ch >= 0 ? "chg-up" : "chg-down") + '">' + pctf(ch) + "</span>" : "") +
+      (v50 ? " · 거래량 " + (r.v / v50).toFixed(1) + "배" : "") + "</span></div>" +
+      '<textarea rows="3" maxlength="500" placeholder="이 날 메모"></textarea>' +
+      '<div class="mp-f"><button type="button" data-a="save">저장</button>' + (cur ? '<button type="button" class="ghost" data-a="del">지우기</button>' : "") +
+      '<span class="muted">' + (SB && MU_USER ? "계정에 저장" : "이 브라우저에만 저장") + "</span></div>";
+    const ta = p.querySelector("textarea"); ta.value = cur;
+    p._commit = (del) => {
+      const txt = del ? "" : ta.value;
+      if (txt.trim() === cur.trim()) return false;
+      const before = memoPut(sym, r.t, txt);
+      // 차트 클릭 처리 도중에 그 차트를 지우지 않게 한 박자 뒤에 다시 그림
+      const redraw = () => setTimeout(() => { if (el._chart && el._redraw) el._redraw(); if (el.id === "mDaily") renderMemoList(sym, d, from); }, 0);
+      redraw();
+      toast(sym + " " + dayLabel(r.t) + (txt.trim() ? " 메모 저장" : " 메모 지움"), () => { memoPut(sym, r.t, before); redraw(); });
+      return true;
+    };
+    p.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const a = e.target.closest("[data-a]"); if (!a) return;
+      if (a.dataset.a === "prev" || a.dataset.a === "next") { const j = i + (a.dataset.a === "prev" ? -1 : 1); if (j >= from && j < d.length) open(j); return; }   // 휴대폰에서 봉을 정확히 누르기 어려워 하루씩 옮김
+      p.remove(); p._commit(a.dataset.a === "del");
+    });
+    ta.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { e.stopPropagation(); p.remove(); }                 // 저장 안 하고 닫기(크게 보기는 그대로)
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { p.remove(); p._commit(false); }
+    });
+    el.appendChild(p);
+    // 봉 바로 위(자리가 없으면 아래)에, 좌우는 봉 가운데
+    const x = ts.logicalToCoordinate(i - from), yh = series.priceToCoordinate(r.h), yl = series.priceToCoordinate(r.l);
+    p.style.left = Math.max(4, Math.min(x - p.offsetWidth / 2, el.clientWidth - p.offsetWidth - 4)) + "px";
+    p.style.top = (yh - p.offsetHeight - 14 > 30 ? yh - p.offsetHeight - 14 : Math.min(yl + 14, el.clientHeight - p.offsetHeight - 4)) + "px";
+    ta.focus();
+  };
+  el._memoOpen = (t) => { const i = d.findIndex((r) => r.t === t); if (i >= from) open(i); };
+  chart.subscribeClick((pm) => { const i = pm.point ? rowAt(pm) : null; if (i != null) open(i); });
+}
+// 크게 보기 차트 아래 메모 목록(1년이 지나 차트 밖으로 나간 메모도 여기 남음). 누르면 그날 메모 칸을 엶
+function renderMemoList(sym, d, from) {
+  const el = document.getElementById("mMemo"); if (!el) return;
+  const m = MEMO[sym] || {}, ks = Object.keys(m).sort().reverse();
+  if (!ks.length) { el.innerHTML = ""; return; }
+  const was = el.querySelector("details"), op = was ? was.open : false, first = d[from].t;
+  el.innerHTML = "<details" + (op ? " open" : "") + "><summary><i>●</i> 메모 " + ks.length + "개 ▾</summary>" +
+    ks.map((t) => '<div class="it' + (t < first ? " old" : "") + '" data-t="' + t + '"><span>' + dayLabel(t) + "</span><span>" + pfEsc(m[t]).replace(/\n/g, " · ") + "</span></div>").join("") + "</details>";
+  el.querySelectorAll("[data-t]").forEach((z) => z.addEventListener("click", (e) => { e.stopPropagation(); const c = document.getElementById("mDaily"); if (c._memoOpen) c._memoOpen(z.dataset.t); }));
+}
 function drawMarket(d, m) {
   if (!HAS_CHART()) return;
   document.getElementById("marketChart")._redraw = () => drawMarket(d, m);   // 가격 보기(바·종가 선)를 바꾸면 다시 그림
@@ -1476,6 +1655,8 @@ function drawMarket(d, m) {
   addVolProfile(chart, mbars, document.getElementById("marketChart"), d, from);
   mbars.createPriceLine({ price: m.line, color: C.box, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: "" });   // 이 선 아래로 마감하면 대기
   addLeftLabels(mbars, [{ p: m.line, text: "52주 고점 −" + Math.round(CORR_52W * 100) + "%", color: C.box }], document.getElementById("marketChart"));
+  const mm = memoMarks("QQQ", d, from); if (mm.length) mbars.setMarkers(mm);   // QQQ 메모는 이 차트에만
+  addMemo(chart, mbars, document.getElementById("marketChart"), "QQQ", d, from);
   chart._n = d.length - from; fitChart(chart);
 }
 function drawDaily(el, d, cls, t, x) {
@@ -1609,8 +1790,10 @@ function drawDaily(el, d, cls, t, x) {
   if (extraP.length) bars.applyOptions({ autoscaleInfoProvider: (orig) => {
     const r = orig(); if (!r || !r.priceRange) return r;
     r.priceRange.minValue = Math.min(r.priceRange.minValue, ...extraP); r.priceRange.maxValue = Math.max(r.priceRange.maxValue, ...extraP); return r; } });
+  marks.push(...memoMarks(t, d, from));
   marks.sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
   if (marks.length) bars.setMarkers(marks);
+  addMemo(chart, bars, el, t, d, from);
   chart._n = d.length - from; fitChart(chart);
 }
 
@@ -1935,7 +2118,7 @@ function renderMyBox() {
     toast(t + " 해제", () => { mySet(t, before); myRefresh(); });
   }));
   const mi = document.getElementById("muIn"), mr = document.getElementById("muRe"), mo = document.getElementById("muOut");
-  if (mi) mi.onclick = muLogin; if (mr) mr.onclick = () => muLoad(); if (mo) mo.onclick = muLogout;
+  if (mi) mi.onclick = muLogin; if (mr) mr.onclick = () => { muLoad(); memoLoad(); }; if (mo) mo.onclick = muLogout;
   document.getElementById("myCopy").addEventListener("click", async () => {
     const link = myLink();
     try { await navigator.clipboard.writeText(link); toast("설정 링크를 복사했어요. 다른 기기에서 열면 그대로 들어갑니다."); }
@@ -2561,6 +2744,7 @@ function openModal(t) {
   document.getElementById("modal").classList.add("open");
   requestAnimationFrame(() => {
     drawDaily(document.getElementById("mDaily"), x.d, cls, t, x);
+    renderMemoList(t, x.d, Math.max(0, x.d.length - SHOW_DAYS_STOCK));
   });
 }
 function closeModal() { const m = document.getElementById("modal"); m.classList.remove("open"); disposeCharts(m); }
@@ -2989,6 +3173,9 @@ function buildHelp() {
 </table>
 <h3 id="h-charts">차트 읽는 법</h3>
 <table>
+<tr><td><span style="color:var(--memo)">●</span> 메모</td><td><b>봉을 누르면</b> 그날 메모 칸이 열립니다(날짜 · 종가 · 등락 · 거래량 50일 평균 대비 배수가 함께 보임). <b>저장</b> 또는 Ctrl(⌘)+Enter, 칸 밖을 눌러도 저장, Esc는 저장하지 않고 닫기, 글을 다 지우거나 <b>지우기</b>를 누르면 메모가 없어집니다. 저장 뒤 아래 알림의 '되돌리기'로 되돌립니다. <b>◀ ▶</b>로 하루씩 옮깁니다(휴대폰에서 봉을 정확히 누르기 어려울 때).
+메모가 있는 날은 봉 위에 <span style="color:var(--memo)">분홍 점</span>, 마우스를 올리면 내용. 1층 QQQ 메모는 QQQ 차트에만, 종목 메모는 그 종목 크게 보기에(어느 층에서 열어도 같음). 크게 보기 아래 '메모 n개'를 누르면 목록이 펼쳐지고(1년이 지나 차트 밖으로 나간 메모는 회색), 누르면 그날 메모 칸이 열립니다.
+<b>저장</b>: 무살 계정으로 로그인하면(⚙ 설정 › 무살 연결) 계정에 저장되어 PC·휴대폰에서 같은 메모가 보입니다(공개 저장소에는 올라가지 않음, 본인만 읽기). 로그인하지 않으면 이 브라우저에만 저장되고, 처음 로그인할 때 계정으로 올라갑니다. 다른 기기에서 쓴 메모는 이 화면으로 돌아오면(1분 넘게 지났을 때) 다시 읽습니다.</td></tr>
 <tr><td>바 차트</td><td>오닐·미너비니식. 세로선은 고가-저가, 오른쪽 짧은 눈금이 종가(시가 눈금 없음). 차트 왼쪽 위 <b>가격</b> 버튼으로 <b>바 · 종가 선</b> 중에서 고릅니다. 고른 것은 1층과 크게 보기 차트에 함께 적용되고 브라우저에 기억됩니다.</td></tr>
 <tr><td>종가 선</td><td>종가만 이은 선(다크 모드는 밝은 회색). 큰 흐름과 종가가 촘촘히 모이는 수축 구간이 잘 보이고, 돌파·이탈 판정(종가 기준)과 그대로 맞습니다. 대신 장중 흔들림, 하루 폭, 그날 종가가 폭의 위쪽인지 아래쪽인지는 바에서만 보입니다. 베이스 상자·피벗·손절선은 고가·저가로 정하므로 선 보기에서는 상자 윗선이 선보다 조금 위에, 손절선은 선보다 조금 아래에 보입니다.</td></tr>
 <tr><td><span style="color:#dc2626">붉은</span> / <span style="color:#1d4ed8">파란</span> 바</td><td>전일 종가보다 올랐으면 붉은색, 내렸으면 파란색. 아래 거래량 막대도 같은 기준.</td></tr>
