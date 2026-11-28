@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>추세 대시보드 v26-11-24 15:06</title>
+<title>추세 대시보드 v26-11-28 15:01</title>
 <!-- 차트 라이브러리: 저장소 안 사본을 먼저(외부 CDN이 막혀도 열리게), 없으면 unpkg -->
 <script src="vendor/lightweight-charts-4.2.0.standalone.production.js"></script>
 <script>window.LightweightCharts || document.write('<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"><\/script>');</script>
@@ -367,7 +367,7 @@
 <body>
 <header class="wrapw">
   <div class="topline">
-    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v26-11-24 15:06</span></h1>
+    <h1><img class="logo" src="logo.svg" alt="">추세 대시보드<span class="ver">v26-11-28 15:01</span></h1>
     <div class="topbtns"><span class="nwrap"><button id="bell" title="QQQ(나스닥100) 구성 변경 알림">🔔<b id="bellN" hidden></b></button><div id="nPanel" hidden></div></span><button id="helpBtn" title="이 화면 보는 법">? 도움말</button><button id="gear" title="API 키·데이터 설정">⚙ 설정</button></div>
   </div>
   <div id="settings" hidden>
@@ -433,7 +433,7 @@
   <div class="mcharts">
     <div><div class="mc" id="mDaily"></div>
       <div class="legend"><i style="color:#ca8a04">━</i> 21 EMA &nbsp; <i style="color:#0d9488">━</i> 50 SMA &nbsp; <i style="color:#7c3aed">━</i> 200 SMA &nbsp; <i style="color:#0d9488">━</i> 거래량 50 SMA &nbsp;
-        <i style="color:#f59e0b">━</i> 베이스 상단·하단 · 저항선 &nbsp; <i style="background:rgba(250,204,21,0.38);color:transparent;padding:0 5px">■</i> 실적 발표일 &nbsp; <b>▲▼</b> 무살 매수·매도 &nbsp; <i style="color:var(--memo)">●</i> 메모(봉을 누르면 쓰기)</div><div id="mMemo"></div></div>
+        <i style="color:#f59e0b">━</i> 베이스 상단·하단 · 저항선 &nbsp; <i style="background:rgba(250,204,21,0.38);color:transparent;padding:0 5px">■</i> 실적 발표일 &nbsp; <i style="background:rgba(220,38,38,0.24);color:transparent;padding:0 5px">■</i> 매수 <i style="background:rgba(29,78,216,0.22);color:transparent;padding:0 5px">■</i> 매도 &nbsp; <i style="color:var(--memo)">●</i> 메모(봉을 누르면 쓰기)</div><div id="mMemo"></div></div>
   </div></div></div>
 
 <footer>
@@ -508,6 +508,9 @@ const C = {
   earnBg: "rgba(250, 204, 21, 0.38)",                                  // 종목 차트 배경색: 실적 발표일
 };
 const DARK = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+// 크게 보기 배경색: 내 매수일 빨강 · 매도일 파랑(다크는 어두운 바탕에서 묻히지 않게 진하게)
+C.buyBg = DARK ? "rgba(239, 83, 80, 0.42)" : "rgba(220, 38, 38, 0.26)";
+C.sellBg = DARK ? "rgba(100, 181, 246, 0.36)" : "rgba(29, 78, 216, 0.24)";
 
 const TICKERS = {};
 const SOLO_G = "단독";   // 산업 없이 따로 보는 종목 묶음 이름(2층 순위 밖, 3층 산업 조건 면제)
@@ -1674,7 +1677,14 @@ function drawDaily(el, d, cls, t, x) {
   const chart = baseChart(el, 0.24);
   const from = Math.max(0, d.length - SHOW_DAYS_STOCK);
   const ed = earnDates(t);
-  if (ed.size) addBg(chart, d, from, (r) => (ed.has(r.t) ? C.earnBg : null));
+  // 내 매매일: 매수 빨강 · 매도 파랑 배경(무살 건 · 직접 넣은 ★★ 매수일). 같은 날이면 매도, 실적일보다 내 거래가 먼저
+  const mup = muOf(t), buyD = new Set(), sellD = new Set();
+  if (mup) mup.trades.forEach((tr) => { tr.lots.forEach((l) => { if (l.day) buyD.add(l.day); }); tr.sells.forEach((z) => { if (z.day) sellD.add(z.day); }); });
+  const hp = x && myLevel(t) === 2 ? holdPlan(x) : null;
+  const hpI = hp && !hp.mu && hp.buy != null && hp.date ? d.findIndex((r) => r.t >= hp.date) : -1;
+  const hpBuyT = hpI >= from ? d[hpI].t : null;
+  if (hpBuyT) buyD.add(hpBuyT);
+  if (ed.size || buyD.size || sellD.size) addBg(chart, d, from, (r) => (sellD.has(r.t) ? C.sellBg : buyD.has(r.t) ? C.buyBg : ed.has(r.t) ? C.earnBg : null));
   const bars = addBars(chart, d, from);
   const cl = d.map((y) => y.c);
   addLine(chart, d, smaArr(cl, 50), from, C.ma10, 2);
@@ -1698,13 +1708,13 @@ function drawDaily(el, d, cls, t, x) {
   if (cls && cls.box && cls.state !== "deep" && (!cls.rg || cls.rg.r === 2) && !bxs.some((b) => b.from === cls.box.from))
     bxs.push({ from: cls.box.from, to: null, top: cls.box.top, bottom: cls.box.bottom, depth: (cls.box.top - cls.box.bottom) / cls.box.top, weeks: cls.weeks, open: true });
   const marks = [];
-  // 무살 매매 기록: 건마다 ▲ 매수 · ▼ 매도(가격, 판 건의 손익) · 판 건은 들고 있던 기간에 매수가 점선
-  const mup = muOf(t), myC = DARK ? "#d1d5db" : "#374151";
+  // 무살 매매 기록: 매수일 빨강 · 매도일 파랑 배경(위 addBg) + 글자(건 이름 · 가격 · 판 건의 손익) · 판 건은 들고 있던 기간에 매수가 점선
+  const myC = DARK ? "#d1d5db" : "#374151", buyC = DARK ? "#ef5350" : C.barUp, sellC = DARK ? "#64b5f6" : C.barDown;
   if (mup) {
     const inR = (day) => day && day >= d[from].t;
     mup.trades.forEach((tr) => {
       tr.lots.forEach((l) => {
-        if (inR(l.day)) marks.push({ time: l.day, position: "belowBar", shape: "arrowUp", color: myC, text: l.label + " 매수 " + l.price.toFixed(2) });
+        if (inR(l.day)) marks.push({ time: l.day, position: "belowBar", shape: "square", size: 0, color: buyC, text: l.label + " 매수 " + l.price.toFixed(2) });
         const end = l.sold && l.sell ? l.sell.day : null;
         if (l.day && end) {
           const span = d.filter((r, i) => i >= from && r.t >= l.day && r.t <= end);
@@ -1712,7 +1722,7 @@ function drawDaily(el, d, cls, t, x) {
             .setData(span.map((r) => ({ time: r.t, value: l.price })));
         }
       });
-      tr.sells.forEach((z) => { if (inR(z.day)) marks.push({ time: z.day, position: "aboveBar", shape: "arrowDown", color: myC, text: (z.labels ? z.labels + " " : "") + "매도 " + z.price.toFixed(2) + (z.ret != null ? " " + pctf(z.ret) : "") }); });
+      tr.sells.forEach((z) => { if (inR(z.day)) marks.push({ time: z.day, position: "aboveBar", shape: "square", size: 0, color: sellC, text: (z.labels ? z.labels + " " : "") + "매도 " + z.price.toFixed(2) + (z.ret != null ? " " + pctf(z.ret) : "") }); });
     });
   }
   if (cls && cls.rg && cls.rg.r === 1) {          // 1단계: 상자 대신 저점(지지선)과 저점 대비 상승률
@@ -1748,8 +1758,7 @@ function drawDaily(el, d, cls, t, x) {
   const leftL = [];    // 선 이름은 왼쪽 끝에(addLeftLabels)
   const pline = (p, color, style, title, width) => { extraP.push(p); leftL.push({ p, text: title, color }); return bars.createPriceLine({ price: p, color, lineWidth: width || 2, lineStyle: style, axisLabelVisible: true, title: "" }); };
   const LS = LightweightCharts.LineStyle;
-  // ★★ 보유: 손절선 · 매수가 · 다음 올릴 자리(+2R)
-  const hp = x && myLevel(t) === 2 ? holdPlan(x) : null;
+  // ★★ 보유: 손절선 · 매수가 · 다음 올릴 자리(+2R)  (hp는 위 배경에서 계산)
   if (hp && hp.mu) {   // 무살 보유: 안 판 건마다 손절(무살 손절가) · 매수 · +2R(닿으면 그날 점으로 알림만)
     const html = muPlanHtml(hp), multi = hp.lots.length > 1;
     hp.lots.forEach((l) => {
@@ -1767,7 +1776,7 @@ function drawDaily(el, d, cls, t, x) {
     if (hp.buy != null) {
       pline(hp.buy, DARK ? "#d1d5db" : "#374151", LS.Solid, "매수", 1);
       tips.push({ p: hp.buy, html });
-      if (hp.date) marks.push({ time: d[Math.max(0, d.findIndex((r) => r.t >= hp.date))].t, position: "belowBar", shape: "arrowUp", color: DARK ? "#d1d5db" : "#374151", text: "매수" });
+      if (hpBuyT) marks.push({ time: hpBuyT, position: "belowBar", shape: "square", size: 0, color: buyC, text: "매수" });
       if (!hp.beHit) { pline(hp.beAt, "#9ca3af", LS.Dotted, "+" + BE_R + "R → 본전", 1); tips.push({ p: hp.beAt, html }); }
     }
   }
@@ -3152,7 +3161,7 @@ function buildHelp() {
 <tr><td>저장과 기기 간 이동</td><td>내 종목은 <b>이 브라우저에만</b> 저장되고 GitHub(공개 저장소)로는 보내지 않습니다. 바꾼 뒤 '설정 링크 복사'로 만든 링크를 다른 기기에서 한 번 여세요. 링크의 # 뒤 내용은 서버로 전송되지 않습니다. 링크를 연 기기의 내 종목은 링크 내용으로 바뀝니다.</td></tr>
 <tr><td>무살 연결</td><td>⚙ 설정 › 내 종목 아래 <b>Google로 로그인</b>. 매매 일지 웹앱 <b>트레이딩:무살</b>과 같은 계정이고 같은 주소(arangpa-cyber.github.io)라, 이 브라우저에서 무살에 로그인돼 있으면 여기서도 이미 로그인 상태입니다(로그아웃도 함께). 무살 기록은 <b>읽기만</b> 합니다. 달러 종목만, 자산명을 티커로 적은 기록만 맞춥니다(앞의 영문 티커만 봄, 대시보드에 없는 종목은 설정에 이름만 나옴).<br>
 ① 무살에 안 판 매수 건이 있는 종목은 <b>★★ 보유</b>로 들어가고 다 팔면 빠집니다(별 메뉴로는 못 뺌). 직접 고른 ★★과 매수가는 그대로입니다.<br>
-② 크게 보기 차트에 건(N-n, 무살과 같은 이름)마다 <b>▲ 매수 가격</b> · <b>▼ 매도 가격과 손익</b>, 판 건은 들고 있던 기간에 매수가 점선. 머리글 '무살 기록'을 누르면 건별 매수 → 매도와 매도 이유.<br>
+② 크게 보기 차트에 매수한 날은 <span style="background:rgba(220,38,38,0.24);padding:0 4px">빨강 배경</span>과 봉 아래 <b>N-n 매수 가격</b>, 매도한 날은 <span style="background:rgba(29,78,216,0.22);padding:0 4px">파랑 배경</span>과 봉 위 <b>N-n 매도 가격 손익</b>(N-n은 무살과 같은 이름), 판 건은 들고 있던 기간에 매수가 점선. 머리글 '무살 기록'을 누르면 건별 매수 → 매도와 매도 이유.<br>
 ③ 안 판 건은 <b>손절(무살 손절가) · 매수 · +${BE_R}R</b> 선. 4층 <b>팔기</b> = 종가가 어느 건이든 그 건의 무살 손절가 아래(여러 건이면 "1-2 손절선 아래"). 대시보드는 손절선을 올리지 않고 <b>+${BE_R}R 도달</b>(차트 점 · 다음 할 일)과 더 높은 구조 손절선(선 근처에 마우스)만 알려 줍니다. 1R = 매수가 − 진입 때 손절가.<br>
 날짜: 무살 날짜(한국)와 그 전 거래일 중 체결가가 그날 고가-저가 안에 드는 미국 거래일에 놓습니다. 둘 다 들거나 둘 다 안 들면 전 거래일입니다(한국 밤에 열리는 미국 장은 대부분 자정 뒤라 날짜가 하루 넘어가서). 무살에서 기록하고 이 화면으로 돌아오면 다시 읽습니다.</td></tr>
 </table>
@@ -3195,6 +3204,7 @@ function buildHelp() {
 <tr><td style="color:#7c3aed">━ 200일선</td><td>장기 추세선.</td></tr>
 <tr><td style="color:#f59e0b">━ 주황 선</td><td><b>베이스</b>(2단계에서 시작한 것만): 위(실선)는 상단=돌파 기준, 아래(점선)는 하단. 글자는 기간(주)과 <b>폭</b>(상단에서 하단까지 몇 % 내려갔나). 돌파한 베이스는 돌파한 날까지, 지금 만드는 베이스는 "진행"으로 오른쪽 끝까지 그립니다.<br><b>저항선</b>: 1·3단계 구간은 베이스가 아니라서 상자 대신 상단 선 하나만 그립니다. 지난 구간을 넘었으면 "저항 n 돌파"(와인스타인: 이 돌파가 2단계의 시작), 지금 1·3단계면 최근 26주 고점에 "저항 n". 4단계(하락 중)에 시작한 박스권은 그리지 않습니다. 1단계면 저점(점선)과 저점 대비 상승률도 함께 그립니다.</td></tr>
 <tr><td><span style="background:rgba(250,204,21,0.38);padding:0 8px">노란 배경</span></td><td>실적 발표일. 그날을 칠합니다. 지난 1년 발표일과 다가오는 발표일이 나옵니다. 실적 전후로 갭이 생기기 쉬우니 베이스와 돌파를 볼 때 함께 확인하세요. 장 마감 뒤 발표는 주가 반응이 다음 날 바에 나타납니다.</td></tr>
+<tr><td><span style="background:rgba(220,38,38,0.24);padding:0 8px">빨강 배경</span> / <span style="background:rgba(29,78,216,0.22);padding:0 8px">파랑 배경</span></td><td>크게 보기에서 내가 산 날 / 판 날(무살 기록, 직접 넣은 ★★ 매수일). 증권사 화면처럼 매수 빨강 · 매도 파랑이라 오름·내림 바 색과 같은 계열입니다. 같은 날 사고 팔았으면 파랑, 실적 발표일과 겹치면 내 거래 색이 먼저입니다(노랑은 그날 안 보임).</td></tr>
 <tr><td style="color:#b91c1c">┄ 붉은 점선</td><td>최근 52주 고점. 오른쪽 가격 축에 값이 나옵니다.</td></tr>
 <tr><td>크게 보기</td><td>일봉 1년 한 장을 화면 가득 보여 줍니다(21 EMA, 50 SMA, 200 SMA, 거래량 50 SMA, 매물대). 차트에는 베이스 상단·하단·폭이 함께 나옵니다.</td></tr>
 </table>
